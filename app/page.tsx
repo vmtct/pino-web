@@ -27,7 +27,7 @@ export default function Home() {
           <a href="#paths">Art & Piano</a>
           <a href="#membership">Membership</a>
         </div>
-        <a className="nav-cta" href="#open-studio">Get a Free Pass</a>
+        <a className="nav-cta" href="/open-studio">Get a Free Pass</a>
       </nav>
 
       <section className="hero shell">
@@ -39,7 +39,7 @@ export default function Home() {
             Bắt đầu với một Open Studio pass miễn phí và xem điều gì thật sự chạm đến con.
           </p>
           <div className="hero-actions">
-            <a className="button button-dark" href="#open-studio">Get their first pass</a>
+            <a className="button button-dark" href="/open-studio">Get their first pass</a>
             <a className="text-link" href="#how-it-works">See how it works <span>→</span></a>
           </div>
           <div className="hero-proof">
@@ -115,7 +115,7 @@ export default function Home() {
               Your first step into PINO is simple: get a free pass, explore an
               Open Studio session, and let your child discover what feels right.
             </p>
-            <a className="button button-light" href="#membership">Get their first Open Studio pass</a>
+            <a className="button button-light" href="/open-studio">Get their first Open Studio pass</a>
           </div>
           <div className="pass-card">
             <span>FREE · 4 PASSES / MONTH</span>
@@ -169,7 +169,7 @@ export default function Home() {
               <li>1 Little Piner pass</li>
               <li>1 Bring-a-Friend pass</li>
             </ul>
-            <a className="card-link" href="#open-studio">Get my first pass →</a>
+            <a className="card-link" href="/open-studio">Get my first pass →</a>
           </article>
           <article className="membership-card premium">
             <p className="eyebrow">PREMIUM · 14-DAY TRIAL</p>
@@ -180,7 +180,7 @@ export default function Home() {
               <li>Continue Art or Piano</li>
               <li>14-day Premium trial</li>
             </ul>
-            <a className="card-link" href="#open-studio">Try PINO first →</a>
+            <a className="card-link" href="/open-studio">Try PINO first →</a>
           </article>
         </div>
       </section>
@@ -203,7 +203,7 @@ export default function Home() {
         <div className="shell final-cta-inner">
           <p className="eyebrow">READY TO LET THEM EXPLORE?</p>
           <h2>Give them one afternoon<br /><em>to make, play and discover.</em></h2>
-          <a className="button button-dark" href="#open-studio">Get their first Open Studio pass</a>
+          <a className="button button-dark" href="/open-studio">Get their first Open Studio pass</a>
         </div>
       </section>
 
