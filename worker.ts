@@ -1,7 +1,11 @@
 type AssetFetcher = { fetch(request: Request): Promise<Response> };
 interface Env {
-  ASSETS: AssetFetcher; NOTION_TOKEN: string; NOTION_PARENT_DATA_SOURCE_ID: string;
-  NOTION_STUDENT_DATA_SOURCE_ID: string; NOTION_OS_PASS_DATA_SOURCE_ID: string; NOTION_OS_SESSION_DATA_SOURCE_ID: string;
+  ASSETS: AssetFetcher;
+  NOTION_TOKEN: string;
+  NOTION_PARENT_DATA_SOURCE_ID: string;
+  NOTION_STUDENT_DATA_SOURCE_ID: string;
+  NOTION_OS_PASS_DATA_SOURCE_ID: string;
+  NOTION_OS_SESSION_DATA_SOURCE_ID: string;
 }
 const corsHeaders={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"Content-Type","Access-Control-Allow-Methods":"GET, POST, OPTIONS"};
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{"Content-Type":"application/json",...corsHeaders}});
@@ -11,7 +15,7 @@ const passRules:Record<PassType,{accessScope:"Open Studio + Premium"|"Any";refer
 const notionHeaders=(env:Env)=>({Authorization:`Bearer ${env.NOTION_TOKEN}`,"Content-Type":"application/json","Notion-Version":"2026-03-11"});
 async function notionCreatePage(env:Env,parent:Record<string,string>,properties:Record<string,unknown>){return fetch("https://api.notion.com/v1/pages",{method:"POST",headers:notionHeaders(env),body:JSON.stringify({parent,properties})});}
 async function notionUpdatePage(env:Env,pageId:string,properties:Record<string,unknown>){return fetch(`https://api.notion.com/v1/pages/${pageId}`,{method:"PATCH",headers:notionHeaders(env),body:JSON.stringify({properties})});}
-async function notionQuery(env:Env,dataSourceId:string,filter:unknown){return fetch(`https://api.notion.com/v1/data_sources/${dataSourceId}/query`,{method:"POST",headers:notionHeaders(env),body:JSON.stringify({filter})});}
+async function notionQuery(env:Env,dataSourceId:string,filter?:unknown){return fetch(`https://api.notion.com/v1/data_sources/${dataSourceId}/query`,{method:"POST",headers:notionHeaders(env),body:JSON.stringify(filter?{filter}:{})});}
 const localDate=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Ho_Chi_Minh",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 const addDays=(date:string,days:number)=>{const d=new Date(`${date}T00:00:00Z`);d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10)};
 const monthStart=(date:string)=>`${date.slice(0,7)}-01`;
@@ -27,20 +31,32 @@ async function issuePasses(env:Env,studentId:string,month:string,subscriptionId?
 }
 const propText=(p:any)=>p?.title?.[0]?.plain_text||p?.rich_text?.[0]?.plain_text||p?.select?.name||"";
 const propDate=(p:any)=>p?.date?.start||null;
-const propNumber=(p:any)=>typeof p?.number==="number"?p.number:null;
+const propNumber=(p:any)=>typeof p?.number==="number"?p.number:typeof p?.formula?.number==="number"?p.formula.number:typeof p?.rollup?.number==="number"?p.rollup.number:null;
 const propFiles=(p:any)=>p?.files?.map((f:any)=>f.file?.url||f.external?.url).filter(Boolean)||[];
+const propRelationIds=(p:any)=>p?.relation?.map((r:any)=>r.id).filter(Boolean)||[];
 async function getSessions(env:Env,params:URLSearchParams){
-  const parts:any[]=[];const type=params.get("type"),path=params.get("path");
-  if(type)parts.push({property:"Type",select:{equals:type}});if(path)parts.push({property:"Path - Program",select:{equals:path}});
-  const filter=parts.length===0?undefined:parts.length===1?parts[0]:{and:parts};
+  const type=params.get("type");
+  const filter=type?{property:"Type",select:{equals:type}}:undefined;
   const response=await notionQuery(env,env.NOTION_OS_SESSION_DATA_SOURCE_ID,filter);
-  if(!response.ok){const detail=await response.text();return {ok:false as const,status:502,error:"Could not load Open Studio sessions.",notionStatus:response.status,detail:detail.slice(0,1000)}}
+  if(!response.ok){const detail=await response.text();return {ok:false as const,status:502,error:"Could not load OS sessions.",notionStatus:response.status,detail:detail.slice(0,1000)}}
   const data=await response.json() as {results?:any[]};
-  const items=(data.results||[]).map(page=>({id:page.id,name:propText(page.properties?.Name)||"Untitled session",topic:propText(page.properties?.Topic),type:propText(page.properties?.Type),path:propText(page.properties?.["Path - Program"]),date:propDate(page.properties?.Date),duration:propNumber(page.properties?.Duration),maxSeats:propNumber(page.properties?.["Max Seats"]),availableSeats:propNumber(page.properties?.["Available Seats"]),confirmedCount:propNumber(page.properties?.["Confirmed Count"]),cover:propFiles(page.properties?.Cover)[0]||null,avatar:propFiles(page.properties?.Avatar)[0]||null}));
-  items.sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999")); return {ok:true as const,sessions:items};
+  const items=(data.results||[]).map(page=>({
+    id:page.id,
+    topic:propText(page.properties?.Topic)||"Untitled session",
+    type:propText(page.properties?.Type),
+    date:propDate(page.properties?.Date),
+    availableSeats:propNumber(page.properties?.["Available Seats"]),
+    capacity:propNumber(page.properties?.Capacity),
+    confirmedCount:propNumber(page.properties?.["Confirmed Count"]),
+    runningClassIds:propRelationIds(page.properties?.["Running Class"]),
+    cover:propFiles(page.properties?.Cover)[0]||null,
+    avatar:propFiles(page.properties?.Avatar)[0]||null,
+  }));
+  items.sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
+  return {ok:true as const,sessions:items};
 }
 const worker={async fetch(request:Request,env:Env):Promise<Response>{const url=new URL(request.url);if(request.method==="OPTIONS")return new Response(null,{headers:corsHeaders});
-  if(url.pathname==="/api/open-studio/sessions"){if(request.method!=="GET")return json({error:"Method not allowed"},405);if(!env.NOTION_TOKEN||!env.NOTION_OS_SESSION_DATA_SOURCE_ID)return json({error:"Session feed is not configured yet."},503);const result=await getSessions(env,url.searchParams);return result.ok?json(result):json(result,result.status)}
+  if(url.pathname==="/api/open-studio/sessions"||url.pathname==="/api/os-sessions"){if(request.method!=="GET")return json({error:"Method not allowed"},405);if(!env.NOTION_TOKEN||!env.NOTION_OS_SESSION_DATA_SOURCE_ID)return json({error:"OS Session feed is not configured yet."},503);const result=await getSessions(env,url.searchParams);return result.ok?json(result):json(result,result.status)}
   if(url.pathname==="/api/open-studio/interest"){if(request.method!=="POST")return json({error:"Method not allowed"},405);if(!env.NOTION_TOKEN||!env.NOTION_PARENT_DATA_SOURCE_ID)return json({error:"Open Studio intake is not configured yet."},503);let body:any;try{body=await request.json()}catch{return json({error:"Invalid request."},400)}const parentName=body.parentName?.trim(),phone=body.phone?.trim(),childName=body.childName?.trim()||"",ageStage=body.ageStage?.trim(),passType=body.passType?.trim() as PassType|undefined;if(!parentName||!phone||!ageStage||!passType)return json({error:"Please complete the required fields."},400);if(!allowedPasses.includes(passType))return json({error:"Invalid pass type."},400);const note=["Source: pino-web","Open Studio interest",`Pass: ${passType}`,`Age stage: ${ageStage}`,childName?`Child: ${childName}`:""].filter(Boolean).join("\n");const response=await notionCreatePage(env,{data_source_id:env.NOTION_PARENT_DATA_SOURCE_ID},{Name:{title:[{text:{content:parentName}}]},Mobile:{phone_number:phone},Note:{rich_text:[{text:{content:note}}]},"Lead Source":{select:{name:"pino.cantho.center"}}});if(!response.ok){const detail=await response.text();return json({error:"Notion rejected the request.",notionStatus:response.status,detail:detail.slice(0,1000)},502)}const created=await response.json() as {id?:string};return json({ok:true,parentId:created.id})}
   if(url.pathname==="/api/member/activate"){if(request.method!=="POST")return json({error:"Method not allowed"},405);if(!env.NOTION_TOKEN||!env.NOTION_PARENT_DATA_SOURCE_ID||!env.NOTION_STUDENT_DATA_SOURCE_ID||!env.NOTION_OS_PASS_DATA_SOURCE_ID)return json({error:"Member activation is not configured yet."},503);let body:any;try{body=await request.json()}catch{return json({error:"Invalid request."},400)}const parentId=body.parentId?.trim(),studentName=body.studentName?.trim(),subscriptionId=body.subscriptionId?.trim();if(!parentId||!studentName)return json({error:"parentId and studentName are required."},400);const existingResponse=await notionQuery(env,env.NOTION_STUDENT_DATA_SOURCE_ID,{and:[{property:"Parents ",relation:{contains:parentId}},{property:"Student Name",title:{equals:studentName}}]});if(!existingResponse.ok){const detail=await existingResponse.text();return json({error:"Could not check existing student.",notionStatus:existingResponse.status,detail:detail.slice(0,1000)},502)}const existing=await existingResponse.json() as {results?:Array<{id:string}>};const today=localDate(),trialUntil=addDays(today,14),properties:any={"Parents ":{relation:[{id:parentId}]},Membership:{select:{name:"Premium"}},"Activation Date":{date:{start:today}},"Premium Trial Started":{date:{start:today}},"Premium Trial Until":{date:{start:trialUntil}},"Premium Access Until":{date:{start:trialUntil}},...(subscriptionId?{"Subscription Plan":{relation:[{id:subscriptionId}]}}:{})};let studentId:string,alreadyActivated=false;if((existing.results?.length||0)>0){studentId=existing.results![0].id;alreadyActivated=true;const r=await notionUpdatePage(env,studentId,properties);if(!r.ok){const detail=await r.text();return json({error:"Could not activate student.",notionStatus:r.status,detail:detail.slice(0,1000)},502)}}else{const r=await notionCreatePage(env,{data_source_id:env.NOTION_STUDENT_DATA_SOURCE_ID},{"Student Name":{title:[{text:{content:studentName}}]},...properties});if(!r.ok){const detail=await r.text();return json({error:"Could not create student.",notionStatus:r.status,detail:detail.slice(0,1000)},502)}const created=await r.json() as {id?:string};if(!created.id)return json({error:"Student was created but no ID was returned."},502);studentId=created.id}const passes=await issuePasses(env,studentId,monthStart(today),subscriptionId);if(!passes.ok)return json(passes,passes.status);return json({ok:true,alreadyActivated,studentId,membership:"Premium",trial:{started:today,until:trialUntil},passes})}
   if(url.pathname==="/api/passes/issue"){if(request.method!=="POST")return json({error:"Method not allowed"},405);if(!env.NOTION_TOKEN||!env.NOTION_STUDENT_DATA_SOURCE_ID||!env.NOTION_OS_PASS_DATA_SOURCE_ID)return json({error:"Pass engine is not configured yet."},503);let body:any;try{body=await request.json()}catch{return json({error:"Invalid request."},400)}const studentId=body.studentId?.trim(),subscriptionId=body.subscriptionId?.trim(),month=body.month?.trim()||monthStart(localDate());if(!studentId)return json({error:"studentId is required."},400);const passes=await issuePasses(env,studentId,month,subscriptionId);return passes.ok?json(passes):json(passes,passes.status)}
