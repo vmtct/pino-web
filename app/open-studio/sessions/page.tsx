@@ -10,9 +10,9 @@ const dateLabel=(d:string)=>new Intl.DateTimeFormat("en-US",{month:"short",day:"
 
 export default function SessionsPage(){
  const [sessions,setSessions]=useState<Session[]>([]); const [filter,setFilter]=useState("All"); const [selectedDay,setSelectedDay]=useState(""); const [loading,setLoading]=useState(true); const [error,setError]=useState("");
- useEffect(()=>{fetch("/api/os-sessions").then(async r=>{const data=await r.json();if(!r.ok)throw new Error(data.error||"Could not load sessions.");return data}).then(data=>{const list=data.sessions||[];setSessions(list);const days=[...new Set(list.filter((s:Session)=>s.date).map((s:Session)=>dayKey(s.date)))];setSelectedDay(days[0]||"")}).catch(e=>setError(e.message||"Could not load sessions.")).finally(()=>setLoading(false))},[]);
+ useEffect(()=>{fetch("/api/os-sessions").then(async r=>{const data=await r.json();if(!r.ok)throw new Error(data.error||"Could not load sessions.");return data}).then(data=>{const list:Session[]=data.sessions||[];setSessions(list);const days:string[]=[...new Set(list.filter((s:Session)=>s.date).map((s:Session)=>dayKey(s.date)))];setSelectedDay(days[0]||"")}).catch(e=>setError(e.message||"Could not load sessions.")).finally(()=>setLoading(false))},[]);
  const filtered=useMemo(()=>filter==="All"?sessions:sessions.filter(s=>s.path===filter),[filter,sessions]);
- const days=useMemo(()=>[...new Set(filtered.filter(s=>s.date).map(s=>dayKey(s.date)))].sort(),[filtered]);
+ const days:string[]=useMemo(()=>[...new Set(filtered.filter(s=>s.date).map(s=>dayKey(s.date)))].sort(),[filtered]);
  useEffect(()=>{if(days.length&&!days.includes(selectedDay))setSelectedDay(days[0])},[days,selectedDay]);
  const visible=filtered.filter(s=>dayKey(s.date)===selectedDay);
  return <main style={{minHeight:"100vh",background:"#f4f0e7",color:"#171713"}}>
