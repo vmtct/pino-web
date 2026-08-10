@@ -40,7 +40,7 @@ const propText=(p:any)=>p?.title?.[0]?.plain_text||p?.rich_text?.[0]?.plain_text
 const propDate=(p:any)=>p?.date?.start||null;
 const propNumber=(p:any)=>typeof p?.number==="number"?p.number:typeof p?.formula?.number==="number"?p.formula.number:typeof p?.rollup?.number==="number"?p.rollup.number:null;
 const propFiles=(p:any)=>p?.files?.map((f:any)=>f.file?.url||f.external?.url).filter(Boolean)||[];
-const propRelationIds=(p:any)=>p?.relation?.map((r:any)=>r.id).filter(Boolean)||[];
+const propRelationIds=(p:any):string[]=>p?.relation?.map((r:any)=>r.id).filter((id:any):id is string=>Boolean(id))||[];
 const propSelect=(p:any)=>p?.select?.name||null;
 const publicPath=(master:string|null)=>master==="PianoHouse"?"Piano":master==="Architect"?"Mỹ thuật":master==="Little PIner"?"Little Piner":null;
 
@@ -55,7 +55,7 @@ async function getProgramContext(env:Env){
   const programPaths=new Map<string,string>();
   for(const page of programs.results||[]){const path=publicPath(propSelect(page.properties?.["Master Path"]));if(path)programPaths.set(page.id,path)}
   const classPaths=new Map<string,string>();
-  for(const page of classes.results||[]){const pathIds=propRelationIds(page.properties?.["Path Program"]);const path=pathIds.map(id=>programPaths.get(id)).find(Boolean);if(path)classPaths.set(page.id,path)}
+  for(const page of classes.results||[]){const pathIds=propRelationIds(page.properties?.["Path Program"]);const path=pathIds.map((id:string)=>programPaths.get(id)).find(Boolean);if(path)classPaths.set(page.id,path)}
   return {classPaths,programPaths};
 }
 async function getSessions(env:Env,params:URLSearchParams){
@@ -65,7 +65,7 @@ async function getSessions(env:Env,params:URLSearchParams){
   if(!response.ok){const detail=await response.text();return {ok:false as const,status:502,error:"Could not load OS sessions.",notionStatus:response.status,detail:detail.slice(0,1000)}}
   const data=await response.json() as {results?:any[]};
   const context=await getProgramContext(env);
-  const items=(data.results||[]).map(page=>{const runningClassIds=propRelationIds(page.properties?.["Running Class"]);const paths=runningClassIds.map(id=>context.classPaths.get(id)).filter(Boolean);return {id:page.id,topic:propText(page.properties?.Topic)||"Untitled session",type:propText(page.properties?.Type),path:paths[0]||null,date:propDate(page.properties?.Date),availableSeats:propNumber(page.properties?.["Available Seats"]),capacity:propNumber(page.properties?.Capacity),confirmedCount:propNumber(page.properties?.["Confirmed Count"]),runningClassIds,cover:propFiles(page.properties?.Cover)[0]||null,avatar:propFiles(page.properties?.Avatar)[0]||null};});
+  const items=(data.results||[]).map(page=>{const runningClassIds=propRelationIds(page.properties?.["Running Class"]);const paths=runningClassIds.map((id:string)=>context.classPaths.get(id)).filter(Boolean);return {id:page.id,topic:propText(page.properties?.Topic)||"Untitled session",type:propText(page.properties?.Type),path:paths[0]||null,date:propDate(page.properties?.Date),availableSeats:propNumber(page.properties?.["Available Seats"]),capacity:propNumber(page.properties?.Capacity),confirmedCount:propNumber(page.properties?.["Confirmed Count"]),runningClassIds,cover:propFiles(page.properties?.Cover)[0]||null,avatar:propFiles(page.properties?.Avatar)[0]||null};});
   const requestedPath=params.get("path");
   const filtered=requestedPath?items.filter(item=>item.path===requestedPath):items;
   filtered.sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
