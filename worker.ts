@@ -42,8 +42,7 @@ const propNumber=(p:any)=>typeof p?.number==="number"?p.number:typeof p?.formula
 const propFiles=(p:any)=>p?.files?.map((f:any)=>f.file?.url||f.external?.url).filter(Boolean)||[];
 const propRelationIds=(p:any):string[]=>p?.relation?.map((r:any)=>r.id).filter((id:any):id is string=>Boolean(id))||[];
 const propSelect=(p:any)=>p?.select?.name||null;
-const publicPath=(master:string|null)=>master==="PianoHouse"?"Piano":master==="Architect"?"Mỹ thuật":master==="Little PIner"?"Little Piner":null;
-
+const publicPath=(master:string|null)=>{const value=(master||"").trim().toLowerCase().replace(/\s+/g," ");if(value==="pianohouse")return "Piano";if(value==="architect")return "Mỹ thuật";if(value==="little piner")return "Little Piner";return null;};
 async function getProgramContext(env:Env){
   const [classesResponse,programsResponse]=await Promise.all([
     notionQuery(env,env.NOTION_RUNNING_CLASS_DATA_SOURCE_ID),
