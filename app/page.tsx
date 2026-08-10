@@ -4,14 +4,14 @@ const paths = [
 ];
 
 const ageStages = [
-  { age: "3–6", title: "Little Pino", detail: "A gentle first world of music, making and creative confidence." },
+  { age: "3–6", title: "Little Piner", detail: "A first creative world where Art and Piano meet through play, rhythm and discovery." },
   { age: "7+", title: "PINO", detail: "More depth, more choice, and a clearer path to grow in Art or Piano." },
 ];
 
 const steps = [
   { number: "01", title: "Pick a day", detail: "Choose an Open Studio session that fits your family." },
   { number: "02", title: "Come to PINO", detail: "No preparation. No need to choose Art or Piano first." },
-  { number: "03", title: "Let them explore", detail: "Try, make, play and see what naturally clicks." },
+  { number: "03", title: "Make something", detail: "Try, make, play and see what naturally clicks." },
   { number: "04", title: "Come back", detail: "Use another pass when they are ready to keep going." },
 ];
 
@@ -35,9 +35,8 @@ export default function Home() {
           <p className="eyebrow">PINO OPEN STUDIO · AGES 3–15</p>
           <h1>Cho con một<br />buổi chiều <em>thật ý nghĩa.</em></h1>
           <p className="hero-lede">
-            A creative afternoon where kids can try Art and Piano without having
-            to choose a path first. Start with a free Open Studio pass and see
-            what clicks.
+            Một buổi chiều để con thử Art và Piano — không cần chọn trước.
+            Bắt đầu với một Open Studio pass miễn phí và xem điều gì thật sự chạm đến con.
           </p>
           <div className="hero-actions">
             <a className="button button-dark" href="#open-studio">Get their first pass</a>
@@ -119,13 +118,13 @@ export default function Home() {
             <a className="button button-light" href="#membership">Get their first Open Studio pass</a>
           </div>
           <div className="pass-card">
-            <span>FREE</span>
+            <span>FREE · 4 PASSES / MONTH</span>
             <strong>4</strong>
-            <p>passes / month</p>
+            <p>ways to experience PINO</p>
             <div className="pass-list">
-              <span>01 · Art</span>
-              <span>02 · Piano</span>
-              <span>03 · Explore again</span>
+              <span>01 · Piano</span>
+              <span>02 · Art</span>
+              <span>03 · Little Piner</span>
               <span>04 · Bring a friend</span>
             </div>
           </div>
@@ -163,10 +162,11 @@ export default function Home() {
           <article className="membership-card">
             <p className="eyebrow">FREE</p>
             <h3>Explore</h3>
-            <p>Four Open Studio passes every month, including one Bring-a-Friend pass. Try Art and Piano before choosing where to go deeper.</p>
+            <p>Four monthly passes: Piano, Art, Little Piner, and one Bring-a-Friend pass.</p>
             <ul>
-              <li>4 passes / month</li>
-              <li>Art · Piano</li>
+              <li>1 Piano pass</li>
+              <li>1 Art pass</li>
+              <li>1 Little Piner pass</li>
               <li>1 Bring-a-Friend pass</li>
             </ul>
             <a className="card-link" href="#open-studio">Get my first pass →</a>
