@@ -98,13 +98,16 @@ const worker = {
             Note: {
               rich_text: [{ text: { content: note } }],
             },
+            "Lead Source": {
+              select: { name: "pino.cantho.center" },
+            },
           },
         }),
       });
 
       if (!notionResponse.ok) {
         const detail = await notionResponse.text();
-        console.error("Notion create page failed", detail);
+        console.error("Notion create page failed", notionResponse.status, detail);
         return json({ error: "We could not save your request. Please try again." }, 502);
       }
 
