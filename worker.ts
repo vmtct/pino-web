@@ -22,14 +22,15 @@ const json = (body: unknown, status = 200) =>
     headers: { "Content-Type": "application/json", ...corsHeaders },
   });
 
-const allowedPasses = [
-  "Piano",
-  "Art",
-  "Little Piner",
-  "Bring-a-Friend",
-] as const;
-
+const allowedPasses = ["Piano", "Art", "Little Piner", "Bring-a-Friend"] as const;
 type PassType = (typeof allowedPasses)[number];
+
+const passRules: Record<PassType, { accessScope: "Open Studio + Premium" | "Any"; referral: boolean }> = {
+  Piano: { accessScope: "Open Studio + Premium", referral: false },
+  Art: { accessScope: "Open Studio + Premium", referral: false },
+  "Little Piner": { accessScope: "Open Studio + Premium", referral: false },
+  "Bring-a-Friend": { accessScope: "Any", referral: true },
+};
 
 const notionHeaders = (env: Env) => ({
   Authorization: `Bearer ${env.NOTION_TOKEN}`,
@@ -61,19 +62,11 @@ const worker = {
 
     if (url.pathname === "/api/open-studio/interest") {
       if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
-
       if (!env.NOTION_TOKEN || !env.NOTION_PARENT_DATA_SOURCE_ID) {
         return json({ error: "Open Studio intake is not configured yet." }, 503);
       }
 
-      let body: {
-        parentName?: string;
-        phone?: string;
-        childName?: string;
-        ageStage?: string;
-        passType?: string;
-      };
-
+      let body: { parentName?: string; phone?: string; childName?: string; ageStage?: string; passType?: string };
       try {
         body = await request.json();
       } catch {
@@ -86,13 +79,8 @@ const worker = {
       const ageStage = body.ageStage?.trim();
       const passType = body.passType?.trim() as PassType | undefined;
 
-      if (!parentName || !phone || !ageStage || !passType) {
-        return json({ error: "Please complete the required fields." }, 400);
-      }
-
-      if (!allowedPasses.includes(passType)) {
-        return json({ error: "Invalid pass type." }, 400);
-      }
+      if (!parentName || !phone || !ageStage || !passType) return json({ error: "Please complete the required fields." }, 400);
+      if (!allowedPasses.includes(passType)) return json({ error: "Invalid pass type." }, 400);
 
       const note = [
         "Source: pino-web",
@@ -102,9 +90,7 @@ const worker = {
         childName ? `Child: ${childName}` : "",
       ].filter(Boolean).join("\n");
 
-      const notionResponse = await notionCreatePage(env, {
-        data_source_id: env.NOTION_PARENT_DATA_SOURCE_ID,
-      }, {
+      const notionResponse = await notionCreatePage(env, { data_source_id: env.NOTION_PARENT_DATA_SOURCE_ID }, {
         Name: { title: [{ text: { content: parentName } }] },
         Mobile: { phone_number: phone },
         Note: { rich_text: [{ text: { content: note } }] },
@@ -117,7 +103,7 @@ const worker = {
         return json({ error: "Notion rejected the request.", notionStatus: notionResponse.status, detail: detail.slice(0, 1000) }, 502);
       }
 
-      const created = (await notionResponse.json()) as { id?: string };
+      const created = await notionResponse.json() as { id?: string };
       return json({ ok: true, parentId: created.id });
     }
 
@@ -136,16 +122,18 @@ const worker = {
 
       const studentId = body.studentId?.trim();
       const subscriptionId = body.subscriptionId?.trim();
-      const month = body.month?.trim() || new Date().toISOString().slice(0, 7) + "-01";
-
+      const month = body.month?.trim() || `${new Date().getUTCFullYear()}-${String(new Date().getUTCMonth() + 1).padStart(2, "0")}-01`;
       if (!studentId) return json({ error: "studentId is required." }, 400);
 
-      // Idempotency: don't issue a second set for the same student/month.
+      const monthDate = new Date(`${month}T00:00:00Z`);
+      if (Number.isNaN(monthDate.getTime())) return json({ error: "month must be YYYY-MM-01." }, 400);
+      const nextMonth = new Date(Date.UTC(monthDate.getUTCFullYear(), monthDate.getUTCMonth() + 1, 1)).toISOString().slice(0, 10);
+
       const existingResponse = await notionQuery(env, env.NOTION_OS_PASS_DATA_SOURCE_ID, {
         and: [
           { property: "Student", relation: { contains: studentId } },
           { property: "Month", date: { on_or_after: month } },
-          { property: "Month", date: { before: new Date(new Date(month).setMonth(new Date(month).getMonth() + 1)).toISOString().slice(0, 10) } },
+          { property: "Month", date: { before: nextMonth } },
         ],
       });
 
@@ -162,14 +150,15 @@ const worker = {
 
       const createdIds: string[] = [];
       for (const type of allowedPasses) {
-        const response = await notionCreatePage(env, {
-          data_source_id: env.NOTION_OS_PASS_DATA_SOURCE_ID,
-        }, {
+        const rule = passRules[type];
+        const response = await notionCreatePage(env, { data_source_id: env.NOTION_OS_PASS_DATA_SOURCE_ID }, {
           Name: { title: [{ text: { content: `${type} · ${month}` } }] },
           Student: { relation: [{ id: studentId }] },
           ...(subscriptionId ? { Subscription: { relation: [{ id: subscriptionId }] } } : {}),
           "Pass Type": { select: { name: type } },
           Status: { select: { name: "Available" } },
+          "Access Scope": { select: { name: rule.accessScope } },
+          Referral: { checkbox: rule.referral },
           Month: { date: { start: month } },
         });
 
