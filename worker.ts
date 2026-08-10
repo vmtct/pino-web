@@ -6,16 +6,21 @@ interface Env {
   NOTION_STUDENT_DATA_SOURCE_ID: string;
   NOTION_OS_PASS_DATA_SOURCE_ID: string;
   NOTION_OS_SESSION_DATA_SOURCE_ID: string;
+  NOTION_OS_SESSION_DATABASE_ID: string;
 }
 const corsHeaders={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"Content-Type","Access-Control-Allow-Methods":"GET, POST, OPTIONS"};
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{"Content-Type":"application/json",...corsHeaders}});
 const allowedPasses=["Piano","Art","Little Piner","Bring-a-Friend"] as const;
 type PassType=typeof allowedPasses[number];
 const passRules:Record<PassType,{accessScope:"Open Studio + Premium"|"Any";referral:boolean}>={Piano:{accessScope:"Open Studio + Premium",referral:false},Art:{accessScope:"Open Studio + Premium",referral:false},"Little Piner":{accessScope:"Open Studio + Premium",referral:false},"Bring-a-Friend":{accessScope:"Any",referral:true}};
-const notionHeaders=(env:Env)=>({Authorization:`Bearer ${env.NOTION_TOKEN}`,"Content-Type":"application/json","Notion-Version":"2026-03-11"});
+const notionHeaders=(env:Env,version="2026-03-11")=>({Authorization:`Bearer ${env.NOTION_TOKEN}`,"Content-Type":"application/json","Notion-Version":version});
 async function notionCreatePage(env:Env,parent:Record<string,string>,properties:Record<string,unknown>){return fetch("https://api.notion.com/v1/pages",{method:"POST",headers:notionHeaders(env),body:JSON.stringify({parent,properties})});}
 async function notionUpdatePage(env:Env,pageId:string,properties:Record<string,unknown>){return fetch(`https://api.notion.com/v1/pages/${pageId}`,{method:"PATCH",headers:notionHeaders(env),body:JSON.stringify({properties})});}
-async function notionQuery(env:Env,dataSourceId:string,filter?:unknown){return fetch(`https://api.notion.com/v1/data_sources/${dataSourceId}/query`,{method:"POST",headers:notionHeaders(env),body:JSON.stringify(filter?{filter}:{})});}
+async function notionQuery(env:Env,dataSourceId:string,filter?:unknown){
+  const response=await fetch(`https://api.notion.com/v1/data_sources/${dataSourceId}/query`,{method:"POST",headers:notionHeaders(env),body:JSON.stringify(filter?{filter}:{})});
+  if(response.ok||dataSourceId!==env.NOTION_OS_SESSION_DATA_SOURCE_ID||!env.NOTION_OS_SESSION_DATABASE_ID)return response;
+  return fetch(`https://api.notion.com/v1/databases/${env.NOTION_OS_SESSION_DATABASE_ID}/query`,{method:"POST",headers:notionHeaders(env,"2022-06-28"),body:JSON.stringify(filter?{filter}:{})});
+}
 const localDate=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Ho_Chi_Minh",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 const addDays=(date:string,days:number)=>{const d=new Date(`${date}T00:00:00Z`);d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10)};
 const monthStart=(date:string)=>`${date.slice(0,7)}-01`;
@@ -40,18 +45,7 @@ async function getSessions(env:Env,params:URLSearchParams){
   const response=await notionQuery(env,env.NOTION_OS_SESSION_DATA_SOURCE_ID,filter);
   if(!response.ok){const detail=await response.text();return {ok:false as const,status:502,error:"Could not load OS sessions.",notionStatus:response.status,detail:detail.slice(0,1000)}}
   const data=await response.json() as {results?:any[]};
-  const items=(data.results||[]).map(page=>({
-    id:page.id,
-    topic:propText(page.properties?.Topic)||"Untitled session",
-    type:propText(page.properties?.Type),
-    date:propDate(page.properties?.Date),
-    availableSeats:propNumber(page.properties?.["Available Seats"]),
-    capacity:propNumber(page.properties?.Capacity),
-    confirmedCount:propNumber(page.properties?.["Confirmed Count"]),
-    runningClassIds:propRelationIds(page.properties?.["Running Class"]),
-    cover:propFiles(page.properties?.Cover)[0]||null,
-    avatar:propFiles(page.properties?.Avatar)[0]||null,
-  }));
+  const items=(data.results||[]).map(page=>({id:page.id,topic:propText(page.properties?.Topic)||"Untitled session",type:propText(page.properties?.Type),date:propDate(page.properties?.Date),availableSeats:propNumber(page.properties?.["Available Seats"]),capacity:propNumber(page.properties?.Capacity),confirmedCount:propNumber(page.properties?.["Confirmed Count"]),runningClassIds:propRelationIds(page.properties?.["Running Class"]),cover:propFiles(page.properties?.Cover)[0]||null,avatar:propFiles(page.properties?.Avatar)[0]||null}));
   items.sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
   return {ok:true as const,sessions:items};
 }
