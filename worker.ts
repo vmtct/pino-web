@@ -1,5 +1,9 @@
+type AssetFetcher = {
+  fetch(request: Request): Promise<Response>;
+};
+
 interface Env {
-  ASSETS: Fetcher;
+  ASSETS: AssetFetcher;
   NOTION_TOKEN: string;
   NOTION_PARENT_DATA_SOURCE_ID: string;
 }
@@ -23,7 +27,7 @@ const allowedPasses = new Set([
   "Bring-a-Friend",
 ]);
 
-export default {
+const worker = {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
@@ -104,10 +108,12 @@ export default {
         return json({ error: "We could not save your request. Please try again." }, 502);
       }
 
-      const created = await notionResponse.json() as { id?: string };
+      const created = (await notionResponse.json()) as { id?: string };
       return json({ ok: true, id: created.id });
     }
 
     return env.ASSETS.fetch(request);
   },
-} satisfies ExportedHandler<Env>;
+};
+
+export default worker;
