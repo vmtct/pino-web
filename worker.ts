@@ -108,7 +108,14 @@ const worker = {
       if (!notionResponse.ok) {
         const detail = await notionResponse.text();
         console.error("Notion create page failed", notionResponse.status, detail);
-        return json({ error: "We could not save your request. Please try again." }, 502);
+        return json(
+          {
+            error: "Notion rejected the request.",
+            notionStatus: notionResponse.status,
+            detail: detail.slice(0, 1000),
+          },
+          502,
+        );
       }
 
       const created = (await notionResponse.json()) as { id?: string };
