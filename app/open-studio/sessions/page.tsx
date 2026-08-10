@@ -8,7 +8,7 @@ const dayKey=(d:string|null)=>d?new Date(d).toISOString().slice(0,10):"unknown";
 const dayLabel=(d:string)=>new Intl.DateTimeFormat("en-US",{weekday:"short"}).format(new Date(`${d}T12:00:00`));
 const dateLabel=(d:string)=>new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric"}).format(new Date(`${d}T12:00:00`));
 const normalize=(value:string|null)=>value?.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim()||"";
-const matchesPath=(session:Session,filter:string)=>{if(filter==="All")return true;const value=normalize(`${session.path||""} ${session.topic||""}`);if(filter==="Piano")return value.includes("piano");if(filter==="Mỹ thuật")return value.includes("my thuat")||value.includes("art")||value.includes("architect");if(filter==="Little Piner")return value.includes("little piner");return false;};
+const matchesPath=(session:Session,filter:string)=>{if(filter==="All")return true;const value=normalize(`${session.path||""} ${session.topic||""}`);if(filter==="Piano")return value.includes("piano");if(filter==="Mỹ thuật")return value.includes("my thuat")||value.includes("art")||value.includes("architect");if(filter==="Little Piner")return value.includes("little piner")||value.includes("chibi")||value.includes("nguoi ban")||value.includes("nhung nguoi ban")||value.includes("piner");return false;};
 
 export default function SessionsPage(){
  const [sessions,setSessions]=useState<Session[]>([]); const [filter,setFilter]=useState("All"); const [selectedDay,setSelectedDay]=useState(""); const [loading,setLoading]=useState(true); const [error,setError]=useState("");
