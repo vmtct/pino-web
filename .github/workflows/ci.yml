@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  issues: write
+
 concurrency:
   group: pino-web-${{ github.ref }}
   cancel-in-progress: true
@@ -117,3 +121,59 @@ jobs:
           name: playwright-test-results
           path: test-results/
           if-no-files-found: ignore
+
+  failure-intake:
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.build.result == 'failure' || needs.smoke.result == 'failure' || needs.e2e.result == 'failure')
+    needs: [build, smoke, e2e]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create structured CI failure intake
+        uses: actions/github-script@v7
+        env:
+          BUILD_RESULT: ${{ needs.build.result }}
+          SMOKE_RESULT: ${{ needs.smoke.result }}
+          E2E_RESULT: ${{ needs.e2e.result }}
+        with:
+          script: |
+            const run = context.runId;
+            const sha = context.sha;
+            const { owner, repo } = context.repo;
+            const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+              owner, repo, run_id: run, per_page: 100
+            });
+
+            const failed = jobs
+              .filter(j => ['failure', 'timed_out', 'cancelled'].includes(j.conclusion))
+              .map(j => ({
+                name: j.name,
+                conclusion: j.conclusion,
+                url: j.html_url,
+                failedSteps: (j.steps || [])
+                  .filter(s => ['failure', 'timed_out', 'cancelled'].includes(s.conclusion))
+                  .map(s => s.name)
+              }));
+
+            const title = `CI Failure Intake — ${sha.slice(0, 7)} — run ${run}`;
+            const body = [
+              '# CI Failure Intake',
+              '',
+              `- **Commit:** \`${sha}\``,
+              `- **Run:** ${run}`,
+              `- **Run URL:** ${context.serverUrl}/${owner}/${repo}/actions/runs/${run}`,
+              `- **Build:** ${process.env.BUILD_RESULT}`,
+              `- **Smoke:** ${process.env.SMOKE_RESULT}`,
+              `- **E2E:** ${process.env.E2E_RESULT}`,
+              '',
+              '## Failed jobs',
+              '```json',
+              JSON.stringify(failed, null, 2),
+              '```',
+              '',
+              '## Agent instruction',
+              'Treat this issue as machine-generated CI evidence. Inspect the referenced workflow run, failed job logs, Playwright artifacts, and the commit diff before proposing or applying a fix.',
+              '',
+              '## Safety boundary',
+              'Do not mutate production data merely to reproduce the failure. Prefer tests, mocks, validation-only endpoints, or disposable E2E fixtures.',
+            ].join('\n');
+
+            await github.rest.issues.create({ owner, repo, title, body, labels: ['ci-failure'] });
