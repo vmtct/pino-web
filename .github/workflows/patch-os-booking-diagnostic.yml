@@ -10,42 +10,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch worker entitlement normalization
+      - name: Patch deployed member worker
         run: |
           python - <<'PY'
           from pathlib import Path
-          p = Path('worker.ts')
+          p = Path('worker-member-v2.ts')
           s = p.read_text()
-
-          old_text = 'const propText=(p:any)=>p?.title?.[0]?.plain_text||p?.rich_text?.[0]?.plain_text||p?.select?.name||"";'
-          new_text = 'const propText=(p:any)=>p?.title?.[0]?.plain_text||p?.rich_text?.[0]?.plain_text||p?.select?.name||p?.status?.name||"";'
-          if old_text in s:
-              s = s.replace(old_text, new_text, 1)
-
-          old_prop = 'const propSelect=(p:any)=>p?.select?.name||null;'
-          new_prop = 'const propSelect=(p:any)=>p?.select?.name||p?.status?.name||null;\nconst canonicalSessionType=(value:string|null)=>{const normalized=(value||"").normalize("NFKC").replace(/\\s+/g," ").trim().toLowerCase();if(normalized==="open studio")return "Open Studio";if(normalized==="premium")return "Premium";return (value||"").normalize("NFKC").replace(/\\s+/g," ").trim();};'
-          if old_prop in s:
-              s = s.replace(old_prop, new_prop, 1)
-          elif 'const canonicalSessionType=' not in s:
-              raise SystemExit('target propSelect not found')
-
-          old_type = 'type:propText(page.properties?.["Type"])'
-          new_type = 'type:canonicalSessionType(propText(page.properties?.["Type"]))'
-          if old_type in s:
-              s = s.replace(old_type, new_type, 1)
-
-          old_check = 'if(rule.accessScope!=="Any"&&session.type!=="Open Studio"&&session.type!=="Premium")return {ok:false as const,status:409,error:"This pass cannot access this session."};'
-          new_check = 'const sessionType=canonicalSessionType(session.type);if(rule.accessScope!=="Any"&&sessionType!=="Open Studio"&&sessionType!=="Premium")return {ok:false as const,status:409,error:`This pass cannot access this session (${sessionType||"unknown type"}).`};'
-          if old_check in s:
-              s = s.replace(old_check, new_check, 1)
-          elif 'const sessionType=canonicalSessionType(session.type);' not in s:
-              raise SystemExit('target booking access check not found')
-
+          old = 'const text=(p:any)=>p?.title?.[0]?.plain_text||p?.rich_text?.[0]?.plain_text||p?.select?.name||"";'
+          new = 'const text=(p:any)=>p?.title?.[0]?.plain_text||p?.rich_text?.[0]?.plain_text||p?.select?.name||p?.status?.name||"";'
+          if old in s: s = s.replace(old, new, 1)
+          old = 'const select=(p:any)=>p?.select?.name||null;'
+          new = 'const select=(p:any)=>p?.select?.name||p?.status?.name||null;'
+          if old in s: s = s.replace(old, new, 1)
+          marker = 'const relationIds=(p:any):string[]=>p?.relation?.map((r:any)=>r.id).filter(Boolean)||[];'
+          helper = 'const canonicalSessionType=(value:string|null)=>{const normalized=(value||"").normalize("NFKC").replace(/\\s+/g," ").trim().toLowerCase();if(normalized==="open studio")return "Open Studio";if(normalized==="premium")return "Premium";return (value||"").normalize("NFKC").replace(/\\s+/g," ").trim();};'
+          if 'const canonicalSessionType=' not in s:
+              if marker not in s: raise SystemExit('relationIds marker not found')
+              s = s.replace(marker, marker + '\n' + helper, 1)
+          old = 'type:text(page.properties?.["Type"]),path:paths[0]||null'
+          new = 'type:canonicalSessionType(text(page.properties?.["Type"])),path:paths[0]||null'
+          if old in s: s = s.replace(old, new, 1)
+          old = 'if(session.type!=="Open Studio"&&session.type!=="Premium")return {ok:false as const,status:409,error:"This session is not bookable with an Open Studio pass."};'
+          new = 'const sessionType=canonicalSessionType(session.type);if(sessionType!=="Open Studio"&&sessionType!=="Premium")return {ok:false as const,status:409,error:`This session is not bookable with an Open Studio pass (${sessionType||"unknown type"}).`};'
+          if old in s: s = s.replace(old, new, 1)
           p.write_text(s)
           PY
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           rm -f .github/trigger-os-booking-debug
-          git add worker.ts .github/trigger-os-booking-debug
-          git commit -m 'fix: read Notion status properties as text'
+          git add worker-member-v2.ts .github/trigger-os-booking-debug
+          git commit -m 'fix: use deployed member worker for OS booking type'
           git push
