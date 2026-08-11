@@ -3,7 +3,7 @@ export type MemberPass = { id:string; name:string; type:string|null; scope:strin
 export type MemberBooking = { id:string; status:string|null; sessionId:string|null; sessionTopic:string|null; sessionDate:string|null };
 export type MemberProfile = { id:string; name:string; phone:string|null; students:MemberStudent[]; passes:MemberPass[]; bookings:MemberBooking[] };
 
-const normalizePhone=(value:string)=>value.replace(/\D/g,"").replace(/^84(?=0)/,"0");
+const normalizePhone=(value:string)=>{let digits=value.replace(/\D/g,"");if(digits.startsWith("84"))digits=digits.slice(2);if(digits.startsWith("0"))digits=digits.slice(1);return digits;};
 const notionHeaders=(env:any)=>({Authorization:`Bearer ${env.NOTION_TOKEN}`,"Content-Type":"application/json","Notion-Version":"2026-03-11"});
 
 async function query(env:any,dataSourceId:string,filter:unknown){
@@ -51,7 +51,6 @@ async function buildMember(env:any,parent:any):Promise<{ok:true;member:MemberPro
     if(bookingResponse.ok){const data=await bookingResponse.json() as {results?:any[]};for(const page of data.results||[]){const sessionIds=relationIds(page.properties?.["OS Session"]);bookings.push({id:page.id,status:page.properties?.Status?.select?.name||null,sessionId:sessionIds[0]||null,sessionTopic:null,sessionDate:null});}}
   }
 
-  // Hydrate OS Session relations so Member Space gets usable booking details.
   if(bookings.length&&env.NOTION_OS_SESSION_DATA_SOURCE_ID){
     const uniqueSessionIds=[...new Set(bookings.map(b=>b.sessionId).filter((id):id is string=>Boolean(id)))];
     const sessions=new Map<string,{topic:string|null;date:string|null}>();
