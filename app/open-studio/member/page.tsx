@@ -1,37 +1,112 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 
-type Student={id:string;name:string;avatar:string|null};
-type Pass={id:string;studentId:string;name:string;type:string|null;scope:string|null;validUntil:string|null;status:string|null};
-type Member={id:string;name:string;phone:string|null;students:Student[];passes:Pass[]};
-type Session={id:string;topic:string;type:string;path:string|null;date:string|null;availableSeats:number|null;capacity:number|null;confirmedCount:number|null;cover:string|null;avatar:string|null};
+export default function MemberPage() {
+  const router = useRouter();
+  const [phone, setPhone] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-const TZ="Asia/Ho_Chi_Minh";
-const parseSessionDate=(d:string|null)=>{if(!d)return null;const normalized=d.includes(" ")&&!d.includes("T")?d.replace(" ","T"):d;const parsed=new Date(normalized);return Number.isNaN(parsed.getTime())?null:parsed};
-const todayKey=()=>new Intl.DateTimeFormat("en-CA",{timeZone:TZ,year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
-const addDays=(date:string,days:number)=>{const d=new Date(`${date}T00:00:00Z`);d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10)};
-const inBookingWindow=(d:string|null)=>{if(!d)return false;const key=d.slice(0,10);const today=todayKey();return key>=today&&key<addDays(today,7)};
-const isPast=(d:string|null)=>{const parsed=parseSessionDate(d);if(!parsed)return false;if(d&&d.length<=10)return d<todayKey();return parsed.getTime()<Date.now()};
-const dateLabel=(d:string|null)=>{const parsed=parseSessionDate(d);if(!parsed)return "Ngày TBA";return new Intl.DateTimeFormat("vi-VN",{weekday:"short",day:"2-digit",month:"2-digit",year:"numeric",timeZone:TZ}).format(parsed)};
-const timeLabel=(d:string|null)=>{const parsed=parseSessionDate(d);if(!parsed||!d||d.length<=10)return "";return new Intl.DateTimeFormat("vi-VN",{hour:"2-digit",minute:"2-digit",hour12:false,timeZone:TZ}).format(parsed)};
-const initials=(name:string)=>name.split(" ").filter(Boolean).slice(-2).map(x=>x[0]).join("").toUpperCase();
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLoading(true);
+    setError("");
 
-export default function MemberBookPage(){
- const [phone,setPhone]=useState("");const [member,setMember]=useState<Member|null>(null);const [sessions,setSessions]=useState<Session[]>([]);const [studentId,setStudentId]=useState("");const [sessionId,setSessionId]=useState("");const [passId,setPassId]=useState("");const [loading,setLoading]=useState(true);const [booking,setBooking]=useState(false);const [error,setError]=useState("");const [success,setSuccess]=useState(false);
- useEffect(()=>{const saved=sessionStorage.getItem("pino_member_phone")||"";setPhone(saved);if(!saved){setLoading(false);return}Promise.all([fetch("/api/member",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone:saved})}).then(async r=>{const d=await r.json();if(!r.ok)throw new Error(d.error||"Member not found.");return d.member}),fetch("/api/os-sessions").then(async r=>{const d=await r.json();if(!r.ok)throw new Error(d.error||"Could not load sessions.");return d.sessions||[]})]).then(([m,s])=>{setMember(m);setSessions((s as Session[]).filter(x=>inBookingWindow(x.date)));setStudentId(m.students[0]?.id||"")}).catch(e=>setError(e.message||"Could not load booking data.")).finally(()=>setLoading(false))},[]);
- const selectedStudent=member?.students.find(s=>s.id===studentId)||null;
- const eligiblePasses=useMemo(()=>member?.passes.filter(p=>p.status==="Available"&&p.studentId===studentId)||[],[member,studentId]);
- const selectedSession=sessions.find(s=>s.id===sessionId)||null;
- const canBook=!!selectedSession&&!isPast(selectedSession.date)&&selectedSession.type!=="";
- useEffect(()=>{if(eligiblePasses.length===1)setPassId(eligiblePasses[0].id);else if(!eligiblePasses.some(p=>p.id===passId))setPassId(eligiblePasses[0]?.id||"")},[eligiblePasses,passId]);
- const submit=async()=>{if(!member||!selectedStudent||!selectedSession||!passId||!canBook)return;setBooking(true);setError("");try{const r=await fetch("/api/member/book",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone:member.phone||phone,studentId:selectedStudent.id,sessionId:selectedSession.id,passId})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Could not create booking.");setSuccess(true)}catch(e:any){setError(e.message||"Could not create booking")}finally{setBooking(false)}};
- if(loading)return <main className="book-page"><div className="book-shell">Đang mở booking space…</div><style jsx>{css}</style></main>;
- if(!member)return <main className="book-page"><nav><a href="/open-studio/member">PINO<span>•</span></a></nav><section className="empty"><p className="eyebrow">MEMBER BOOKING</p><h1>Mở Member Space trước.</h1><p>Hãy đăng nhập bằng số Zalo đã đăng ký với PINO để book bằng Open Studio Pass của bé.</p><a className="button" href="/open-studio/member">Vào Member Space →</a></section><style jsx>{css}</style></main>;
- if(success)return <main className="book-page"><nav><a href="/open-studio/member">PINO<span>•</span></a></nav><section className="success"><p className="eyebrow">BOOKING CONFIRMED</p><h1>Hẹn gặp bạn tại PINO.</h1><p><strong>{selectedStudent?.name}</strong> đã được đăng ký vào <strong>{selectedSession?.topic}</strong>.</p><p>{selectedSession?.date?dateLabel(selectedSession.date):""}{timeLabel(selectedSession?.date||null)?` · ${timeLabel(selectedSession?.date||null)}`:""}</p><a className="button" href="/open-studio/member">Về Member Space →</a></section><style jsx>{css}</style></main>;
- return <main className="book-page"><nav className="nav"><a href="/open-studio/member" className="logo">PINO<span>•</span></a><a href="/open-studio/sessions">Browse public sessions →</a></nav><section className="hero"><p className="eyebrow">PINO MEMBER · OPEN STUDIO</p><h1>Book a session<br/><em>for your kid.</em></h1><p>Chọn bé, chọn một session phù hợp và dùng Open Studio Pass đang có. Booking được xác nhận ngay.</p><p className="window-note">Booking window: 7 ngày · Session đã qua chỉ để xem.</p></section><section className="content"><div className="steps"><div className="step active"><span>01</span><strong>Chọn bé</strong></div><div className="step"><span>02</span><strong>Chọn session</strong></div><div className="step"><span>03</span><strong>Xác nhận</strong></div></div><div className="layout"><div className="main"><section className="panel"><div className="panel-title"><div><p className="eyebrow">01 · FAMILY</p><h2>Who is coming?</h2></div></div><div className="student-grid">{member.students.map(s=><button key={s.id} className={`student ${studentId===s.id?"selected":""}`} onClick={()=>setStudentId(s.id)}><div className="avatar">{s.avatar?<img src={s.avatar} alt=""/>:initials(s.name)}</div><span>{s.name}</span><small>{studentId===s.id?"Selected":"Select"}</small></button>)}</div></section><section className="panel"><div className="panel-title"><div><p className="eyebrow">02 · SESSION</p><h2>Choose a session</h2></div><span>{sessions.length} sessions</span></div><div className="session-list">{sessions.map(s=>{const past=isPast(s.date),sold=s.availableSeats!==null&&s.availableSeats<=0,disabled=past||sold;return <button key={s.id} disabled={disabled} className={`session ${sessionId===s.id?"selected":""} ${past?"past":""} ${sold?"sold":""}`} onClick={()=>!disabled&&setSessionId(s.id)}><div className="session-cover" style={{backgroundImage:s.cover?`url(${s.cover})`:undefined}}>{!s.cover&&<span>PINO<br/>OPEN<br/>STUDIO</span>}{past&&<i>PAST</i>}</div><div className="session-copy"><div><small>{s.path||"OPEN STUDIO"} · {s.type||"SESSION"}</small><b>{s.topic}</b><span>{s.date?`${dateLabel(s.date)}${timeLabel(s.date)?` · ${timeLabel(s.date)}`:""}`:"Date TBA"}</span></div><strong>{past?"Session đã qua":sold?"Sold out":s.availableSeats===null?"Seats TBA":`${s.availableSeats} seats left`}</strong></div></button>})}</div>{sessions.length===0&&<p className="muted">Trong 7 ngày tới chưa có session nào.</p>}</section></div><aside className="summary"><p className="eyebrow">03 · CONFIRM</p><h2>Your booking</h2><div className="summary-row"><span>Student</span><strong>{selectedStudent?.name||"Chưa chọn"}</strong></div><div className="summary-row"><span>Session</span><strong>{selectedSession?.topic||"Chưa chọn"}</strong></div><div className="summary-row"><span>Date</span><strong>{selectedSession?.date?dateLabel(selectedSession.date):"—"}</strong></div><div className="summary-row"><span>Pass</span><select value={passId} onChange={e=>setPassId(e.target.value)} disabled={!eligiblePasses.length}>{eligiblePasses.map(p=><option key={p.id} value={p.id}>{p.type||"Open Studio"} · {p.scope||"Access"}</option>)}</select></div>{!eligiblePasses.length&&<p className="warning">Bé chưa có Open Studio Pass khả dụng.</p>}{selectedSession&&!canBook&&<p className="warning">Session này đã qua và chỉ có thể xem.</p>}{error&&<p className="error">{error}</p>}<button className="confirm" disabled={booking||!selectedStudent||!selectedSession||!passId||!canBook} onClick={submit}>{booking?"Đang xác nhận…":!canBook&&selectedSession?"Session đã qua":"Confirm booking →"}</button><p className="note">Booking window là 7 ngày. Session đã qua được giữ lại ở chế độ read-only.</p></aside></div></section><style jsx>{css}</style></main>;
+    const normalizedPhone = phone.replace(/[^0-9+]/g, "").trim();
+
+    try {
+      const response = await fetch("/api/member", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: normalizedPhone }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.member) {
+        throw new Error(data.error || "Không tìm thấy tài khoản Member.");
+      }
+
+      sessionStorage.setItem("pino_member_phone", normalizedPhone);
+      router.push("/open-studio/member/book");
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Không thể mở Member Space.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <main className="member-page">
+      <nav className="nav">
+        <a className="logo" href="/">PINO<span>•</span></a>
+        <a className="back" href="/open-studio">Open Studio</a>
+      </nav>
+
+      <section className="member-shell">
+        <div className="intro">
+          <p className="eyebrow">PINO MEMBER SPACE</p>
+          <h1>Một nơi để<br /><em>con tiếp tục khám phá.</em></h1>
+          <p className="lede">
+            Đăng nhập bằng số điện thoại/Zalo đã đăng ký với PINO để xem Pass của bé,
+            tìm Open Studio và đặt chỗ ngay.
+          </p>
+        </div>
+
+        <div className="login-card">
+          <div>
+            <p className="eyebrow">MEMBER LOGIN</p>
+            <h2>Chào mừng trở lại.</h2>
+            <p className="card-copy">Dùng số điện thoại phụ huynh đã đăng ký với PINO.</p>
+          </div>
+
+          <form onSubmit={submit}>
+            <label htmlFor="phone">Số điện thoại</label>
+            <input
+              id="phone"
+              name="phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="09xx xxx xxx"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              required
+              autoFocus
+            />
+
+            {error && <p className="error" role="alert">{error}</p>}
+
+            <button type="submit" disabled={loading || !phone.trim()}>
+              {loading ? "Đang mở Member Space…" : "Vào Member Space →"}
+            </button>
+          </form>
+
+          <p className="privacy">
+            PINO chỉ dùng số điện thoại này để xác định tài khoản gia đình của bạn.
+          </p>
+        </div>
+      </section>
+
+      <footer>
+        <span>PINO<span className="dot">•</span></span>
+        <span>Creative club for curious kids.</span>
+      </footer>
+
+      <style jsx>{css}</style>
+    </main>
+  );
 }
 
-const css=`
-.book-page{min-height:100vh;background:#f4f0e7;color:#171713}.book-shell{max-width:920px;margin:auto;padding:80px 24px}.nav{height:84px;max-width:1120px;margin:auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(23,23,19,.15)}nav:not(.nav){max-width:920px;margin:auto;padding:24px;border-bottom:1px solid rgba(23,23,19,.15)}nav a{color:#171713;text-decoration:none}.logo{font-weight:700;font-size:24px;letter-spacing:-.08em}.logo span,nav a span{color:#d65b42}.nav>a:last-child{font-size:12px;color:#777269}.hero{max-width:1120px;margin:auto;padding:72px 24px 50px}.eyebrow{font-size:10px;letter-spacing:.14em;font-weight:700;color:#777269;margin:0 0 12px}.hero h1{font-size:clamp(58px,7vw,94px);line-height:.9;letter-spacing:-.065em;margin:0;max-width:850px}.hero h1 em{font-family:"DM Serif Display",serif;font-weight:400}.hero>p{max-width:570px;color:#777269;font-size:16px;line-height:1.6;margin-top:25px}.hero .window-note{font-size:11px;margin-top:10px;letter-spacing:.03em}.content{max-width:1120px;margin:auto;padding:0 24px 100px}.steps{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid rgba(23,23,19,.15);border-bottom:1px solid rgba(23,23,19,.15);margin-bottom:14px}.step{padding:17px 0;display:flex;gap:12px;align-items:center;color:#aaa59a}.step span{font-size:10px}.step strong{font-size:12px}.step.active{color:#171713}.layout{display:grid;grid-template-columns:1.45fr .75fr;gap:14px}.main{display:grid;gap:14px}.panel{background:#e8e0d1;padding:28px}.panel-title{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px}.panel-title h2{font-size:32px;letter-spacing:-.05em;margin:0}.panel-title>span{font-size:11px;color:#777269}.student-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.student{border:1px solid rgba(23,23,19,.15);background:rgba(255,255,255,.22);padding:15px;display:grid;grid-template-columns:42px 1fr auto;gap:12px;align-items:center;text-align:left;cursor:pointer}.student.selected{border-color:#171713;background:#f4f0e7}.avatar{width:42px;height:42px;border-radius:50%;background:#f4f0e7;display:grid;place-items:center;font-size:11px;font-weight:700;overflow:hidden}.avatar img{width:100%;height:100%;object-fit:cover}.student span{font-size:14px;font-weight:700}.student small{font-size:9px;text-transform:uppercase;color:#777269}.session-list{display:grid;gap:8px}.session{width:100%;display:grid;grid-template-columns:145px 1fr;gap:16px;text-align:left;border:1px solid rgba(23,23,19,.14);background:rgba(255,255,255,.22);padding:0;cursor:pointer}.session.selected{border:2px solid #171713}.session.sold,.session.past{opacity:.58;cursor:not-allowed}.session-cover{min-height:115px;background:linear-gradient(135deg,#d9d0bd,#c6d5ba) center/cover;display:grid;place-items:center;position:relative}.session-cover span{font-size:11px;line-height:.95;font-weight:700;letter-spacing:.08em;text-align:center}.session-cover i{position:absolute;left:10px;bottom:10px;background:#777269;color:#fff;font-size:8px;font-style:normal;font-weight:700;letter-spacing:.1em;padding:5px 7px}.session-copy{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:15px 15px 15px 0}.session-copy>div{display:grid;gap:5px}.session-copy small{font-size:9px;letter-spacing:.08em;color:#777269}.session-copy b{font-size:18px;letter-spacing:-.04em}.session-copy span{font-size:11px;color:#777269}.session-copy>strong{font-size:10px;white-space:nowrap;color:#536323}.session.past .session-copy>strong{color:#777269}.summary{background:#e2ebc0;padding:28px;height:max-content;position:sticky;top:20px}.summary h2{font-size:34px;letter-spacing:-.05em;margin:0 0 22px}.summary-row{padding:15px 0;border-top:1px solid rgba(23,23,19,.15);display:grid;gap:5px}.summary-row span{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#777269}.summary-row strong{font-size:15px}.summary select{border:0;background:transparent;font:inherit;outline:none}.confirm{width:100%;margin-top:20px;border:0;border-radius:999px;background:#171713;color:#fff;padding:15px;font-weight:700;cursor:pointer}.confirm:disabled{background:#aaa59a;cursor:not-allowed}.warning,.error{font-size:12px;line-height:1.5}.warning{color:#6b712d}.error{color:#a63b2a;background:rgba(166,59,42,.08);padding:10px}.note,.muted{font-size:10px;line-height:1.5;color:#777269}.note{margin:15px 0 0}.empty,.success{max-width:720px;margin:auto;padding:110px 24px}.empty h1,.success h1{font-size:clamp(52px,7vw,88px);letter-spacing:-.06em;line-height:.95;margin:12px 0 24px}.empty p:not(.eyebrow),.success p{color:#777269;line-height:1.6;font-size:16px}.button{display:inline-block;margin-top:24px;background:#171713;color:white;border-radius:999px;padding:14px 20px;font-weight:700;text-decoration:none}@media(max-width:700px){.nav{width:calc(100% - 32px);height:72px;padding:0}.hero{padding:52px 16px 38px}.content{padding:0 16px 70px}.layout{grid-template-columns:1fr}.summary{position:static}.session{grid-template-columns:100px 1fr}.session-copy{padding:12px}.session-copy b{font-size:15px}.session-copy>strong{font-size:9px}.student-grid{grid-template-columns:1fr}.panel{padding:20px}.steps{grid-template-columns:1fr 1fr 1fr}.step{gap:6px}.step strong{font-size:10px}}
+const css = `
+.member-page{min-height:100vh;background:#f4f0e7;color:#171713;display:flex;flex-direction:column}
+.nav{height:84px;max-width:1120px;width:100%;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(23,23,19,.15);box-sizing:border-box}
+.logo{color:#171713;text-decoration:none;font-weight:700;font-size:24px;letter-spacing:-.08em}.logo span{color:#d65b42}
+.back{color:#777269;text-decoration:none;font-size:12px}.back:hover{text-decoration:underline}
+.member-shell{width:100%;max-width:1120px;margin:0 auto;padding:88px 24px 110px;box-sizing:border-box;display:grid;grid-template-columns:1.25fr .75fr;gap:90px;align-items:center;flex:1}
+.intro{max-width:760px}.eyebrow{font-size:10px;letter-spacing:.14em;font-weight:700;color:#777269;margin:0 0 14px}.intro h1{font-size:clamp(58px,7vw,94px);line-height:.9;letter-spacing:-.065em;margin:0;max-width:800px}.intro h1 em{font-family:"DM Serif Display",serif;font-weight:400}.lede{max-width:560px;color:#777269;font-size:16px;line-height:1.65;margin:30px 0 0}
+.login-card{background:#e2ebc0;padding:34px;box-sizing:border-box;box-shadow:0 18px 50px rgba(23,23,19,.06)}.login-card h2{font-size:34px;line-height:1;letter-spacing:-.05em;margin:0}.card-copy{color:#777269;font-size:13px;line-height:1.5;margin:12px 0 28px}.login-card form{display:grid;gap:9px}.login-card label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#777269}.login-card input{width:100%;box-sizing:border-box;border:1px solid rgba(23,23,19,.2);background:#f4f0e7;color:#171713;padding:15px 14px;font:inherit;font-size:16px;outline:none}.login-card input:focus{border-color:#171713}.login-card button{border:0;background:#171713;color:#fff;padding:15px 18px;margin-top:7px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}.login-card button:disabled{opacity:.45;cursor:not-allowed}.error{margin:8px 0 0;color:#9b3d2e;font-size:12px;line-height:1.45}.privacy{font-size:10px;line-height:1.5;color:#777269;margin:20px 0 0}
+footer{width:100%;max-width:1120px;margin:0 auto;padding:22px 24px 30px;box-sizing:border-box;border-top:1px solid rgba(23,23,19,.15);display:flex;justify-content:space-between;color:#777269;font-size:10px;letter-spacing:.04em}footer>span:first-child{color:#171713;font-weight:700}.dot{color:#d65b42}
+@media (max-width:800px){.member-shell{grid-template-columns:1fr;gap:48px;padding-top:58px;padding-bottom:70px}.intro h1{font-size:clamp(52px,14vw,76px)}.lede{font-size:15px}.login-card{padding:26px}.nav{height:72px}footer{display:block}footer span{display:block;margin-top:6px}}
 `;
