@@ -99,6 +99,7 @@ jobs:
         env:
           CI: true
           E2E_BASE_URL: https://pino-web.minhtri-van42.workers.dev
+          E2E_MEMBER_PHONE: ${{ secrets.E2E_MEMBER_PHONE }}
         run: npx --yes -p @playwright/test@1.55.0 playwright test
 
       - name: Upload Playwright report
