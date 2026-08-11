@@ -3,8 +3,10 @@ compatibility_date = "2026-08-10"
 main = "worker-member.ts"
 keep_vars = false
 
-# CI retrigger after Open Studio booking type fix
+# Environment controls whether Notion Mock Data is exposed.
+# Production hides mock fixtures; preview keeps them visible for testing.
 [vars]
+ENVIRONMENT = "production"
 NOTION_PARENT_DATA_SOURCE_ID = "30e8156e-326f-81e4-9910-000b14c9637f"
 NOTION_STUDENT_DATA_SOURCE_ID = "30e8156e-326f-81a3-8485-000b921040ad"
 NOTION_OS_PASS_DATA_SOURCE_ID = "fe2dad4b-d701-4296-b4ae-06333876a776"
@@ -13,6 +15,9 @@ NOTION_OS_SESSION_DATA_SOURCE_ID = "3b78156e-326f-809d-a3a2-000bb7c23760"
 NOTION_OS_SESSION_DATABASE_ID = "3b78156e-326f-800f-93c5-c78f82351bf1"
 NOTION_RUNNING_CLASS_DATA_SOURCE_ID = "3b78156e-326f-80dc-bb5f-000b1d24d851"
 NOTION_PATH_PROGRAM_DATA_SOURCE_ID = "3878156e-326f-805f-a58a-000b6b0ee348"
+
+[env.preview.vars]
+ENVIRONMENT = "preview"
 
 [assets]
 directory = "./out"
