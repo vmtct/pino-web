@@ -25,15 +25,42 @@ jobs:
         run: bun run build
 
   smoke:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Check production app
+      - name: Wait for Cloudflare deployment
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
         run: |
-          set -e
+          set -euo pipefail
           base="https://pino-web.minhtri-van42.workers.dev"
+
+          echo "Waiting for production to expose commit $EXPECTED_SHA"
+          for attempt in $(seq 1 30); do
+            if curl -fsS "$base/build-info.json" -o /tmp/build-info.json; then
+              deployed_sha=$(python -c 'import json; print(json.load(open("/tmp/build-info.json"))["commit"])')
+              echo "Production commit: $deployed_sha"
+              if [ "$deployed_sha" = "$EXPECTED_SHA" ]; then
+                echo "Production deployment confirmed"
+                exit 0
+              fi
+            fi
+            echo "Deployment not ready yet (attempt $attempt/30)"
+            sleep 10
+          done
+
+          echo "Timed out waiting for production commit $EXPECTED_SHA"
+          exit 1
+
+      - name: Run production smoke tests
+        run: |
+          set -euo pipefail
+          base="https://pino-web.minhtri-van42.workers.dev"
+
           status=$(curl -sS -o /tmp/home.html -w "%{http_code}" "$base/")
           test "$status" = "200"
+
           status=$(curl -sS -o /tmp/sessions.json -w "%{http_code}" "$base/api/os-sessions")
           test "$status" = "200"
           grep -q 'sessions' /tmp/sessions.json
