@@ -39,6 +39,16 @@ jobs:
           git push --set-upstream origin "$BRANCH"
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
 
+      - name: Capture failed CI context
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          gh run view "$RUN_ID" --log-failed > .agent-failure.log 2>&1 || true
+          if [ ! -s .agent-failure.log ]; then
+            echo "No failed-step log was returned; inspect the run directly with gh." > .agent-failure.log
+          fi
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -51,6 +61,7 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_AGENT_MODEL: gpt-5.6-sol
+          OPENAI_AGENT_MAX_TURNS: '40'
           GITHUB_TOKEN: ${{ github.token }}
           GH_TOKEN: ${{ github.token }}
           GITHUB_WORKSPACE: ${{ github.workspace }}
