@@ -7,9 +7,11 @@ from agents import Agent, Runner, function_tool
 
 REPO = Path(os.environ.get("GITHUB_WORKSPACE", ".")).resolve()
 MAX_FIX_ATTEMPTS = int(os.environ.get("MAX_FIX_ATTEMPTS", "3"))
+MAX_TURNS = int(os.environ.get("OPENAI_AGENT_MAX_TURNS", "40"))
 RUN_ID = os.environ.get("FAILED_RUN_ID", "")
 HEAD_SHA = os.environ.get("FAILED_HEAD_SHA", "")
 BRANCH = os.environ.get("AGENT_BRANCH", "")
+FAILURE_CONTEXT_FILE = REPO / ".agent-failure.log"
 
 
 def run_cmd(command: str, timeout: int = 120) -> str:
@@ -58,6 +60,7 @@ Failed run: {RUN_ID}
 Failed head SHA: {HEAD_SHA}
 Recovery branch: {BRANCH}
 Workspace: {REPO}
+Failure context file: {FAILURE_CONTEXT_FILE}
 
 Your job is to diagnose and repair the failure, then leave a clean recovery branch with a commit that passes CI.
 
@@ -74,17 +77,18 @@ MANDATORY SAFETY RULES:
 - If the failure is infrastructure-only or cannot be safely fixed from code, stop and explain why.
 
 RECOVERY LOOP:
-1. Inspect the failed GitHub run with `gh run view {RUN_ID} --log-failed` and repository status/diff.
-2. Identify the root cause and affected files.
-3. Make the smallest fix.
-4. Run relevant local checks (at minimum the failing test/build when practical).
-5. Commit the fix to {BRANCH} and push it.
-6. Use `gh run list --branch {BRANCH}` and `gh run watch`/`gh run view` to inspect the new CI run.
-7. If the new CI fails, inspect its logs and make another fix.
-8. Repeat for at most {MAX_FIX_ATTEMPTS} total fix attempts.
-9. Finish only when CI is green or when a clear blocker requires human intervention.
+1. FIRST read `{FAILURE_CONTEXT_FILE}` if it exists. This contains the failed CI log captured before the agent starts. Use it as primary failure evidence.
+2. Inspect repository status/diff and the failed run with `gh run view {RUN_ID} --log-failed` when additional context is needed.
+3. Identify the root cause and affected files.
+4. Make the smallest correct fix.
+5. Run relevant local checks (at minimum the failing test/build when practical).
+6. Commit the fix to {BRANCH} and push it.
+7. Use `gh run list --branch {BRANCH}` and `gh run view` to inspect the new CI run.
+8. If the new CI fails, inspect its logs and make another fix.
+9. Repeat for at most {MAX_FIX_ATTEMPTS} total fix attempts.
+10. Finish only when CI is green or when a clear blocker requires human intervention.
 
-Do not create a fake success. Report the exact final state.
+Be decisive and avoid spending turns on redundant repository exploration. Prefer targeted inspection based on the captured failure log. Do not create a fake success. Report the exact final state.
 """,
     tools=[shell, read_file],
 )
@@ -93,10 +97,11 @@ Do not create a fake success. Report the exact final state.
 async def main() -> None:
     prompt = (
         f"Recover the failed CI run {RUN_ID} for commit {HEAD_SHA}. "
-        f"Work on branch {BRANCH}. Diagnose from real logs, fix the root cause, "
-        f"run verification, push the branch, and verify CI. You have at most {MAX_FIX_ATTEMPTS} fix attempts."
+        f"Work on branch {BRANCH}. Start by reading {FAILURE_CONTEXT_FILE} if present, "
+        f"then diagnose from real logs, fix the root cause, run verification, push the branch, "
+        f"and verify CI. You have at most {MAX_FIX_ATTEMPTS} fix attempts and {MAX_TURNS} agent turns."
     )
-    result = await Runner.run(agent, prompt)
+    result = await Runner.run(agent, prompt, max_turns=MAX_TURNS)
     print(result.final_output)
 
 
