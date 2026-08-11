@@ -19,21 +19,22 @@ jobs:
 
           old_prop = 'const propSelect=(p:any)=>p?.select?.name||null;'
           new_prop = 'const propSelect=(p:any)=>p?.select?.name||p?.status?.name||null;\nconst canonicalSessionType=(value:string|null)=>{const normalized=(value||"").normalize("NFKC").replace(/\\s+/g," ").trim().toLowerCase();if(normalized==="open studio")return "Open Studio";if(normalized==="premium")return "Premium";return (value||"").normalize("NFKC").replace(/\\s+/g," ").trim();};'
-          if old_prop not in s:
+          if old_prop in s:
+              s = s.replace(old_prop, new_prop, 1)
+          elif 'const canonicalSessionType=' not in s:
               raise SystemExit('target propSelect not found')
-          s = s.replace(old_prop, new_prop, 1)
 
-          old_item = 'items.push({id:page.id,topic:propText(page.properties?.["Topic"])||"Untitled session",type:propText(page.properties?.["Type"]),path:paths[0]||null,date:propDate(page.properties?.["Date"]),'
-          new_item = 'items.push({id:page.id,topic:propText(page.properties?.["Topic"])||"Untitled session",type:canonicalSessionType(propText(page.properties?.["Type"])),path:paths[0]||null,date:propDate(page.properties?.["Date"]),'
-          if old_item not in s:
-              raise SystemExit('target session item mapper not found')
-          s = s.replace(old_item, new_item, 1)
+          old_type = 'type:propText(page.properties?.["Type"])'
+          new_type = 'type:canonicalSessionType(propText(page.properties?.["Type"]))'
+          if old_type in s:
+              s = s.replace(old_type, new_type, 1)
 
-          old_booking = 'const rule=passRules[type];if(rule.path&&rule.path!==session.path)return {ok:false as const,status:409,error:`${type} pass cannot be used for this path.`};if(rule.accessScope!=="Any"&&session.type!=="Open Studio"&&session.type!=="Premium")return {ok:false as const,status:409,error:"This pass cannot access this session."};'
-          new_booking = 'const rule=passRules[type];const sessionPath=publicPath(session.path);const sessionType=canonicalSessionType(session.type);if(rule.path&&rule.path!==sessionPath)return {ok:false as const,status:409,error:`${type} pass cannot be used for this path.`};if(rule.accessScope!=="Any"&&sessionType!=="Open Studio"&&sessionType!=="Premium")return {ok:false as const,status:409,error:`This pass cannot access this session (${sessionType||"unknown type"}).`};'
-          if old_booking not in s:
-              raise SystemExit('target booking entitlement check not found')
-          s = s.replace(old_booking, new_booking, 1)
+          old_check = 'if(rule.accessScope!=="Any"&&session.type!=="Open Studio"&&session.type!=="Premium")return {ok:false as const,status:409,error:"This pass cannot access this session."};'
+          new_check = 'const sessionType=canonicalSessionType(session.type);if(rule.accessScope!=="Any"&&sessionType!=="Open Studio"&&sessionType!=="Premium")return {ok:false as const,status:409,error:`This pass cannot access this session (${sessionType||"unknown type"}).`};'
+          if old_check in s:
+              s = s.replace(old_check, new_check, 1)
+          elif 'const sessionType=canonicalSessionType(session.type);' not in s:
+              raise SystemExit('target booking access check not found')
 
           p.write_text(s)
           PY
@@ -41,5 +42,5 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           rm -f .github/trigger-os-booking-debug
           git add worker.ts .github/trigger-os-booking-debug
-          git commit -m 'fix: normalize Open Studio entitlement values'
+          git commit -m 'fix: normalize Open Studio session type'
           git push
