@@ -17,6 +17,11 @@ jobs:
           p = Path('worker.ts')
           s = p.read_text()
 
+          old_text = 'const propText=(p:any)=>p?.title?.[0]?.plain_text||p?.rich_text?.[0]?.plain_text||p?.select?.name||"";'
+          new_text = 'const propText=(p:any)=>p?.title?.[0]?.plain_text||p?.rich_text?.[0]?.plain_text||p?.select?.name||p?.status?.name||"";'
+          if old_text in s:
+              s = s.replace(old_text, new_text, 1)
+
           old_prop = 'const propSelect=(p:any)=>p?.select?.name||null;'
           new_prop = 'const propSelect=(p:any)=>p?.select?.name||p?.status?.name||null;\nconst canonicalSessionType=(value:string|null)=>{const normalized=(value||"").normalize("NFKC").replace(/\\s+/g," ").trim().toLowerCase();if(normalized==="open studio")return "Open Studio";if(normalized==="premium")return "Premium";return (value||"").normalize("NFKC").replace(/\\s+/g," ").trim();};'
           if old_prop in s:
@@ -42,5 +47,5 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           rm -f .github/trigger-os-booking-debug
           git add worker.ts .github/trigger-os-booking-debug
-          git commit -m 'fix: normalize Open Studio session type'
+          git commit -m 'fix: read Notion status properties as text'
           git push
