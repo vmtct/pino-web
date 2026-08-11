@@ -176,4 +176,4 @@ jobs:
               'Do not mutate production data merely to reproduce the failure. Prefer tests, mocks, validation-only endpoints, or disposable E2E fixtures.',
             ].join('\n');
 
-            await github.rest.issues.create({ owner, repo, title, body, labels: ['ci-failure'] });
+            await github.rest.issues.create({ owner, repo, title, body });
