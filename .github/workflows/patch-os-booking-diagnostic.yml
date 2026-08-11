@@ -1,0 +1,30 @@
+name: Patch OS booking diagnostic
+on:
+  push:
+    paths:
+      - .github/trigger-os-booking-debug
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch worker diagnostics
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('worker.ts')
+          s = p.read_text()
+          old = 'async function getConfirmedCount(env:Env,sessionId:string){const response=await notionQuery(env,env.NOTION_OS_BOOKING_DATA_SOURCE_ID,{and:[{property:"OS Session",relation:{contains:sessionId}},{property:"Status",select:{equals:"Confirmed"}}]});if(!response.ok)return {ok:false as const,status:502,error:"Could not load session bookings.",notionStatus:response.status};const data=await response.json() as {results?:any[]};return {ok:true as const,count:data.results?.length||0};}'
+          new = 'async function getConfirmedCount(env:Env,sessionId:string){const filter={and:[{property:"OS Session",relation:{contains:sessionId}},{property:"Status",select:{equals:"Confirmed"}}]};const response=await notionQuery(env,env.NOTION_OS_BOOKING_DATA_SOURCE_ID,filter);if(!response.ok){const notionDetail=(await response.text()).slice(0,1000);return {ok:false as const,status:502,error:"Could not load session bookings.",notionStatus:response.status,notionDetail};}const data=await response.json() as {results?:any[]};return {ok:true as const,count:data.results?.length||0};}'
+          if old not in s:
+              raise SystemExit('target getConfirmedCount not found')
+          p.write_text(s.replace(old,new,1))
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          rm -f .github/trigger-os-booking-debug
+          git add worker.ts .github/trigger-os-booking-debug
+          git commit -m 'fix: expose Notion OS booking query error detail'
+          git push
