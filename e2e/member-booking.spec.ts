@@ -1,6 +1,31 @@
 import { test, expect } from '@playwright/test';
 
 const phone = process.env.E2E_MEMBER_PHONE;
+const unknownPhone = process.env.E2E_UNKNOWN_PHONE;
+
+test.describe('Open Studio member access', () => {
+  test('known parent can always enter Member Space', async ({ page }) => {
+    test.skip(!phone, 'E2E_MEMBER_PHONE is not configured.');
+
+    await page.goto('/open-studio/member');
+    await page.getByLabel('Số điện thoại').fill(phone!);
+    await page.getByRole('button', { name: /Tiếp tục/i }).click();
+
+    await expect(page).toHaveURL(/\/open-studio\/member\/book/);
+    await expect(page.getByRole('heading', { name: /Book a session/i })).toBeVisible({ timeout: 15_000 });
+  });
+
+  test('unknown parent is rejected at identity lookup', async ({ page }) => {
+    test.skip(!unknownPhone, 'E2E_UNKNOWN_PHONE is not configured.');
+
+    await page.goto('/open-studio/member');
+    await page.getByLabel('Số điện thoại').fill(unknownPhone!);
+    await page.getByRole('button', { name: /Tiếp tục/i }).click();
+
+    await expect(page.getByRole('alert')).toContainText(/không tìm thấy|not found/i, { timeout: 15_000 });
+    await expect(page).toHaveURL(/\/open-studio\/member(?:\?.*)?$/);
+  });
+});
 
 test.describe('Open Studio member booking journey', () => {
   test.beforeEach(async ({ page }) => {
@@ -10,7 +35,7 @@ test.describe('Open Studio member booking journey', () => {
     }, phone!);
   });
 
-  test('member can submit the real booking flow through server validation without mutating Notion', async ({ page }) => {
+  test('member can submit the server validation flow without mutating Notion', async ({ page }) => {
     await page.route('**/api/member/book', async (route) => {
       const request = route.request();
       const validationUrl = request.url().replace('/api/member/book', '/api/member/book/validate');
