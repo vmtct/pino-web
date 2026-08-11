@@ -54,5 +54,6 @@ async function buildMember(env:any,parent:any):Promise<{ok:true;member:MemberPro
     const bookingResponse=await query(env,env.NOTION_OS_BOOKING_DATA_SOURCE_ID,{property:"Student",relation:{contains:studentId}});
     if(bookingResponse.ok){const data=await bookingResponse.json() as {results?:any[]};for(const page of data.results||[]){const sessionIds=relationIds(page.properties?.["OS Session"]);bookings.push({id:page.id,status:page.properties?.Status?.select?.name||null,sessionId:sessionIds[0]||null,sessionTopic:null,sessionDate:null});}}
   }
-  return {ok:true,member:{id:parent.id,name:text(parent.properties?.Name)||"Member",phone:parent.properties?.Mobile?.phone_number||normalized,students,passes,bookings}};
+  const memberPhone=parent.properties?.Mobile?.phone_number||null;
+  return {ok:true,member:{id:parent.id,name:text(parent.properties?.Name)||"Member",phone:memberPhone,students,passes,bookings}};
 }
