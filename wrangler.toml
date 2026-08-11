@@ -1,7 +1,7 @@
 name = "pino-web"
 compatibility_date = "2026-08-10"
 main = "worker.ts"
-keep_vars = true
+keep_vars = false
 
 [vars]
 NOTION_PARENT_DATA_SOURCE_ID = "30e8156e-326f-81e4-9910-000b14c9637f"
