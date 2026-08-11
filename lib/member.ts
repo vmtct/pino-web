@@ -12,6 +12,11 @@ async function query(env:any,dataSourceId:string,filter:unknown){
   if(dataSourceId===env.NOTION_PARENT_DATA_SOURCE_ID&&env.NOTION_PARENT_DATABASE_ID)return fetch(`https://api.notion.com/v1/databases/${env.NOTION_PARENT_DATABASE_ID}/query`,{method:"POST",headers:{...notionHeaders(env),"Notion-Version":"2022-06-28"},body:JSON.stringify({filter})});
   return response;
 }
+
+async function getPage(env:any,pageId:string){
+  return fetch(`https://api.notion.com/v1/pages/${pageId}`,{method:"GET",headers:notionHeaders(env)});
+}
+
 const text=(p:any)=>p?.title?.[0]?.plain_text||p?.rich_text?.[0]?.plain_text||p?.select?.name||"";
 const propertyText=(properties:any,preferred:string[])=>{for(const key of preferred){const value=text(properties?.[key]);if(value)return value;}for(const value of Object.values(properties||{}) as any[]){if(value?.type==="title"||value?.title){const result=text(value);if(result)return result;}}return "";};
 const date=(p:any)=>p?.date?.start||null;
@@ -45,6 +50,24 @@ async function buildMember(env:any,parent:any):Promise<{ok:true;member:MemberPro
     const bookingResponse=await query(env,env.NOTION_OS_BOOKING_DATA_SOURCE_ID,{property:"Student",relation:{contains:studentId}});
     if(bookingResponse.ok){const data=await bookingResponse.json() as {results?:any[]};for(const page of data.results||[]){const sessionIds=relationIds(page.properties?.["OS Session"]);bookings.push({id:page.id,status:page.properties?.Status?.select?.name||null,sessionId:sessionIds[0]||null,sessionTopic:null,sessionDate:null});}}
   }
+
+  // Hydrate OS Session relations so Member Space gets usable booking details.
+  if(bookings.length&&env.NOTION_OS_SESSION_DATA_SOURCE_ID){
+    const uniqueSessionIds=[...new Set(bookings.map(b=>b.sessionId).filter((id):id is string=>Boolean(id)))];
+    const sessions=new Map<string,{topic:string|null;date:string|null}>();
+    await Promise.all(uniqueSessionIds.map(async sessionId=>{
+      const response=await getPage(env,sessionId);
+      if(!response.ok)return;
+      const page=await response.json() as {id?:string;properties?:any};
+      sessions.set(sessionId,{topic:propertyText(page.properties,["Topic","Name"])||null,date:date(page.properties?.Date)});
+    }));
+    for(const booking of bookings){
+      if(!booking.sessionId)continue;
+      const session=sessions.get(booking.sessionId);
+      if(session){booking.sessionTopic=session.topic;booking.sessionDate=session.date;}
+    }
+  }
+
   const memberPhone=parent.properties?.Mobile?.phone_number||null;
   return {ok:true,member:{id:parent.id,name:propertyText(parent.properties,["Name"])||"Member",phone:memberPhone,students,passes,bookings}};
 }
