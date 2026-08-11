@@ -10,9 +10,15 @@ test.describe('Open Studio member booking journey', () => {
     }, phone!);
   });
 
-  test('member can reach booking confirmation with a live family, pass and session', async ({ page }) => {
-    await page.goto('/open-studio/member/book');
+  test('member can submit the real booking flow through server validation without mutating Notion', async ({ page }) => {
+    await page.route('**/api/member/book', async (route) => {
+      const request = route.request();
+      const validationUrl = request.url().replace('/api/member/book', '/api/member/book/validate');
+      const response = await route.fetch({ url: validationUrl, method: 'POST', postData: request.postData() || undefined });
+      await route.fulfill({ response });
+    });
 
+    await page.goto('/open-studio/member/book');
     await expect(page.getByRole('heading', { name: /Book a session/i })).toBeVisible({ timeout: 15_000 });
 
     const students = page.locator('button.student');
@@ -25,11 +31,9 @@ test.describe('Open Studio member booking journey', () => {
 
     const confirm = page.getByRole('button', { name: /Confirm booking/i });
     await expect(confirm).toBeEnabled();
+    await confirm.click();
 
-    // This test intentionally stops before the mutating booking request.
-    // It verifies the complete browser-side journey and that the production
-    // data model supplies a usable student + session + pass combination.
-    await expect(page.getByText(/Your booking/i)).toBeVisible();
-    await expect(page.locator('select').first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Hẹn gặp bạn tại PINO/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/BOOKING CONFIRMED/i)).toBeVisible();
   });
 });
