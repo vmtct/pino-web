@@ -9,7 +9,7 @@ const notionHeaders=(env:any)=>({Authorization:`Bearer ${env.NOTION_TOKEN}`,"Con
 async function query(env:any,dataSourceId:string,filter:unknown){
   const response=await fetch(`https://api.notion.com/v1/data_sources/${dataSourceId}/query`,{method:"POST",headers:notionHeaders(env),body:JSON.stringify({filter})});
   if(response.ok)return response;
-  if(dataSourceId===env.NOTION_PARENT_DATA_SOURCE_ID&&env.NOTION_PARENT_DATABASE_ID)return fetch(`https://api.notion.com/v1/databases/${env.NOTION_PARENT_DATABASE_ID}/query`,{method:"POST",headers:{...notionHeaders(env),"Notion-Version":"2022-06-28"},body:JSON.stringify({filter}));
+  if(dataSourceId===env.NOTION_PARENT_DATA_SOURCE_ID&&env.NOTION_PARENT_DATABASE_ID)return fetch(`https://api.notion.com/v1/databases/${env.NOTION_PARENT_DATABASE_ID}/query`,{method:"POST",headers:{...notionHeaders(env),"Notion-Version":"2022-06-28"},body:JSON.stringify({filter})});
   return response;
 }
 const text=(p:any)=>p?.title?.[0]?.plain_text||p?.rich_text?.[0]?.plain_text||p?.select?.name||"";
