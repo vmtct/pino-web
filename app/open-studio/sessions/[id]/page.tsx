@@ -1,0 +1,97 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+
+type Session = {
+  id: string;
+  topic: string;
+  type: string;
+  path: string | null;
+  date: string | null;
+  availableSeats: number | null;
+  capacity: number | null;
+  confirmedCount: number;
+  cover: string | null;
+  avatar: string | null;
+};
+
+function parseDate(value: string | null) {
+  if (!value) return null;
+  const normalized = value.length === 10 ? `${value}T12:00:00+07:00` : value;
+  const parsed = new Date(normalized);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function dateLabel(value: string | null) {
+  const parsed = parseDate(value);
+  if (!parsed) return "Ngày đang cập nhật";
+  return new Intl.DateTimeFormat("vi-VN", { weekday: "long", day: "numeric", month: "numeric", year: "numeric", timeZone: "Asia/Ho_Chi_Minh" }).format(parsed);
+}
+
+function timeLabel(value: string | null) {
+  const parsed = parseDate(value);
+  if (!parsed || !value || value.length <= 10) return "";
+  return new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" }).format(parsed);
+}
+
+export default function SessionDetailPage() {
+  const params = useParams<{ id: string }>();
+  const router = useRouter();
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/os-sessions")
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Không thể tải session.");
+        return data.sessions || [];
+      })
+      .then((sessions: Session[]) => {
+        const found = sessions.find((item) => item.id === params.id && item.type === "Open Studio");
+        if (!found) throw new Error("Session không tồn tại hoặc đã đóng.");
+        if (active) setSession(found);
+      })
+      .catch((caught) => { if (active) setError(caught instanceof Error ? caught.message : "Không thể tải session."); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [params.id]);
+
+  const join = () => {
+    if (!session) return;
+    const next = `/open-studio/member/book?session=${encodeURIComponent(session.id)}`;
+    const phone = sessionStorage.getItem("pino_member_phone");
+    router.push(phone ? next : `/open-studio/member?next=${encodeURIComponent(next)}`);
+  };
+
+  if (loading) return <main className="session-page"><div className="loading">Đang mở session…</div><style jsx>{`.session-page{min-height:100vh;background:#f4f0e7;color:#171713}.loading{max-width:1120px;margin:auto;padding:100px 24px;color:#777269}`}</style></main>;
+  if (error || !session) return <main className="session-page"><nav><a href="/open-studio">PINO<span>•</span></a></nav><section className="error-state"><p className="eyebrow">OPEN STUDIO</p><h1>Buổi này không còn mở.</h1><p>{error || "Hãy xem các session khác đang có."}</p><a href="/open-studio#sessions">Xem các buổi đang có →</a></section><style jsx>{`.session-page{min-height:100vh;background:#f4f0e7;color:#171713}.session-page nav{max-width:1120px;margin:auto;padding:24px;border-bottom:1px solid rgba(23,23,19,.15)}.session-page nav a{font-weight:700;font-size:24px;letter-spacing:-.08em;color:#171713;text-decoration:none}.session-page nav span{color:#d65b42}.error-state{max-width:760px;margin:auto;padding:110px 24px}.eyebrow{font-size:10px;letter-spacing:.14em;font-weight:700;color:#777269}.error-state h1{font-size:clamp(52px,7vw,84px);line-height:.92;letter-spacing:-.06em;margin:12px 0 20px}.error-state p:not(.eyebrow){color:#777269;line-height:1.6}.error-state a{display:inline-block;margin-top:24px;background:#171713;color:#fff;padding:14px 18px;text-decoration:none;font-weight:700;font-size:13px}`}</style></main>;
+
+  const soldOut = session.availableSeats !== null && session.availableSeats <= 0;
+  const time = timeLabel(session.date);
+
+  return (
+    <main className="session-page">
+      <nav className="nav"><a href="/open-studio">PINO<span>•</span></a><a href="/open-studio#sessions">← Các buổi đang có</a></nav>
+      <section className="detail-hero">
+        <div className="visual" style={session.cover ? { backgroundImage: `url(${session.cover})` } : undefined}><span>{session.path || "OPEN STUDIO"}</span></div>
+        <div className="copy">
+          <p className="eyebrow">OPEN STUDIO · {session.path || "DISCOVERY"}</p>
+          <h1>{session.topic}</h1>
+          <p className="lede">Một buổi sáng tạo có cấu trúc vừa đủ để con thử, khám phá và tự tạo ra một điều gì đó.</p>
+          <div className="meta"><div><small>KHI NÀO</small><strong>{dateLabel(session.date)}{time ? ` · ${time}` : ""}</strong></div><div><small>CHỖ TRỐNG</small><strong>{session.availableSeats === null ? "Đang cập nhật" : soldOut ? "Đã đầy" : `${session.availableSeats} chỗ còn lại`}</strong></div></div>
+          <button className="join" disabled={soldOut} onClick={join}>{soldOut ? "Session đã đầy" : "Chọn session này →"}</button>
+          <p className="note">Bạn có thể đăng nhập bằng số điện thoại đã đăng ký với PINO. Hệ thống sẽ kiểm tra Pass phù hợp trước khi xác nhận.</p>
+        </div>
+      </section>
+      <section className="experience"><div><p className="eyebrow">WHAT HAPPENS</p><h2>Không phải thêm một lớp học.</h2></div><div className="experience-grid"><article><span>01</span><h3>Explore</h3><p>Con làm quen với chủ đề và được thử theo cách của mình.</p></article><article><span>02</span><h3>Create</h3><p>Con tạo ra một bức tranh, giai điệu hoặc ý tưởng riêng.</p></article><article><span>03</span><h3>Take it home</h3><p>Một trải nghiệm cụ thể để con nhớ và có lý do quay lại.</p></article></div></section>
+      <section className="bottom-cta"><p className="eyebrow">READY WHEN YOU ARE</p><h2>Một buổi chiều.<br/><em>Một điều mới.</em></h2><button className="join" disabled={soldOut} onClick={join}>{soldOut ? "Xem session khác →" : "Chọn session này →"}</button></section>
+      <style jsx>{`
+.session-page{min-height:100vh;background:#f4f0e7;color:#171713}.nav{height:84px;max-width:1120px;margin:auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(23,23,19,.15)}.nav a:first-child{font-weight:700;font-size:24px;letter-spacing:-.08em;color:#171713;text-decoration:none}.nav a:first-child span{color:#d65b42}.nav a:last-child{font-size:12px;color:#777269;text-decoration:none}.detail-hero{max-width:1120px;margin:auto;padding:70px 24px 100px;display:grid;grid-template-columns:.9fr 1.1fr;gap:70px;align-items:center}.visual{min-height:520px;background:linear-gradient(145deg,#d7cfbe,#c7d6b8);background-size:cover;background-position:center;display:flex;align-items:flex-end;padding:26px;box-sizing:border-box}.visual span{background:#f4f0e7;padding:8px 10px;font-size:10px;font-weight:700;letter-spacing:.14em}.copy{max-width:620px}.eyebrow{font-size:10px;letter-spacing:.14em;font-weight:700;color:#777269;margin:0 0 14px}.copy h1{font-size:clamp(54px,6vw,82px);line-height:.9;letter-spacing:-.065em;margin:0}.lede{max-width:540px;color:#777269;font-size:16px;line-height:1.65;margin:26px 0 34px}.meta{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(23,23,19,.15);border-bottom:1px solid rgba(23,23,19,.15);margin-bottom:22px}.meta div{padding:17px 0}.meta div+div{padding-left:20px;border-left:1px solid rgba(23,23,19,.15)}.meta small{display:block;color:#777269;font-size:9px;letter-spacing:.13em;font-weight:700;margin-bottom:6px}.meta strong{font-size:14px}.join{border:0;background:#171713;color:#fff;padding:16px 20px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}.join:disabled{opacity:.45;cursor:not-allowed}.note{font-size:10px;color:#777269;line-height:1.5;max-width:460px;margin-top:15px}.experience{background:#e8e0d1;padding:80px max(24px,calc((100vw - 1120px)/2))}.experience>div:first-child h2{font-size:clamp(42px,5vw,68px);line-height:.95;letter-spacing:-.06em;margin:0;max-width:600px}.experience-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-top:55px;background:rgba(23,23,19,.15)}.experience-grid article{background:#e8e0d1;padding:28px}.experience-grid span{font-size:10px;color:#777269}.experience-grid h3{font-size:26px;letter-spacing:-.04em;margin:35px 0 10px}.experience-grid p{font-size:13px;line-height:1.6;color:#777269;margin:0}.bottom-cta{max-width:1120px;margin:auto;padding:100px 24px 120px}.bottom-cta h2{font-size:clamp(52px,7vw,92px);line-height:.9;letter-spacing:-.065em;margin:0 0 30px}.bottom-cta h2 em{font-family:"DM Serif Display",serif;font-weight:400}@media(max-width:800px){.detail-hero{grid-template-columns:1fr;gap:38px;padding-top:42px}.visual{min-height:340px}.copy h1{font-size:clamp(52px,14vw,72px)}.experience-grid{grid-template-columns:1fr;margin-top:35px}.nav{height:72px}.nav a:last-child{font-size:11px}.meta{grid-template-columns:1fr}.meta div+div{border-left:0;border-top:1px solid rgba(23,23,19,.15);padding-left:0}.bottom-cta{padding-top:70px}}
+`}</style>
+    </main>
+  );
+}
