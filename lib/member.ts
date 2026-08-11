@@ -75,14 +75,32 @@ async function getSubscription(env:any,studentPage:any):Promise<MemberSubscripti
 export async function getMember(env:any,phone:string):Promise<{ok:true;member:MemberProfile}|{ok:false;status:number;error:string}>{
   const normalized=normalizePhone(phone);
   if(!normalized)return {ok:false,status:400,error:"A valid Zalo phone number is required."};
+
+  // Phone Normalized stores digits without the leading 0 / country code.
   let parentResponse=await query(env,env.NOTION_PARENT_DATA_SOURCE_ID,{property:"Phone Normalized",rich_text:{equals:normalized}});
-  if(parentResponse.ok){const parentData=await parentResponse.json() as {results?:any[]};if((parentData.results?.length||0)>0){if((parentData.results?.length||0)>1)return {ok:false,status:409,error:"Multiple members use this phone number."};return buildMember(env,parentData.results![0]);}}
-  parentResponse=await query(env,env.NOTION_PARENT_DATA_SOURCE_ID,{property:"Mobile",phone_number:{equals:normalized}});
-  if(!parentResponse.ok)return {ok:false,status:502,error:"Could not load member."};
-  const parentData=await parentResponse.json() as {results?:any[]};
-  if((parentData.results?.length||0)===0)return {ok:false,status:404,error:"Member not found."};
-  if((parentData.results?.length||0)>1)return {ok:false,status:409,error:"Multiple members use this phone number."};
-  return buildMember(env,parentData.results![0]);
+  if(parentResponse.ok){
+    const parentData=await parentResponse.json() as {results?:any[]};
+    if((parentData.results?.length||0)>0){
+      if((parentData.results?.length||0)>1)return {ok:false,status:409,error:"Multiple members use this phone number."};
+      return buildMember(env,parentData.results![0]);
+    }
+  }
+
+  // Notion's Mobile property is a PHONE_NUMBER field and stores the formatted
+  // value (for example 0939980039), while the old code queried it with the
+  // normalized digits (939980039). Try the canonical Vietnamese formats.
+  const mobileCandidates=[`0${normalized}`,`+84${normalized}`];
+  for(const mobile of mobileCandidates){
+    parentResponse=await query(env,env.NOTION_PARENT_DATA_SOURCE_ID,{property:"Mobile",phone_number:{equals:mobile}});
+    if(!parentResponse.ok)continue;
+    const parentData=await parentResponse.json() as {results?:any[]};
+    if((parentData.results?.length||0)>0){
+      if((parentData.results?.length||0)>1)return {ok:false,status:409,error:"Multiple members use this phone number."};
+      return buildMember(env,parentData.results![0]);
+    }
+  }
+
+  return {ok:false,status:404,error:"Member not found."};
 }
 
 async function buildMember(env:any,parent:any):Promise<{ok:true;member:MemberProfile}|{ok:false;status:number;error:string}>{
