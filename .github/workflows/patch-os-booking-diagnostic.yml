@@ -10,21 +10,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch worker diagnostics
+      - name: Patch worker entitlement normalization
         run: |
           python - <<'PY'
           from pathlib import Path
           p = Path('worker.ts')
           s = p.read_text()
-          old = 'async function getConfirmedCount(env:Env,sessionId:string){const response=await notionQuery(env,env.NOTION_OS_BOOKING_DATA_SOURCE_ID,{and:[{property:"OS Session",relation:{contains:sessionId}},{property:"Status",select:{equals:"Confirmed"}}]});if(!response.ok)return {ok:false as const,status:502,error:"Could not load session bookings.",notionStatus:response.status};const data=await response.json() as {results?:any[]};return {ok:true as const,count:data.results?.length||0};}'
-          new = 'async function getConfirmedCount(env:Env,sessionId:string){const filter={and:[{property:"OS Session",relation:{contains:sessionId}},{property:"Status",select:{equals:"Confirmed"}}]};const response=await notionQuery(env,env.NOTION_OS_BOOKING_DATA_SOURCE_ID,filter);if(!response.ok){const notionDetail=(await response.text()).slice(0,1000);return {ok:false as const,status:502,error:"Could not load session bookings.",notionStatus:response.status,notionDetail};}const data=await response.json() as {results?:any[]};return {ok:true as const,count:data.results?.length||0};}'
-          if old not in s:
-              raise SystemExit('target getConfirmedCount not found')
-          p.write_text(s.replace(old,new,1))
+
+          old_prop = 'const propSelect=(p:any)=>p?.select?.name||null;'
+          new_prop = 'const propSelect=(p:any)=>p?.select?.name||p?.status?.name||null;\nconst canonicalSessionType=(value:string|null)=>{const normalized=(value||"").normalize("NFKC").replace(/\\s+/g," ").trim().toLowerCase();if(normalized==="open studio")return "Open Studio";if(normalized==="premium")return "Premium";return (value||"").normalize("NFKC").replace(/\\s+/g," ").trim();};'
+          if old_prop not in s:
+              raise SystemExit('target propSelect not found')
+          s = s.replace(old_prop, new_prop, 1)
+
+          old_item = 'items.push({id:page.id,topic:propText(page.properties?.["Topic"])||"Untitled session",type:propText(page.properties?.["Type"]),path:paths[0]||null,date:propDate(page.properties?.["Date"]),'
+          new_item = 'items.push({id:page.id,topic:propText(page.properties?.["Topic"])||"Untitled session",type:canonicalSessionType(propText(page.properties?.["Type"])),path:paths[0]||null,date:propDate(page.properties?.["Date"]),'
+          if old_item not in s:
+              raise SystemExit('target session item mapper not found')
+          s = s.replace(old_item, new_item, 1)
+
+          old_booking = 'const rule=passRules[type];if(rule.path&&rule.path!==session.path)return {ok:false as const,status:409,error:`${type} pass cannot be used for this path.`};if(rule.accessScope!=="Any"&&session.type!=="Open Studio"&&session.type!=="Premium")return {ok:false as const,status:409,error:"This pass cannot access this session."};'
+          new_booking = 'const rule=passRules[type];const sessionPath=publicPath(session.path);const sessionType=canonicalSessionType(session.type);if(rule.path&&rule.path!==sessionPath)return {ok:false as const,status:409,error:`${type} pass cannot be used for this path.`};if(rule.accessScope!=="Any"&&sessionType!=="Open Studio"&&sessionType!=="Premium")return {ok:false as const,status:409,error:`This pass cannot access this session (${sessionType||"unknown type"}).`};'
+          if old_booking not in s:
+              raise SystemExit('target booking entitlement check not found')
+          s = s.replace(old_booking, new_booking, 1)
+
+          p.write_text(s)
           PY
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           rm -f .github/trigger-os-booking-debug
           git add worker.ts .github/trigger-os-booking-debug
-          git commit -m 'fix: expose Notion OS booking query error detail'
+          git commit -m 'fix: normalize Open Studio entitlement values'
           git push
