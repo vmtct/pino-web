@@ -11,11 +11,17 @@ interface Env {
   NOTION_RUNNING_CLASS_DATA_SOURCE_ID: string;
   NOTION_PATH_PROGRAM_DATA_SOURCE_ID: string;
 }
+
 const corsHeaders={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"Content-Type","Access-Control-Allow-Methods":"GET, POST, OPTIONS"};
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{"Content-Type":"application/json",...corsHeaders}});
 const allowedPasses=["Piano","Art","Little Piner","Bring-a-Friend"] as const;
 type PassType=typeof allowedPasses[number];
-const passRules:Record<PassType,{accessScope:"Open Studio + Premium"|"Any";path:string|null}>={Piano:{accessScope:"Open Studio + Premium",path:"Piano"},Art:{accessScope:"Open Studio + Premium",path:"Mỹ thuật"},"Little Piner":{accessScope:"Open Studio + Premium",path:"Little Piner"},"Bring-a-Friend":{accessScope:"Any",path:null}};
+const passRules:Record<PassType,{accessScope:"Open Studio + Premium"|"Any";path:string|null}>={
+  Piano:{accessScope:"Open Studio + Premium",path:"Piano"},
+  Art:{accessScope:"Open Studio + Premium",path:"Mỹ thuật"},
+  "Little Piner":{accessScope:"Open Studio + Premium",path:"Little Piner"},
+  "Bring-a-Friend":{accessScope:"Any",path:null}
+};
 const notionHeaders=(env:Env,version="2026-03-11")=>({Authorization:`Bearer ${env.NOTION_TOKEN}`,"Content-Type":"application/json","Notion-Version":version});
 async function notionCreatePage(env:Env,parent:Record<string,string>,properties:Record<string,unknown>){return fetch("https://api.notion.com/v1/pages",{method:"POST",headers:notionHeaders(env),body:JSON.stringify({parent,properties})});}
 async function notionUpdatePage(env:Env,pageId:string,properties:Record<string,unknown>){return fetch(`https://api.notion.com/v1/pages/${pageId}`,{method:"PATCH",headers:notionHeaders(env),body:JSON.stringify({properties})});}
@@ -23,7 +29,35 @@ async function notionQuery(env:Env,dataSourceId:string,filter?:unknown){const re
 const localDate=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Ho_Chi_Minh",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 const addDays=(date:string,days:number)=>{const d=new Date(`${date}T00:00:00Z`);d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10)};
 const monthStart=(date:string)=>`${date.slice(0,7)}-01`;
-async function issuePasses(env:Env,studentId:string,month:string,subscriptionId?:string){const monthDate=new Date(`${month}T00:00:00Z`);if(Number.isNaN(monthDate.getTime()))return {ok:false as const,status:400,error:"month must be YYYY-MM-01."};const nextMonth=new Date(Date.UTC(monthDate.getUTCFullYear(),monthDate.getUTCMonth()+1,1)).toISOString().slice(0,10);const existingResponse=await notionQuery(env,env.NOTION_OS_PASS_DATA_SOURCE_ID,{and:[{property:"Student",relation:{contains:studentId}},{property:"Month",date:{on_or_after:month}},{property:"Month",date:{before:nextMonth}}]});if(!existingResponse.ok)return {ok:false as const,status:502,error:"Could not check existing passes.",notionStatus:existingResponse.status};const existing=await existingResponse.json() as {results?:Array<{id:string}>};if((existing.results?.length||0)>0)return {ok:true as const,alreadyIssued:true,passCount:existing.results?.length||0,passIds:existing.results?.map(r=>r.id)||[]};const createdIds:string[]=[];for(const type of allowedPasses){const rule=passRules[type];const response=await notionCreatePage(env,{data_source_id:env.NOTION_OS_PASS_DATA_SOURCE_ID},{Name:{title:[{text:{content:`${type} · ${month}`}}]},Student:{relation:[{id:studentId}]},...(subscriptionId?{Subscription:{relation:[{id:subscriptionId}]}}:{}),"Pass Type":{select:{name:type}},Status:{select:{name:"Available"}},"Access Scope":{select:{name:rule.accessScope}},Month:{date:{start:month}}});if(!response.ok)return {ok:false as const,status:502,error:"Could not issue passes.",notionStatus:response.status,createdIds};const created=await response.json() as {id?:string};if(created.id)createdIds.push(created.id)}return {ok:true as const,alreadyIssued:false,passCount:createdIds.length,passIds:createdIds};}
+
+async function issuePasses(env:Env,studentId:string,month:string,subscriptionId?:string,validUntil?:string,note="Monthly entitlement"){
+  const monthDate=new Date(`${month}T00:00:00Z`);
+  if(Number.isNaN(monthDate.getTime()))return {ok:false as const,status:400,error:"month must be YYYY-MM-01."};
+  const existingResponse=await notionQuery(env,env.NOTION_OS_PASS_DATA_SOURCE_ID,{and:[{property:"Student",relation:{contains:studentId}},{property:"Month",date:{equals:month}},{property:"Note",rich_text:{equals:note}}]});
+  if(!existingResponse.ok)return {ok:false as const,status:502,error:"Could not check existing passes.",notionStatus:existingResponse.status};
+  const existing=await existingResponse.json() as {results?:Array<{id:string}>};
+  if((existing.results?.length||0)>0)return {ok:true as const,alreadyIssued:true,passCount:existing.results?.length||0,passIds:existing.results?.map(r=>r.id)||[]};
+  const createdIds:string[]=[];
+  for(const type of allowedPasses){
+    const rule=passRules[type];
+    const response=await notionCreatePage(env,{data_source_id:env.NOTION_OS_PASS_DATA_SOURCE_ID},{
+      Name:{title:[{text:{content:`${type} · ${month}`}}]},
+      Student:{relation:[{id:studentId}]},
+      ...(subscriptionId?{Subscription:{relation:[{id:subscriptionId}]}}:{}),
+      "Pass Type":{select:{name:type}},
+      Status:{select:{name:"Available"}},
+      "Access Scope":{select:{name:rule.accessScope}},
+      Month:{date:{start:month}},
+      ...(validUntil?{"Valid Until":{date:{start:validUntil}}}:{}),
+      Note:{rich_text:[{text:{content:note}}]}
+    });
+    if(!response.ok)return {ok:false as const,status:502,error:"Could not issue passes.",notionStatus:response.status,createdIds};
+    const created=await response.json() as {id?:string};
+    if(created.id)createdIds.push(created.id);
+  }
+  return {ok:true as const,alreadyIssued:false,passCount:createdIds.length,passIds:createdIds};
+}
+
 const propText=(p:any)=>p?.title?.[0]?.plain_text||p?.rich_text?.[0]?.plain_text||p?.select?.name||"";
 const propDate=(p:any)=>p?.date?.start||null;
 const propNumber=(p:any)=>typeof p?.number==="number"?p.number:typeof p?.formula?.number==="number"?p.formula.number:typeof p?.rollup?.number==="number"?p.rollup.number:null;
@@ -31,16 +65,147 @@ const propFiles=(p:any)=>p?.files?.map((f:any)=>f.file?.url||f.external?.url).fi
 const propRelationIds=(p:any):string[]=>p?.relation?.map((r:any)=>r.id).filter((id:any):id is string=>Boolean(id))||[];
 const propSelect=(p:any)=>p?.select?.name||null;
 const publicPath=(master:string|null)=>{const value=(master||"").trim().toLowerCase().replace(/\s+/g," ");if(value==="pianohouse")return "Piano";if(value==="architect")return "Mỹ thuật";if(value==="little piner")return "Little Piner";return null;};
-async function getProgramContext(env:Env){const [classesResponse,programsResponse]=await Promise.all([notionQuery(env,env.NOTION_RUNNING_CLASS_DATA_SOURCE_ID),notionQuery(env,env.NOTION_PATH_PROGRAM_DATA_SOURCE_ID)]);if(!classesResponse.ok||!programsResponse.ok)return {classPaths:new Map<string,string>()};const classes=await classesResponse.json() as {results?:any[]};const programs=await programsResponse.json() as {results?:any[]};const programPaths=new Map<string,string>();for(const page of programs.results||[]){const path=publicPath(propSelect(page.properties?.["Master Path"]));if(path)programPaths.set(page.id,path)}const classPaths=new Map<string,string>();for(const page of classes.results||[]){const pathIds=propRelationIds(page.properties?.["Path Program"]);const path=pathIds.map((id:string)=>programPaths.get(id)).find(Boolean);if(path)classPaths.set(page.id,path)}return {classPaths};}
-async function getSessions(env:Env,params:URLSearchParams){const type=params.get("type");const filter=type?{property:"Type",select:{equals:type}}:undefined;const response=await notionQuery(env,env.NOTION_OS_SESSION_DATA_SOURCE_ID,filter);if(!response.ok)return {ok:false as const,status:502,error:"Could not load OS sessions.",notionStatus:response.status};const data=await response.json() as {results?:any[]};const context=await getProgramContext(env);const items=(data.results||[]).map(page=>{const runningClassIds=propRelationIds(page.properties?.["Running Class"]);const paths=runningClassIds.map((id:string)=>context.classPaths.get(id)).filter(Boolean);return {id:page.id,topic:propText(page.properties?.Topic)||"Untitled session",type:propText(page.properties?.Type),path:paths[0]||null,date:propDate(page.properties?.Date),availableSeats:propNumber(page.properties?.["Available Seats"]),capacity:propNumber(page.properties?.Capacity),confirmedCount:propNumber(page.properties?.["Confirmed Count"]),runningClassIds,cover:propFiles(page.properties?.Cover)[0]||null,avatar:propFiles(page.properties?.Avatar)[0]||null};});const requestedPath=params.get("path");const filtered=requestedPath?items.filter(item=>item.path===requestedPath):items;filtered.sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));return {ok:true as const,sessions:filtered};}
-async function getEligiblePasses(env:Env,studentId:string,session:any){const response=await notionQuery(env,env.NOTION_OS_PASS_DATA_SOURCE_ID,{and:[{property:"Student",relation:{contains:studentId}},{property:"Status",select:{equals:"Available"}}]});if(!response.ok)return {ok:false as const,status:502,error:"Could not load eligible passes."};const data=await response.json() as {results?:any[]};const passes=(data.results||[]).map(page=>{const type=propSelect(page.properties?.["Pass Type"]) as PassType|null;const scope=propSelect(page.properties?.["Access Scope"]);return {id:page.id,name:propText(page.properties?.Name)||type,type,scope,month:propDate(page.properties?.Month)};}).filter(p=>{if(!p.type||!passRules[p.type])return false;const rule=passRules[p.type];return (rule.accessScope==="Any"||session.type==="Open Studio"||session.type==="Premium")&&(rule.path===null||rule.path===session.path);});return {ok:true as const,passes};}
-async function createBooking(env:Env,studentId:string,sessionId:string,passId:string,friendName?:string){const passResponse=await notionQuery(env,env.NOTION_OS_PASS_DATA_SOURCE_ID,{and:[{property:"Student",relation:{contains:studentId}},{property:"Status",select:{equals:"Available"}}]});if(!passResponse.ok)return {ok:false as const,status:502,error:"Could not validate pass."};const passData=await passResponse.json() as {results?:any[]};const pass=passData.results?.find(p=>p.id===passId);if(!pass)return {ok:false as const,status:409,error:"This pass is not available."};const type=propSelect(pass.properties?.["Pass Type"]) as PassType|null;if(!type||!passRules[type])return {ok:false as const,status:409,error:"This pass is invalid."};const sessions=await getSessions(env,new URLSearchParams());if(!sessions.ok)return sessions;const session=sessions.sessions.find(s=>s.id===sessionId);if(!session)return {ok:false as const,status:404,error:"Session not found."};const rule=passRules[type];if(rule.path&&rule.path!==session.path)return {ok:false as const,status:409,error:`${type} pass cannot be used for this path.`};if(rule.accessScope!=="Any"&&session.type!=="Open Studio"&&session.type!=="Premium")return {ok:false as const,status:409,error:"This pass cannot access this session."};if(type==="Bring-a-Friend"&&!friendName?.trim())return {ok:false as const,status:400,error:"Friend name is required for a Bring-a-Friend pass."};if(session.availableSeats!==null&&session.availableSeats<=0)return {ok:false as const,status:409,error:"This session is sold out."};const bookingResponse=await notionCreatePage(env,{data_source_id:env.NOTION_OS_BOOKING_DATA_SOURCE_ID},{Name:{title:[{text:{content:`${session.topic} · ${studentId.slice(0,6)}`}}]},Student:{relation:[{id:studentId}]},"OS Session":{relation:[{id:sessionId}]},"OS Pass":{relation:[{id:passId}]},Status:{select:{name:"Confirmed"}},...(friendName?.trim()?{"Friend Name":{rich_text:[{text:{content:friendName.trim()}}]}}:{})});if(!bookingResponse.ok){const detail=await bookingResponse.text();return {ok:false as const,status:502,error:"Could not create booking.",detail:detail.slice(0,500)}}const booking=await bookingResponse.json() as {id?:string};if(!booking.id)return {ok:false as const,status:502,error:"Booking created without an ID."};const updatePass=await notionUpdatePage(env,passId,{Status:{select:{name:"Used"}}});if(!updatePass.ok)return {ok:false as const,status:502,error:"Booking was created but pass could not be consumed.",bookingId:booking.id};return {ok:true as const,bookingId:booking.id,sessionId,passId,status:"Confirmed"};}
-const worker={async fetch(request:Request,env:Env):Promise<Response>{const url=new URL(request.url);if(request.method==="OPTIONS")return new Response(null,{headers:corsHeaders});
-if(url.pathname==="/api/open-studio/sessions"||url.pathname==="/api/os-sessions"){if(request.method!=="GET")return json({error:"Method not allowed"},405);if(!env.NOTION_TOKEN||!env.NOTION_OS_SESSION_DATA_SOURCE_ID)return json({error:"OS Session feed is not configured yet."},503);const result=await getSessions(env,url.searchParams);return result.ok?json(result):json(result,result.status)}
-if(url.pathname==="/api/open-studio/eligibility"){if(request.method!=="POST")return json({error:"Method not allowed"},405);let body:any;try{body=await request.json()}catch{return json({error:"Invalid request."},400)}const studentId=body.studentId?.trim(),sessionId=body.sessionId?.trim();if(!studentId||!sessionId)return json({error:"studentId and sessionId are required."},400);const sessions=await getSessions(env,new URLSearchParams());if(!sessions.ok)return json(sessions,sessions.status);const session=sessions.sessions.find(s=>s.id===sessionId);if(!session)return json({error:"Session not found."},404);const result=await getEligiblePasses(env,studentId,session);return result.ok?json({ok:true,session,passes:result.passes}):json(result,result.status)}
-if(url.pathname==="/api/open-studio/book"){if(request.method!=="POST")return json({error:"Method not allowed"},405);let body:any;try{body=await request.json()}catch{return json({error:"Invalid request."},400)}const studentId=body.studentId?.trim(),sessionId=body.sessionId?.trim(),passId=body.passId?.trim(),friendName=body.friendName?.trim();if(!studentId||!sessionId||!passId)return json({error:"studentId, sessionId and passId are required."},400);const result=await createBooking(env,studentId,sessionId,passId,friendName);return result.ok?json(result):json(result,result.status)}
-if(url.pathname==="/api/open-studio/interest"){if(request.method!=="POST")return json({error:"Method not allowed"},405);if(!env.NOTION_TOKEN||!env.NOTION_PARENT_DATA_SOURCE_ID)return json({error:"Open Studio intake is not configured yet."},503);let body:any;try{body=await request.json()}catch{return json({error:"Invalid request."},400)}const parentName=body.parentName?.trim(),phone=body.phone?.trim(),childName=body.childName?.trim()||"",ageStage=body.ageStage?.trim(),passType=body.passType?.trim() as PassType|undefined;if(!parentName||!phone||!ageStage||!passType)return json({error:"Please complete the required fields."},400);if(!allowedPasses.includes(passType))return json({error:"Invalid pass type."},400);const note=["Source: pino-web","Open Studio interest",`Pass: ${passType}`,`Age stage: ${ageStage}`,childName?`Child: ${childName}`:""].filter(Boolean).join("\n");const response=await notionCreatePage(env,{data_source_id:env.NOTION_PARENT_DATA_SOURCE_ID},{Name:{title:[{text:{content:parentName}}]},Mobile:{phone_number:phone},Note:{rich_text:[{text:{content:note}}]},"Lead Source":{select:{name:"pino.cantho.center"}}});if(!response.ok)return json({error:"Notion rejected the request.",notionStatus:response.status},502);const created=await response.json() as {id?:string};return json({ok:true,parentId:created.id})}
-if(url.pathname==="/api/member/activate"){if(request.method!=="POST")return json({error:"Method not allowed"},405);if(!env.NOTION_TOKEN||!env.NOTION_PARENT_DATA_SOURCE_ID||!env.NOTION_STUDENT_DATA_SOURCE_ID||!env.NOTION_OS_PASS_DATA_SOURCE_ID)return json({error:"Member activation is not configured yet."},503);let body:any;try{body=await request.json()}catch{return json({error:"Invalid request."},400)}const parentId=body.parentId?.trim(),studentName=body.studentName?.trim(),subscriptionId=body.subscriptionId?.trim();if(!parentId||!studentName)return json({error:"parentId and studentName are required."},400);const existingResponse=await notionQuery(env,env.NOTION_STUDENT_DATA_SOURCE_ID,{and:[{property:"Parents ",relation:{contains:parentId}},{property:"Student Name",title:{equals:studentName}}]});if(!existingResponse.ok)return json({error:"Could not check existing student.",notionStatus:existingResponse.status},502);const existing=await existingResponse.json() as {results?:Array<{id:string}>};const today=localDate(),trialUntil=addDays(today,14),properties:any={"Parents ":{relation:[{id:parentId}]},Membership:{select:{name:"Premium"}},"Activation Date":{date:{start:today}},"Premium Trial Started":{date:{start:today}},"Premium Trial Until":{date:{start:trialUntil}},"Premium Access Until":{date:{start:trialUntil}},...(subscriptionId?{"Subscription Plan":{relation:[{id:subscriptionId}]}}:{})};let studentId:string,alreadyActivated=false;if((existing.results?.length||0)>0){studentId=existing.results![0].id;alreadyActivated=true;const r=await notionUpdatePage(env,studentId,properties);if(!r.ok)return json({error:"Could not activate student.",notionStatus:r.status},502)}else{const r=await notionCreatePage(env,{data_source_id:env.NOTION_STUDENT_DATA_SOURCE_ID},{"Student Name":{title:[{text:{content:studentName}}]},...properties});if(!r.ok)return json({error:"Could not create student.",notionStatus:r.status},502);const created=await r.json() as {id?:string};if(!created.id)return json({error:"Student was created but no ID was returned."},502);studentId=created.id}const passes=await issuePasses(env,studentId,monthStart(today),subscriptionId);if(!passes.ok)return json(passes,passes.status);return json({ok:true,alreadyActivated,studentId,membership:"Premium",trial:{started:today,until:trialUntil},passes})}
-if(url.pathname==="/api/passes/issue"){if(request.method!=="POST")return json({error:"Method not allowed"},405);if(!env.NOTION_TOKEN||!env.NOTION_STUDENT_DATA_SOURCE_ID||!env.NOTION_OS_PASS_DATA_SOURCE_ID)return json({error:"Pass engine is not configured yet."},503);let body:any;try{body=await request.json()}catch{return json({error:"Invalid request."},400)}const studentId=body.studentId?.trim(),subscriptionId=body.subscriptionId?.trim(),month=body.month?.trim()||monthStart(localDate());if(!studentId)return json({error:"studentId is required."},400);const passes=await issuePasses(env,studentId,month,subscriptionId);return passes.ok?json(passes):json(passes,passes.status)}
-return env.ASSETS.fetch(request);}};
+
+async function getProgramContext(env:Env){
+  const [classesResponse,programsResponse]=await Promise.all([notionQuery(env,env.NOTION_RUNNING_CLASS_DATA_SOURCE_ID),notionQuery(env,env.NOTION_PATH_PROGRAM_DATA_SOURCE_ID)]);
+  if(!classesResponse.ok||!programsResponse.ok)return {classPaths:new Map<string,string>()};
+  const classes=await classesResponse.json() as {results?:any[]};
+  const programs=await programsResponse.json() as {results?:any[]};
+  const programPaths=new Map<string,string>();
+  for(const page of programs.results||[]){const path=publicPath(propSelect(page.properties?.["Master Path"]));if(path)programPaths.set(page.id,path)}
+  const classPaths=new Map<string,string>();
+  for(const page of classes.results||[]){const pathIds=propRelationIds(page.properties?.["Path Program"]);const path=pathIds.map((id:string)=>programPaths.get(id)).find(Boolean);if(path)classPaths.set(page.id,path)}
+  return {classPaths};
+}
+
+async function getSessions(env:Env,params:URLSearchParams){
+  const type=params.get("type");
+  const filter=type?{property:"Type",select:{equals:type}}:undefined;
+  const response=await notionQuery(env,env.NOTION_OS_SESSION_DATA_SOURCE_ID,filter);
+  if(!response.ok)return {ok:false as const,status:502,error:"Could not load OS sessions.",notionStatus:response.status};
+  const data=await response.json() as {results?:any[]};
+  const context=await getProgramContext(env);
+  const items=(data.results||[]).map(page=>{
+    const runningClassIds=propRelationIds(page.properties?.["Running Class"]);
+    const paths=runningClassIds.map((id:string)=>context.classPaths.get(id)).filter(Boolean);
+    return {id:page.id,topic:propText(page.properties?.Topic)||"Untitled session",type:propText(page.properties?.Type),path:paths[0]||null,date:propDate(page.properties?.Date),availableSeats:propNumber(page.properties?.["Available Seats"]),capacity:propNumber(page.properties?.Capacity),confirmedCount:propNumber(page.properties?.["Confirmed Count"]),runningClassIds,cover:propFiles(page.properties?.Cover)[0]||null,avatar:propFiles(page.properties?.Avatar)[0]||null};
+  });
+  const requestedPath=params.get("path");
+  const filtered=requestedPath?items.filter(item=>item.path===requestedPath):items;
+  filtered.sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
+  return {ok:true as const,sessions:filtered};
+}
+
+async function getEligiblePasses(env:Env,studentId:string,session:any){
+  const response=await notionQuery(env,env.NOTION_OS_PASS_DATA_SOURCE_ID,{and:[{property:"Student",relation:{contains:studentId}},{property:"Status",select:{equals:"Available"}}]});
+  if(!response.ok)return {ok:false as const,status:502,error:"Could not load eligible passes."};
+  const data=await response.json() as {results?:any[]};
+  const today=localDate();
+  const passes=(data.results||[]).map(page=>{const type=propSelect(page.properties?.["Pass Type"]) as PassType|null;const scope=propSelect(page.properties?.["Access Scope"]);return {id:page.id,name:propText(page.properties?.Name)||type,type,scope,month:propDate(page.properties?.Month),validUntil:propDate(page.properties?.["Valid Until"])};}).filter(p=>{
+    if(!p.type||!passRules[p.type])return false;
+    if(p.validUntil&&p.validUntil<today)return false;
+    const rule=passRules[p.type];
+    return (rule.accessScope==="Any"||session.type==="Open Studio"||session.type==="Premium")&&(rule.path===null||rule.path===session.path);
+  });
+  return {ok:true as const,passes};
+}
+
+async function createBooking(env:Env,studentId:string,sessionId:string,passId:string,friendName?:string){
+  const passResponse=await notionQuery(env,env.NOTION_OS_PASS_DATA_SOURCE_ID,{and:[{property:"Student",relation:{contains:studentId}},{property:"Status",select:{equals:"Available"}}]});
+  if(!passResponse.ok)return {ok:false as const,status:502,error:"Could not validate pass."};
+  const passData=await passResponse.json() as {results?:any[]};
+  const pass=passData.results?.find(p=>p.id===passId);
+  if(!pass)return {ok:false as const,status:409,error:"This pass is not available."};
+  const validUntil=propDate(pass.properties?.["Valid Until"]);
+  if(validUntil&&validUntil<localDate())return {ok:false as const,status:409,error:"This pass has expired."};
+  const type=propSelect(pass.properties?.["Pass Type"]) as PassType|null;
+  if(!type||!passRules[type])return {ok:false as const,status:409,error:"This pass is invalid."};
+  const sessions=await getSessions(env,new URLSearchParams());
+  if(!sessions.ok)return sessions;
+  const session=sessions.sessions.find(s=>s.id===sessionId);
+  if(!session)return {ok:false as const,status:404,error:"Session not found."};
+  const rule=passRules[type];
+  if(rule.path&&rule.path!==session.path)return {ok:false as const,status:409,error:`${type} pass cannot be used for this path.`};
+  if(rule.accessScope!=="Any"&&session.type!=="Open Studio"&&session.type!=="Premium")return {ok:false as const,status:409,error:"This pass cannot access this session."};
+  if(type==="Bring-a-Friend"&&!friendName?.trim())return {ok:false as const,status:400,error:"Friend name is required for a Bring-a-Friend pass."};
+  if(session.availableSeats!==null&&session.availableSeats<=0)return {ok:false as const,status:409,error:"This session is sold out."};
+  const bookingResponse=await notionCreatePage(env,{data_source_id:env.NOTION_OS_BOOKING_DATA_SOURCE_ID},{Name:{title:[{text:{content:`${session.topic} · ${studentId.slice(0,6)}`}}]},Student:{relation:[{id:studentId}]},"OS Session":{relation:[{id:sessionId}]},"OS Pass":{relation:[{id:passId}]},Status:{select:{name:"Confirmed"}},...(friendName?.trim()?{"Friend Name":{rich_text:[{text:{content:friendName.trim()}}]}}:{})});
+  if(!bookingResponse.ok){const detail=await bookingResponse.text();return {ok:false as const,status:502,error:"Could not create booking.",detail:detail.slice(0,500)}}
+  const booking=await bookingResponse.json() as {id?:string};
+  if(!booking.id)return {ok:false as const,status:502,error:"Booking created without an ID."};
+  const updatePass=await notionUpdatePage(env,passId,{Status:{select:{name:"Used"}}});
+  if(!updatePass.ok)return {ok:false as const,status:502,error:"Booking was created but pass could not be consumed.",bookingId:booking.id};
+  return {ok:true as const,bookingId:booking.id,sessionId,passId,status:"Confirmed"};
+}
+
+const worker={async fetch(request:Request,env:Env):Promise<Response>{
+  const url=new URL(request.url);
+  if(request.method==="OPTIONS")return new Response(null,{headers:corsHeaders});
+  if(url.pathname==="/api/open-studio/sessions"||url.pathname==="/api/os-sessions"){
+    if(request.method!=="GET")return json({error:"Method not allowed"},405);
+    if(!env.NOTION_TOKEN||!env.NOTION_OS_SESSION_DATA_SOURCE_ID)return json({error:"OS Session feed is not configured yet."},503);
+    const result=await getSessions(env,url.searchParams);return result.ok?json(result):json(result,result.status);
+  }
+  if(url.pathname==="/api/open-studio/eligibility"){
+    if(request.method!=="POST")return json({error:"Method not allowed"},405);
+    let body:any;try{body=await request.json()}catch{return json({error:"Invalid request."},400)}
+    const studentId=body.studentId?.trim(),sessionId=body.sessionId?.trim();
+    if(!studentId||!sessionId)return json({error:"studentId and sessionId are required."},400);
+    const sessions=await getSessions(env,new URLSearchParams());if(!sessions.ok)return json(sessions,sessions.status);
+    const session=sessions.sessions.find(s=>s.id===sessionId);if(!session)return json({error:"Session not found."},404);
+    const result=await getEligiblePasses(env,studentId,session);return result.ok?json({ok:true,session,passes:result.passes}):json(result,result.status);
+  }
+  if(url.pathname==="/api/open-studio/book"){
+    if(request.method!=="POST")return json({error:"Method not allowed"},405);
+    let body:any;try{body=await request.json()}catch{return json({error:"Invalid request."},400)}
+    const studentId=body.studentId?.trim(),sessionId=body.sessionId?.trim(),passId=body.passId?.trim(),friendName=body.friendName?.trim();
+    if(!studentId||!sessionId||!passId)return json({error:"studentId, sessionId and passId are required."},400);
+    const result=await createBooking(env,studentId,sessionId,passId,friendName);return result.ok?json(result):json(result,result.status);
+  }
+  if(url.pathname==="/api/open-studio/interest"){
+    if(request.method!=="POST")return json({error:"Method not allowed"},405);
+    if(!env.NOTION_TOKEN||!env.NOTION_PARENT_DATA_SOURCE_ID)return json({error:"Open Studio intake is not configured yet."},503);
+    let body:any;try{body=await request.json()}catch{return json({error:"Invalid request."},400)}
+    const parentName=body.parentName?.trim(),phone=body.phone?.trim(),childName=body.childName?.trim()||"",ageStage=body.ageStage?.trim(),passType=body.passType?.trim() as PassType|undefined;
+    if(!parentName||!phone||!ageStage||!passType)return json({error:"Please complete the required fields."},400);
+    if(!allowedPasses.includes(passType))return json({error:"Invalid pass type."},400);
+    const note=["Source: pino-web","Open Studio interest",`Pass: ${passType}`,`Age stage: ${ageStage}`,childName?`Child: ${childName}`:""].filter(Boolean).join("\n");
+    const response=await notionCreatePage(env,{data_source_id:env.NOTION_PARENT_DATA_SOURCE_ID},{Name:{title:[{text:{content:parentName}}]},Mobile:{phone_number:phone},Note:{rich_text:[{text:{content:note}}]},"Lead Source":{select:{name:"pino.cantho.center"}}});
+    if(!response.ok)return json({error:"Notion rejected the request.",notionStatus:response.status},502);
+    const created=await response.json() as {id?:string};return json({ok:true,parentId:created.id});
+  }
+  if(url.pathname==="/api/member/activate"){
+    if(request.method!=="POST")return json({error:"Method not allowed"},405);
+    if(!env.NOTION_TOKEN||!env.NOTION_PARENT_DATA_SOURCE_ID||!env.NOTION_STUDENT_DATA_SOURCE_ID||!env.NOTION_OS_PASS_DATA_SOURCE_ID)return json({error:"Member activation is not configured yet."},503);
+    let body:any;try{body=await request.json()}catch{return json({error:"Invalid request."},400)}
+    const parentId=body.parentId?.trim(),studentName=body.studentName?.trim(),subscriptionId=body.subscriptionId?.trim();
+    if(!parentId||!studentName)return json({error:"parentId and studentName are required."},400);
+    const existingResponse=await notionQuery(env,env.NOTION_STUDENT_DATA_SOURCE_ID,{and:[{property:"Parents ",relation:{contains:parentId}},{property:"Student Name",title:{equals:studentName}}]});
+    if(!existingResponse.ok)return json({error:"Could not check existing student.",notionStatus:existingResponse.status},502);
+    const existing=await existingResponse.json() as {results?:Array<{id:string}>};
+    const properties:any={"Parents ":{relation:[{id:parentId}]},...(subscriptionId?{"Subscription Plan":{relation:[{id:subscriptionId]}}}:{})};
+    let studentId:string,alreadyMember=false;
+    if((existing.results?.length||0)>0){
+      studentId=existing.results![0].id;alreadyMember=true;
+      const r=await notionUpdatePage(env,studentId,properties);if(!r.ok)return json({error:"Could not update student.",notionStatus:r.status},502);
+    } else {
+      const r=await notionCreatePage(env,{data_source_id:env.NOTION_STUDENT_DATA_SOURCE_ID},{"Student Name":{title:[{text:{content:studentName}}]},...properties});
+      if(!r.ok)return json({error:"Could not create student.",notionStatus:r.status},502);
+      const created=await r.json() as {id?:string};if(!created.id)return json({error:"Student was created but no ID was returned."},502);studentId=created.id;
+    }
+    const today=localDate(),trialUntil=addDays(today,14);
+    const passes=await issuePasses(env,studentId,monthStart(today),subscriptionId,trialUntil,"Premium trial · 14 days");
+    if(!passes.ok)return json(passes,passes.status);
+    return json({ok:true,alreadyMember,studentId,trial:{started:today,until:trialUntil},passes});
+  }
+  if(url.pathname==="/api/passes/issue"){
+    if(request.method!=="POST")return json({error:"Method not allowed"},405);
+    if(!env.NOTION_TOKEN||!env.NOTION_STUDENT_DATA_SOURCE_ID||!env.NOTION_OS_PASS_DATA_SOURCE_ID)return json({error:"Pass engine is not configured yet."},503);
+    let body:any;try{body=await request.json()}catch{return json({error:"Invalid request."},400)}
+    const studentId=body.studentId?.trim(),subscriptionId=body.subscriptionId?.trim(),month=body.month?.trim()||monthStart(localDate());
+    if(!studentId)return json({error:"studentId is required."},400);
+    const passes=await issuePasses(env,studentId,month,subscriptionId);return passes.ok?json(passes):json(passes,passes.status);
+  }
+  return env.ASSETS.fetch(request);
+}};
 export default worker;
