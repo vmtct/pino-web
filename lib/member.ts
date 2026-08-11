@@ -1,5 +1,5 @@
 export type MemberStudent = { id:string; name:string; avatar:string|null };
-export type MemberPass = { id:string; name:string; type:string|null; scope:string|null; month:string|null; validUntil:string|null; status:string|null };
+export type MemberPass = { id:string; studentId:string; name:string; type:string|null; scope:string|null; month:string|null; validUntil:string|null; status:string|null };
 export type MemberBooking = { id:string; status:string|null; sessionId:string|null; sessionTopic:string|null; sessionDate:string|null };
 export type MemberProfile = { id:string; name:string; phone:string|null; students:MemberStudent[]; passes:MemberPass[]; bookings:MemberBooking[] };
 
@@ -46,27 +46,16 @@ async function buildMember(env:any,parent:any):Promise<{ok:true;member:MemberPro
   const bookings:MemberBooking[]=[];
   for(const studentId of studentIds){
     const passResponse=await query(env,env.NOTION_OS_PASS_DATA_SOURCE_ID,{property:"Student",relation:{contains:studentId}});
-    if(passResponse.ok){const data=await passResponse.json() as {results?:any[]};for(const page of data.results||[]){passes.push({id:page.id,name:propertyText(page.properties,["Name","Pass Name"]),type:page.properties?.["Pass Type"]?.select?.name||null,scope:page.properties?.["Access Scope"]?.select?.name||null,month:date(page.properties?.Month),validUntil:date(page.properties?.["Valid Until"]),status:page.properties?.Status?.select?.name||null});}}
+    if(passResponse.ok){const data=await passResponse.json() as {results?:any[]};for(const page of data.results||[]){passes.push({id:page.id,studentId,name:propertyText(page.properties,["Name","Pass Name"]),type:page.properties?.["Pass Type"]?.select?.name||null,scope:page.properties?.["Access Scope"]?.select?.name||null,month:date(page.properties?.Month),validUntil:date(page.properties?.["Valid Until"]),status:page.properties?.Status?.select?.name||null});}}
     const bookingResponse=await query(env,env.NOTION_OS_BOOKING_DATA_SOURCE_ID,{property:"Student",relation:{contains:studentId}});
     if(bookingResponse.ok){const data=await bookingResponse.json() as {results?:any[]};for(const page of data.results||[]){const sessionIds=relationIds(page.properties?.["OS Session"]);bookings.push({id:page.id,status:page.properties?.Status?.select?.name||null,sessionId:sessionIds[0]||null,sessionTopic:null,sessionDate:null});}}
   }
-
   if(bookings.length&&env.NOTION_OS_SESSION_DATA_SOURCE_ID){
     const uniqueSessionIds=[...new Set(bookings.map(b=>b.sessionId).filter((id):id is string=>Boolean(id)))];
     const sessions=new Map<string,{topic:string|null;date:string|null}>();
-    await Promise.all(uniqueSessionIds.map(async sessionId=>{
-      const response=await getPage(env,sessionId);
-      if(!response.ok)return;
-      const page=await response.json() as {id?:string;properties?:any};
-      sessions.set(sessionId,{topic:propertyText(page.properties,["Topic","Name"])||null,date:date(page.properties?.Date)});
-    }));
-    for(const booking of bookings){
-      if(!booking.sessionId)continue;
-      const session=sessions.get(booking.sessionId);
-      if(session){booking.sessionTopic=session.topic;booking.sessionDate=session.date;}
-    }
+    await Promise.all(uniqueSessionIds.map(async sessionId=>{const response=await getPage(env,sessionId);if(!response.ok)return;const page=await response.json() as {id?:string;properties?:any};sessions.set(sessionId,{topic:propertyText(page.properties,["Topic","Name"])||null,date:date(page.properties?.Date)});}));
+    for(const booking of bookings){if(!booking.sessionId)continue;const session=sessions.get(booking.sessionId);if(session){booking.sessionTopic=session.topic;booking.sessionDate=session.date;}}
   }
-
   const memberPhone=parent.properties?.Mobile?.phone_number||null;
   return {ok:true,member:{id:parent.id,name:propertyText(parent.properties,["Name"])||"Member",phone:memberPhone,students,passes,bookings}};
 }
