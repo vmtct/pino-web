@@ -23,3 +23,18 @@ jobs:
 
       - name: Production build
         run: bun run build
+
+  smoke:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check production app
+        run: |
+          set -e
+          base="https://pino-web.minhtri-van42.workers.dev"
+          status=$(curl -sS -o /tmp/home.html -w "%{http_code}" "$base/")
+          test "$status" = "200"
+          status=$(curl -sS -o /tmp/sessions.json -w "%{http_code}" "$base/api/os-sessions")
+          test "$status" = "200"
+          grep -q 'sessions' /tmp/sessions.json
+          echo "Production smoke tests passed"
