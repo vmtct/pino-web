@@ -24,7 +24,7 @@ def run_cmd(command: str, timeout: int = 120) -> str:
         stderr=subprocess.STDOUT,
         timeout=timeout,
     )
-    output = p.stdout[-20000:]
+    output = p.stdout[-12000:]
     return f"exit_code={p.returncode}\n{output}"
 
 
@@ -45,7 +45,7 @@ def read_file(path: str) -> str:
         return "BLOCKED: path outside repository"
     if not target.exists() or not target.is_file():
         return "FILE NOT FOUND"
-    return target.read_text(encoding="utf-8")[:30000]
+    return target.read_text(encoding="utf-8")[:16000]
 
 
 agent = Agent(
@@ -77,8 +77,8 @@ MANDATORY SAFETY RULES:
 - If the failure is infrastructure-only or cannot be safely fixed from code, stop and explain why.
 
 RECOVERY LOOP:
-1. FIRST read `{FAILURE_CONTEXT_FILE}` if it exists. This contains the failed CI log captured before the agent starts. Use it as primary failure evidence.
-2. Inspect repository status/diff and the failed run with `gh run view {RUN_ID} --log-failed` when additional context is needed.
+1. FIRST read `{FAILURE_CONTEXT_FILE}` if it exists. It is a compact capture of the failed CI output. Use it as primary failure evidence.
+2. Inspect repository status/diff and use `gh run view {RUN_ID} --log-failed` only when additional context is needed.
 3. Identify the root cause and affected files.
 4. Make the smallest correct fix.
 5. Run relevant local checks (at minimum the failing test/build when practical).
@@ -86,9 +86,9 @@ RECOVERY LOOP:
 7. Use `gh run list --branch {BRANCH}` and `gh run view` to inspect the new CI run.
 8. If the new CI fails, inspect its logs and make another fix.
 9. Repeat for at most {MAX_FIX_ATTEMPTS} total fix attempts.
-10. Finish only when CI is green or when a clear blocker requires human intervention.
+10. Finish only when CI is green or when a clear blocker requires human intervention. Do not create a fake success.
 
-Be decisive and avoid spending turns on redundant repository exploration. Prefer targeted inspection based on the captured failure log. Do not create a fake success. Report the exact final state.
+Be decisive. Start with the captured failure, then inspect only files relevant to that failure. Avoid broad repository dumps and redundant exploration. Report the exact final state.
 """,
     tools=[shell, read_file],
 )
@@ -96,10 +96,11 @@ Be decisive and avoid spending turns on redundant repository exploration. Prefer
 
 async def main() -> None:
     prompt = (
-        f"Recover the failed CI run {RUN_ID} for commit {HEAD_SHA}. "
-        f"Work on branch {BRANCH}. Start by reading {FAILURE_CONTEXT_FILE} if present, "
-        f"then diagnose from real logs, fix the root cause, run verification, push the branch, "
-        f"and verify CI. You have at most {MAX_FIX_ATTEMPTS} fix attempts and {MAX_TURNS} agent turns."
+        f"CI run {RUN_ID} failed for commit {HEAD_SHA}. "
+        f"Recover it on branch {BRANCH}. Read {FAILURE_CONTEXT_FILE} first, "
+        "diagnose the real root cause, make the smallest safe fix, verify it, "
+        "push the recovery branch, and verify CI. "
+        f"Use at most {MAX_FIX_ATTEMPTS} fix attempts and {MAX_TURNS} agent turns."
     )
     result = await Runner.run(agent, prompt, max_turns=MAX_TURNS)
     print(result.final_output)
