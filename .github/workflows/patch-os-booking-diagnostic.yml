@@ -36,11 +36,14 @@ jobs:
           old = 'if(session.type!=="Open Studio"&&session.type!=="Premium")return {ok:false as const,status:409,error:"This session is not bookable with an Open Studio pass."};'
           new = 'const sessionType=canonicalSessionType(session.type);if(sessionType!=="Open Studio"&&sessionType!=="Premium")return {ok:false as const,status:409,error:`This session is not bookable with an Open Studio pass (${sessionType||"unknown type"}).`};'
           if old in s: s = s.replace(old, new, 1)
+          old = 'const ordered=[...confirmedSessionBookings.results].sort((a:any,b:any)=>String(a.created_time||"").localeCompare(String(b.created_time||"")));const winnerIds=session.capacity===null?null:new Set(ordered.slice(0,session.capacity).map((item:any)=>item.id));if(winnerIds&&ordered.length>session.capacity&&!winnerIds.has(created.id)){await updatePage(env,created.id,{Status:{select:{name:"Cancelled"}}});return {ok:false as const,status:409,error:"This session filled up while your booking was being processed."};}const consumed='
+          new = 'const ordered=[...confirmedSessionBookings.results].sort((a:any,b:any)=>String(a.created_time||"").localeCompare(String(b.created_time||"")));if(session.capacity!==null&&ordered.length>session.capacity){const winnerIds=new Set(ordered.slice(0,session.capacity).map((item:any)=>item.id));if(!winnerIds.has(created.id)){await updatePage(env,created.id,{Status:{select:{name:"Cancelled"}}});return {ok:false as const,status:409,error:"This session filled up while your booking was being processed."};}}const consumed='
+          if old in s: s = s.replace(old, new, 1)
           p.write_text(s)
           PY
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           rm -f .github/trigger-os-booking-debug
           git add worker-member-v2.ts .github/trigger-os-booking-debug
-          git commit -m 'fix: normalize Piano path for OS booking'
+          git commit -m 'fix: harden OS booking capacity type check'
           git push
