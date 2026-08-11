@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 const phone = process.env.E2E_MEMBER_PHONE;
 const unknownPhone = process.env.E2E_UNKNOWN_PHONE;
@@ -21,20 +21,20 @@ type Session = {
   capacity?: number | null;
 };
 
-async function loadMember(page: Parameters<Parameters<typeof test>[1]>[0]['page']): Promise<MemberPayload> {
+async function loadMember(page: Page): Promise<MemberPayload> {
   const response = await page.request.post('/api/member', { data: { phone } });
   expect(response.ok()).toBeTruthy();
   return response.json();
 }
 
-async function loadSessions(page: Parameters<Parameters<typeof test>[1]>[0]['page']): Promise<Session[]> {
+async function loadSessions(page: Page): Promise<Session[]> {
   const response = await page.request.get('/api/os-sessions');
   expect(response.ok()).toBeTruthy();
   const payload = await response.json();
   return payload.sessions || [];
 }
 
-async function validateBooking(page: Parameters<Parameters<typeof test>[1]>[0]['page'], body: Record<string, string>) {
+async function validateBooking(page: Page, body: Record<string, string>) {
   return page.request.post('/api/member/book/validate', { data: body });
 }
 
@@ -101,7 +101,7 @@ test.describe('Open Studio member booking journey', () => {
     const member = await loadMember(page);
     const students = member.member?.students || [];
     const passes = member.member?.passes || [];
-    test.skip(students.length < 2 || passes.length === 0, 'Requires at least two students and one available pass fixture.');
+    test.skip(students.length < 2 || passes.length === 0, 'Requires at least two students and one pass fixture.');
 
     const pass = passes[0];
     const passStudentId = pass.studentId;
