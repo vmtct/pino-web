@@ -42,4 +42,8 @@ jobs:
           test "$status" = "400"
           grep -q 'required' /tmp/book.json
 
+          status=$(curl -sS -o /tmp/member.json -w "%{http_code}" -X POST "$base/api/member" -H 'Content-Type: application/json' -d '{}')
+          test "$status" = "400"
+          grep -q 'phone' /tmp/member.json
+
           echo "Production smoke tests passed"
