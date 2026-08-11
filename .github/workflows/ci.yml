@@ -37,4 +37,9 @@ jobs:
           status=$(curl -sS -o /tmp/sessions.json -w "%{http_code}" "$base/api/os-sessions")
           test "$status" = "200"
           grep -q 'sessions' /tmp/sessions.json
+
+          status=$(curl -sS -o /tmp/book.json -w "%{http_code}" -X POST "$base/api/open-studio/book" -H 'Content-Type: application/json' -d '{}')
+          test "$status" = "400"
+          grep -q 'required' /tmp/book.json
+
           echo "Production smoke tests passed"
