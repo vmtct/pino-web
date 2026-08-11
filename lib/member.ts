@@ -37,6 +37,15 @@ const multiSelect=(p:any):string[]=>p?.multi_select?.map((v:any)=>v.name).filter
 const number=(p:any)=>typeof p?.number==="number"?p.number:typeof p?.formula?.number==="number"?p.formula.number:typeof p?.rollup?.number==="number"?p.rollup.number:null;
 const localDate=()=>new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Ho_Chi_Minh",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 
+async function getLearningPath(env:any,properties:any){
+  const pathId=relationIds(properties?.["Learning Path"])[0];
+  if(!pathId)return null;
+  const response=await getPage(env,pathId);
+  if(!response.ok)return null;
+  const page=await response.json() as {properties?:any};
+  return propertyText(page.properties,["Master Path","Name"])||null;
+}
+
 async function getSubscription(env:any,studentPage:any):Promise<MemberSubscription|null>{
   const subscriptionId=relationIds(studentPage.properties?.["Subscription Plan"])[0];
   if(!subscriptionId)return null;
@@ -49,12 +58,13 @@ async function getSubscription(env:any,studentPage:any):Promise<MemberSubscripti
   const today=localDate();
   const active=(!startDate||startDate<=today)&&(!endDate||endDate>=today);
   const schedule=multiSelect(properties?.Schedule);
+  const learningPath=await getLearningPath(env,properties);
   return {
     id:subscriptionId,
-    learningPath:propertyText(properties,["Learning Path","Path","Master Path"])||null,
+    learningPath,
     setup:propertyText(properties,["Setup"])||null,
     schedule,
-    sessionsPerWeek:number(properties?.["Sessions per Week"])??schedule.length,
+    sessionsPerWeek:schedule.length,
     startDate,
     endDate,
     numberOfWeeks:number(properties?.["Number of Weeks"]),
