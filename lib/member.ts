@@ -21,8 +21,6 @@ export async function getMember(env:any,phone:string):Promise<{ok:true;member:Me
   const normalized=normalizePhone(phone);
   if(!normalized)return {ok:false,status:400,error:"A valid Zalo phone number is required."};
 
-  // Prefer the canonical Phone Normalized field, but fall back to Mobile while
-  // existing Parent records are being backfilled. This avoids duplicate Parents.
   let parentResponse=await query(env,env.NOTION_PARENT_DATA_SOURCE_ID,{property:"Phone Normalized",rich_text:{equals:normalized}});
   if(parentResponse.ok){
     const parentData=await parentResponse.json() as {results?:any[]};
@@ -44,7 +42,7 @@ async function buildMember(env:any,parent:any):Promise<{ok:true;member:MemberPro
   const studentsResponse=await query(env,env.NOTION_STUDENT_DATA_SOURCE_ID,{property:"Parents ",relation:{contains:parent.id}});
   if(!studentsResponse.ok)return {ok:false,status:502,error:"Could not load member students."};
   const studentsData=await studentsResponse.json() as {results?:any[]};
-  const students=(studentsData.results||[]).map(page=>({id:page.id,name:text(page.properties?.Name)||"Unnamed",avatar:files(page.properties?.Avatar)[0]||null}));
+  const students=(studentsData.results||[]).map(page=>({id:page.id,name:text(page.properties?.["Student Name"])||"Unnamed",avatar:files(page.properties?.Avatar)[0]||null}));
   const studentIds=students.map(s=>s.id);
   const passes:MemberPass[]=[];
   const bookings:MemberBooking[]=[];
