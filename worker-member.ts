@@ -73,7 +73,10 @@ async function filterProductionSessions(env: Env, response: Response) {
   const sessions: any[] = [];
   for (const session of payload.sessions) {
     const page = await notionPage(env, session.id);
-    if (!page || isMock(page)) continue;
+    if (!page) {
+      return json({ error: "Could not validate production session data." }, 502);
+    }
+    if (isMock(page)) continue;
 
     const bookingResponse = await notionQuery(env, env.NOTION_OS_BOOKING_DATA_SOURCE_ID, {
       and: [
@@ -83,20 +86,20 @@ async function filterProductionSessions(env: Env, response: Response) {
       ],
     });
 
-    if (bookingResponse) {
-      const bookingData = (await bookingResponse.json()) as any;
-      const confirmedCount = bookingData.results?.length || 0;
-      sessions.push({
-        ...session,
-        confirmedCount,
-        availableSeats:
-          typeof session.capacity === "number"
-            ? Math.max(0, session.capacity - confirmedCount)
-            : session.availableSeats,
-      });
-    } else {
-      sessions.push(session);
+    if (!bookingResponse) {
+      return json({ error: "Could not validate production booking data." }, 502);
     }
+
+    const bookingData = (await bookingResponse.json()) as any;
+    const confirmedCount = bookingData.results?.length || 0;
+    sessions.push({
+      ...session,
+      confirmedCount,
+      availableSeats:
+        typeof session.capacity === "number"
+          ? Math.max(0, session.capacity - confirmedCount)
+          : session.availableSeats,
+    });
   }
 
   return json({ ...payload, sessions });
