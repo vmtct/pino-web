@@ -20,12 +20,27 @@ const files=(p:any)=>p?.files?.map((f:any)=>f.file?.url||f.external?.url).filter
 export async function getMember(env:any,phone:string):Promise<{ok:true;member:MemberProfile}|{ok:false;status:number;error:string}>{
   const normalized=normalizePhone(phone);
   if(!normalized)return {ok:false,status:400,error:"A valid Zalo phone number is required."};
-  const parentResponse=await query(env,env.NOTION_PARENT_DATA_SOURCE_ID,{property:"Phone Normalized",rich_text:{equals:normalized}});
+
+  // Prefer the canonical Phone Normalized field, but fall back to Mobile while
+  // existing Parent records are being backfilled. This avoids duplicate Parents.
+  let parentResponse=await query(env,env.NOTION_PARENT_DATA_SOURCE_ID,{property:"Phone Normalized",rich_text:{equals:normalized}});
+  if(parentResponse.ok){
+    const parentData=await parentResponse.json() as {results?:any[]};
+    if((parentData.results?.length||0)>0){
+      if((parentData.results?.length||0)>1)return {ok:false,status:409,error:"Multiple members use this phone number."};
+      return buildMember(env,parentData.results![0]);
+    }
+  }
+
+  parentResponse=await query(env,env.NOTION_PARENT_DATA_SOURCE_ID,{property:"Mobile",phone_number:{equals:normalized}});
   if(!parentResponse.ok)return {ok:false,status:502,error:"Could not load member."};
   const parentData=await parentResponse.json() as {results?:any[]};
   if((parentData.results?.length||0)===0)return {ok:false,status:404,error:"Member not found."};
   if((parentData.results?.length||0)>1)return {ok:false,status:409,error:"Multiple members use this phone number."};
-  const parent=parentData.results![0];
+  return buildMember(env,parentData.results![0]);
+}
+
+async function buildMember(env:any,parent:any):Promise<{ok:true;member:MemberProfile}|{ok:false;status:number;error:string}>{
   const studentsResponse=await query(env,env.NOTION_STUDENT_DATA_SOURCE_ID,{property:"Parents ",relation:{contains:parent.id}});
   if(!studentsResponse.ok)return {ok:false,status:502,error:"Could not load member students."};
   const studentsData=await studentsResponse.json() as {results?:any[]};
