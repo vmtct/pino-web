@@ -1,0 +1,35 @@
+name: one-time session path fix
+on:
+  push:
+    branches: [fix/session-path-resolver]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch worker
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("worker.ts")
+          s = p.read_text()
+          old = '''const publicPath=(master:string|null)=>{const value=(master||"").trim().toLowerCase().replace(/\\s+/g," ");if(value==="pianohouse")return "Piano";if(value==="architect")return "Mỹ thuật";if(value==="little piner")return "Little Piner";return null;};'''
+          new = '''const publicPath=(master:string|null)=>{const value=(master||"").trim().toLowerCase().replace(/\\s+/g," ");if(value==="pianohouse"||value.startsWith("piano"))return "Piano";if(value==="architect"||value.startsWith("architect")||value.startsWith("mỹ thuật")||value.startsWith("my thuat"))return "Mỹ thuật";if(value==="little piner"||value.startsWith("little piner"))return "Little Piner";return null;};'''
+          if old not in s:
+              raise SystemExit("publicPath target not found")
+          s = s.replace(old, new, 1)
+          old_get = '''async function getSessions(env:Env,params:URLSearchParams){const type=params.get("type");const filter=type?{property:"Type",select:{equals:type}}:undefined;const response=await notionQuery(env,env.NOTION_OS_SESSION_DATA_SOURCE_ID,filter);if(!response.ok)return {ok:false as const,status:502,error:"Could not load OS sessions.",notionStatus:response.status};const data=await response.json() as {results?:any[]};const context=await getProgramContext(env);const items:any[]=[];for(const page of data.results||[]){const runningClassIds=propRelationIds(page.properties?.["Running Class"]);const paths=runningClassIds.map((id:string)=>context.classPaths.get(id)).filter(Boolean);const capacities=runningClassIds.map((id:string)=>context.classCapacities.get(id)).filter((v):v is number=>typeof v==="number");const capacity=capacities.length?capacities.reduce((sum,v)=>sum+v,0):null;const confirmedResult=await getConfirmedCount(env,page.id);if(!confirmedResult.ok)return confirmedResult;const confirmedCount=confirmedResult.count;const availableSeats=capacity===null?null:Math.max(0,capacity-confirmedCount);items.push({id:page.id,topic:propText(page.properties?.Topic)||"Untitled session",type:propText(page.properties?.Type),path:paths[0]||null,date:propDate(page.properties?.Date),availableSeats,capacity,confirmedCount,runningClassIds,cover:propFiles(page.properties?.Cover)[0]||null,avatar:propFiles(page.properties?.Avatar)[0]||null});}const requestedPath=params.get("path");const filtered=requestedPath?items.filter(item=>item.path===requestedPath):items;filtered.sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));return {ok:true as const,sessions:filtered};}'''
+          new_get = '''async function getSessions(env:Env,params:URLSearchParams){const type=params.get("type");const filter=type?{property:"Type",select:{equals:type}}:undefined;const response=await notionQuery(env,env.NOTION_OS_SESSION_DATA_SOURCE_ID,filter);if(!response.ok)return {ok:false as const,status:502,error:"Could not load OS sessions.",notionStatus:response.status};const data=await response.json() as {results?:any[]};const context=await getProgramContext(env);const items:any[]=[];for(const page of data.results||[]){const runningClassIds=propRelationIds(page.properties?.["Running Class"]);let sessionPath:null|string=null;const directPathIds=propRelationIds(page.properties?.["Path Program"]);for(const pathId of directPathIds){const pathResponse=await getPage(env,pathId);if(!pathResponse.ok)continue;const pathPage=await pathResponse.json() as {properties?:any};const path=publicPath(propSelect(pathPage.properties?.["Path"]));if(path){sessionPath=path;break;}}const paths=sessionPath?[sessionPath]:runningClassIds.map((id:string)=>context.classPaths.get(id)).filter(Boolean);const capacities=runningClassIds.map((id:string)=>context.classCapacities.get(id)).filter((v):v is number=>typeof v==="number");const capacity=capacities.length?capacities.reduce((sum,v)=>sum+v,0):null;const confirmedResult=await getConfirmedCount(env,page.id);if(!confirmedResult.ok)return confirmedResult;const confirmedCount=confirmedResult.count;const availableSeats=capacity===null?null:Math.max(0,capacity-confirmedCount);items.push({id:page.id,topic:propText(page.properties?.Topic)||"Untitled session",type:propText(page.properties?.Type),path:paths[0]||null,date:propDate(page.properties?.Date),availableSeats,capacity,confirmedCount,runningClassIds,cover:propFiles(page.properties?.Cover)[0]||null,avatar:propFiles(page.properties?.Avatar)[0]||null});}const requestedPath=params.get("path");const filtered=requestedPath?items.filter(item=>item.path===requestedPath):items;filtered.sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));return {ok:true as const,sessions:filtered};}'''
+          if old_get not in s:
+              raise SystemExit("getSessions target not found")
+          s = s.replace(old_get, new_get, 1)
+          p.write_text(s)
+          PY
+          rm .github/workflows/one-time-session-path-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add worker.ts .github/workflows/one-time-session-path-fix.yml
+          git commit -m "fix: resolve Open Studio path from session Path Program"
+          git push
