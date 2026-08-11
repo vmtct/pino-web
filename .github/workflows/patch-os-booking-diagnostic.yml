@@ -30,6 +30,9 @@ jobs:
           old = 'type:text(page.properties?.["Type"]),path:paths[0]||null'
           new = 'type:canonicalSessionType(text(page.properties?.["Type"])),path:paths[0]||null'
           if old in s: s = s.replace(old, new, 1)
+          old = 'const v=(select(p.properties?.["Master Path"])||"").toLowerCase().trim();const path=v==="pianohouse"?"Piano":v==="architect"?"Mỹ thuật":v==="little piner"?"Little Piner":null;'
+          new = 'const v=(select(p.properties?.["Master Path"])||select(p.properties?.["Path"])||"").normalize("NFKC").toLowerCase().replace(/\\s+/g," ").trim();const path=v.includes("piano")||v==="pianohouse"?"Piano":v.includes("architect")||v.includes("mỹ thuật")||v.includes("my thuat")?"Mỹ thuật":v.includes("little piner")?"Little Piner":null;'
+          if old in s: s = s.replace(old, new, 1)
           old = 'if(session.type!=="Open Studio"&&session.type!=="Premium")return {ok:false as const,status:409,error:"This session is not bookable with an Open Studio pass."};'
           new = 'const sessionType=canonicalSessionType(session.type);if(sessionType!=="Open Studio"&&sessionType!=="Premium")return {ok:false as const,status:409,error:`This session is not bookable with an Open Studio pass (${sessionType||"unknown type"}).`};'
           if old in s: s = s.replace(old, new, 1)
@@ -39,5 +42,5 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           rm -f .github/trigger-os-booking-debug
           git add worker-member-v2.ts .github/trigger-os-booking-debug
-          git commit -m 'fix: use deployed member worker for OS booking type'
+          git commit -m 'fix: normalize Piano path for OS booking'
           git push
