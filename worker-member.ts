@@ -1,10 +1,14 @@
 import memberWorker from "./worker-member-v2";
+import { validateMemberBooking } from "./lib/member-booking-validation";
 
 type Env = {
   ENVIRONMENT?: string;
   NOTION_TOKEN: string;
   NOTION_OS_SESSION_DATA_SOURCE_ID: string;
   NOTION_OS_BOOKING_DATA_SOURCE_ID: string;
+  NOTION_OS_PASS_DATA_SOURCE_ID: string;
+  NOTION_RUNNING_CLASS_DATA_SOURCE_ID: string;
+  NOTION_PATH_PROGRAM_DATA_SOURCE_ID: string;
 };
 
 const json = (body: unknown, status = 200) =>
@@ -52,32 +56,20 @@ async function rejectMockSessionInProduction(env: Env, sessionId: string | null)
   if (!isProduction(env) || !sessionId) return null;
   const page = await notionPage(env, sessionId);
   if (!page) return null;
-  if (isMock(page)) {
-    return json({ error: "This session is not available in production." }, 404);
-  }
+  if (isMock(page)) return json({ error: "This session is not available in production." }, 404);
   return null;
 }
 
 async function filterProductionSessions(env: Env, response: Response) {
   if (!isProduction(env)) return response;
-
   let payload: any;
-  try {
-    payload = await response.clone().json();
-  } catch {
-    return response;
-  }
-
+  try { payload = await response.clone().json(); } catch { return response; }
   if (!Array.isArray(payload?.sessions)) return response;
-
   const sessions: any[] = [];
   for (const session of payload.sessions) {
     const page = await notionPage(env, session.id);
-    if (!page) {
-      return json({ error: "Could not validate production session data." }, 502);
-    }
+    if (!page) return json({ error: "Could not validate production session data." }, 502);
     if (isMock(page)) continue;
-
     const bookingResponse = await notionQuery(env, env.NOTION_OS_BOOKING_DATA_SOURCE_ID, {
       and: [
         { property: "OS Session", relation: { contains: session.id } },
@@ -85,58 +77,35 @@ async function filterProductionSessions(env: Env, response: Response) {
         { property: "Mock Data", checkbox: { equals: false } },
       ],
     });
-
-    if (!bookingResponse) {
-      return json({ error: "Could not validate production booking data." }, 502);
-    }
-
+    if (!bookingResponse) return json({ error: "Could not validate production booking data." }, 502);
     const bookingData = (await bookingResponse.json()) as any;
     const confirmedCount = bookingData.results?.length || 0;
-    sessions.push({
-      ...session,
-      confirmedCount,
-      availableSeats:
-        typeof session.capacity === "number"
-          ? Math.max(0, session.capacity - confirmedCount)
-          : session.availableSeats,
-    });
+    sessions.push({ ...session, confirmedCount, availableSeats: typeof session.capacity === "number" ? Math.max(0, session.capacity - confirmedCount) : session.availableSeats });
   }
-
   return json({ ...payload, sessions });
 }
 
 const handler = {
   async fetch(request: Request, env: Env) {
-    if (request.method === "OPTIONS") {
-      return memberWorker.fetch(request, env as any);
-    }
-
+    if (request.method === "OPTIONS") return memberWorker.fetch(request, env as any);
     const url = new URL(request.url);
+
+    if (request.method === "POST" && url.pathname === "/api/member/book/validate") {
+      let body: any;
+      try { body = await request.json(); } catch { return json({ error: "Invalid request." }, 400); }
+      const result = await validateMemberBooking(env, body);
+      return result.ok ? json(result) : json(result, result.status);
+    }
 
     if (isProduction(env) && url.pathname === "/api/os-sessions" && request.method === "GET") {
       const response = await memberWorker.fetch(request, env as any);
       return filterProductionSessions(env, response);
     }
 
-    if (
-      isProduction(env) &&
-      request.method === "POST" &&
-      (url.pathname === "/api/member/book" || url.pathname === "/api/open-studio/book")
-    ) {
+    if (isProduction(env) && request.method === "POST" && (url.pathname === "/api/member/book" || url.pathname === "/api/open-studio/book")) {
       let body: any = null;
-      try {
-        body = await request.clone().json();
-      } catch {
-        body = null;
-      }
-      const sessionId =
-        typeof body?.sessionId === "string"
-          ? body.sessionId
-          : typeof body?.osSessionId === "string"
-            ? body.osSessionId
-            : typeof body?.session === "string"
-              ? body.session
-              : null;
+      try { body = await request.clone().json(); } catch { body = null; }
+      const sessionId = typeof body?.sessionId === "string" ? body.sessionId : typeof body?.osSessionId === "string" ? body.osSessionId : typeof body?.session === "string" ? body.session : null;
       const blocked = await rejectMockSessionInProduction(env, sessionId);
       if (blocked) return blocked;
     }
