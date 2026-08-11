@@ -78,3 +78,41 @@ jobs:
           grep -q 'phone' /tmp/member.json
 
           echo "Production smoke tests passed"
+
+  e2e:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Playwright
+        run: npx --yes playwright@1.55.0 install --with-deps chromium
+
+      - name: Run Playwright E2E
+        env:
+          CI: true
+          E2E_BASE_URL: https://pino-web.minhtri-van42.workers.dev
+        run: npx --yes -p @playwright/test@1.55.0 playwright test
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          if-no-files-found: ignore
+
+      - name: Upload Playwright test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: test-results/
+          if-no-files-found: ignore
