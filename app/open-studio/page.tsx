@@ -35,5 +35,101 @@ export default function OpenStudioPage() {
     <section className="os-start" id="start"><div className="shell"><div className="os-start-grid"><div><p className="eyebrow">READY WHEN YOU ARE</p><h2>Một buổi chiều.<br /><em>Một điều mới.</em></h2><p>Chọn một session đang mở để xem chi tiết. Khi sẵn sàng, PINO sẽ kiểm tra Pass và giúp bạn đặt chỗ.</p></div><div className="direct-book-card"><p className="eyebrow">ALREADY A PINO MEMBER?</p><h3>Đã có Open Studio Pass?</h3><p>Đăng nhập để xem Pass của bé và đặt chỗ ngay.</p><a className="button button-dark" href="/open-studio/member">Vào Member Space →</a></div></div></div></section>
     <footer className="footer shell"><div className="wordmark">PINO<span>•</span></div><p>Creative club for curious kids.</p><span>© {new Date().getFullYear()} PINO</span></footer>
     {!sessionLoading && !sessionError && upcomingSessions.length > 0 && <a className="mobile-session-cta" href="#sessions"><span>Open Studio</span><strong>Chọn một buổi cho con →</strong></a>}
+    <style jsx global>{`
+      .open-studio-landing { --os-shadow: 0 22px 60px rgba(23,23,19,.08); overflow: hidden; }
+      .open-studio-landing .nav { position: sticky; top: 0; z-index: 20; background: rgba(244,240,231,.92); backdrop-filter: blur(14px); }
+      .open-studio-landing .nav-cta { transition: background .2s ease, color .2s ease, transform .2s ease; }
+      .open-studio-landing .nav-cta:hover { background: var(--ink); color: var(--paper); transform: translateY(-1px); }
+      .open-studio-landing .os-ad-hero { min-height: 700px; display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(40px,7vw,110px); align-items: center; padding-top: 70px; padding-bottom: 80px; }
+      .open-studio-landing .hero-copy { position: relative; z-index: 2; }
+      .open-studio-landing .hero-copy h1 { font-size: clamp(58px,7.2vw,104px); max-width: 800px; }
+      .open-studio-landing .hero-copy h1 em { color: #5e6b2b; }
+      .open-studio-landing .hero-lede { max-width: 590px; }
+      .open-studio-landing .hero-actions .button { box-shadow: 0 10px 24px rgba(29,32,26,.14); transition: transform .2s ease, box-shadow .2s ease; }
+      .open-studio-landing .hero-actions .button:hover { transform: translateY(-2px); box-shadow: 0 14px 28px rgba(29,32,26,.18); }
+      .open-studio-landing .hero-art { min-height: 540px; box-shadow: var(--os-shadow); }
+      .open-studio-landing .hero-art::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 75% 80%, rgba(255,255,255,.28), transparent 28%); pointer-events: none; }
+      .open-studio-landing .statement { position: relative; }
+      .open-studio-landing .statement-inner { max-width: 1180px; }
+      .open-studio-landing .statement h2 { max-width: 940px; }
+      .os-sessions-section { padding: 130px 0 115px; background: #f4f0e7; }
+      .os-sessions-section .section-heading { margin-bottom: 48px; }
+      .session-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
+      .session-card { min-height: 390px; padding: 0; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid rgba(23,23,19,.1); background: #e8e0d1; box-shadow: 0 8px 26px rgba(23,23,19,.04); transition: transform .22s ease, box-shadow .22s ease; }
+      a.session-card { color: inherit; }
+      a.session-card:hover { transform: translateY(-5px); box-shadow: var(--os-shadow); }
+      .session-card::before { content: ""; display: block; height: 7px; width: 100%; background: #d65b42; }
+      .session-card-2::before { background: #9bbfd8; }
+      .session-card-3::before { background: #a8c86b; }
+      .session-card-top { display: flex; justify-content: space-between; gap: 16px; padding: 20px 22px 0; font-size: 9px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: #6d685f; }
+      .session-card-top span:last-child { color: #53631f; }
+      .session-card-body { padding: 24px 22px 22px; margin-top: auto; }
+      .session-date { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #777269; margin-bottom: 15px; }
+      .session-card h3 { font-size: clamp(28px,3vw,40px); line-height: .98; letter-spacing: -.055em; margin: 0 0 14px; max-width: 330px; }
+      .session-experience { color: #777269; font-size: 13px; line-height: 1.55; max-width: 300px; margin-bottom: 24px; }
+      .session-seats { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-top: 1px solid rgba(23,23,19,.13); padding-top: 15px; margin: 0; font-size: 11px; font-weight: 700; }
+      .session-seats span { font-size: 18px; transition: transform .2s ease; }
+      a.session-card:hover .session-seats span { transform: translateX(4px); }
+      .session-card.is-unavailable { opacity: .72; }
+      .session-card.is-unavailable .session-card-top span:last-child { color: #8a6b61; }
+      .session-helper { margin: 18px 0 0; color: #8a857b; font-size: 11px; }
+      .recent-sessions { margin-top: 90px; padding-top: 65px; border-top: 1px solid var(--line); }
+      .recent-sessions-heading { display: flex; justify-content: space-between; align-items: end; gap: 40px; margin-bottom: 28px; }
+      .recent-sessions-heading h3 { font-size: clamp(34px,4vw,52px); line-height: .95; letter-spacing: -.055em; margin: 0; }
+      .recent-sessions-heading > p { max-width: 360px; color: var(--muted); font-size: 13px; line-height: 1.55; margin: 0; }
+      .session-card-past { min-height: 310px; background: #ebe5d9; box-shadow: none; }
+      .session-card-past::before { background: #b9b3a7; }
+      .session-card-past .session-card-top span:last-child { color: #8a857b; }
+      .session-card-past h3 { font-size: 30px; }
+      .session-card-past .session-experience { margin-bottom: 20px; }
+      .session-readonly { color: #8a857b; font-weight: 500; }
+      .session-loading, .session-empty { padding: 42px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--muted); font-size: 14px; line-height: 1.6; }
+      .session-empty strong { color: var(--ink); }
+      .how-it-works { background: #e8e0d1; }
+      .open-studio-landing .steps-grid { margin-top: 10px; }
+      .open-studio-landing .step-card { min-height: 220px; padding: 25px 18px 18px 0; }
+      .open-studio-landing .step-card h3 { font-size: 30px; margin-top: 46px; }
+      .open-studio-landing .step-card p { max-width: 260px; }
+      .os-start { background: var(--dark); color: var(--paper); padding: 115px 0 125px; }
+      .os-start-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 90px; align-items: end; }
+      .os-start h2 { font-size: clamp(54px,6.4vw,90px); line-height: .9; letter-spacing: -.065em; margin: 0 0 24px; }
+      .os-start h2 em { color: #c7df72; }
+      .os-start-grid > div:first-child > p:not(.eyebrow) { max-width: 540px; color: #bdb9af; line-height: 1.65; }
+      .os-start .eyebrow { color: #aaa69d; }
+      .direct-book-card { background: #f0eadf; color: var(--ink); padding: 34px; min-height: 280px; display: flex; flex-direction: column; justify-content: flex-end; box-shadow: var(--os-shadow); }
+      .direct-book-card h3 { font-size: 32px; letter-spacing: -.05em; margin: 0 0 10px; }
+      .direct-book-card p:not(.eyebrow) { color: var(--muted); font-size: 13px; line-height: 1.55; max-width: 320px; margin-bottom: 22px; }
+      .direct-book-card .button { width: fit-content; }
+      .mobile-session-cta { display: none; }
+      @media (max-width: 900px) {
+        .open-studio-landing .os-ad-hero { grid-template-columns: 1fr; min-height: auto; padding-top: 65px; }
+        .open-studio-landing .hero-art { min-height: 420px; max-width: 680px; width: 100%; margin: 0 auto; }
+        .session-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+        .os-start-grid { grid-template-columns: 1fr; gap: 45px; }
+        .recent-sessions-heading { align-items: start; flex-direction: column; gap: 16px; }
+      }
+      @media (max-width: 620px) {
+        .open-studio-landing .os-ad-hero { padding-top: 48px; padding-bottom: 62px; }
+        .open-studio-landing .hero-copy h1 { font-size: clamp(52px,15vw,76px); }
+        .open-studio-landing .hero-lede { font-size: 16px; }
+        .open-studio-landing .hero-art { min-height: 320px; border-radius: 42% 58% 48% 52% / 48% 45% 55% 52%; }
+        .open-studio-landing .orb-a { width: 210px; height: 210px; }
+        .open-studio-landing .orb-b { width: 190px; height: 190px; }
+        .open-studio-landing .orb-c { width: 200px; height: 200px; }
+        .os-sessions-section { padding: 82px 0 88px; }
+        .session-grid { grid-template-columns: 1fr; gap: 12px; }
+        .session-card { min-height: 340px; }
+        .recent-sessions { margin-top: 65px; padding-top: 48px; }
+        .recent-sessions-heading h3 { font-size: 38px; }
+        .open-studio-landing .steps-grid { grid-template-columns: 1fr; }
+        .open-studio-landing .step-card { min-height: 175px; }
+        .os-start { padding: 82px 0 105px; }
+        .direct-book-card { min-height: 250px; padding: 28px; }
+        .open-studio-landing .footer { padding-bottom: 90px; }
+        .mobile-session-cta { position: fixed; display: flex; left: 12px; right: 12px; bottom: 12px; z-index: 30; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 12px 11px 15px; background: var(--dark); color: #fff; border-radius: 2px; box-shadow: 0 14px 36px rgba(23,23,19,.22); }
+        .mobile-session-cta span { font-size: 8px; letter-spacing: .13em; opacity: .65; }
+        .mobile-session-cta strong { font-size: 11px; }
+      }
+    `}</style>
   </main>;
 }
