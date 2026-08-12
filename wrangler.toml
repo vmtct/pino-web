@@ -1,6 +1,6 @@
 name = "pino-web"
 compatibility_date = "2026-08-10"
-main = "worker-member.ts"
+main = "worker-entry.ts"
 keep_vars = true
 
 # Environment controls whether Notion Mock Data is exposed.
@@ -15,6 +15,8 @@ NOTION_OS_SESSION_DATA_SOURCE_ID = "3b78156e-326f-809d-a3a2-000bb7c23760"
 NOTION_OS_SESSION_DATABASE_ID = "3b78156e-326f-800f-93c5-c78f82351bf1"
 NOTION_RUNNING_CLASS_DATA_SOURCE_ID = "3b78156e-326f-80dc-bb5f-000b1d24d851"
 NOTION_PATH_PROGRAM_DATA_SOURCE_ID = "3878156e-326f-805f-a58a-000b6b0ee348"
+NOTION_SYLLABUS_DATA_SOURCE_ID = "3168156e-326f-80f3-abf6-000b79aa7614"
+OS_NOTIFY_TO = "pinostaff2024@gmail.com"
 
 [env.preview.vars]
 ENVIRONMENT = "preview"
