@@ -2,6 +2,7 @@ import memberWorker from "./worker-member";
 import { createPublicBooking, getPublicSessions } from "./lib/open-studio-public";
 import { getWebContent } from "./lib/web-content";
 import { getWebImages } from "./lib/web-images";
+import { WORKER_BUILD_INFO } from "./worker-build-info";
 
 type Env = Record<string, any>;
 
@@ -17,6 +18,7 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 const handler = {
   async fetch(request: Request, env: Env) {
     const url = new URL(request.url);
+    if (request.method === "GET" && url.pathname === "/build-info.json") return json(WORKER_BUILD_INFO);
     if (request.method === "GET" && url.pathname === "/api/os-sessions") return getPublicSessions(env as any, url.searchParams);
     if (request.method === "GET" && url.pathname === "/api/web-content") {
       try { return json({ content: await getWebContent(env as any) }); }
