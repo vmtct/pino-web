@@ -68,7 +68,6 @@ jobs:
 
           status=$(curl -sS -o /tmp/sessions.json -w "%{http_code}" "$base/api/os-sessions")
           echo "GET /api/os-sessions -> $status"
-          cat /tmp/sessions.json
           test "$status" = "200"
           grep -q 'sessions' /tmp/sessions.json
 
