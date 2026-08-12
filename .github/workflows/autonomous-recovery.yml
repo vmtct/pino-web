@@ -144,6 +144,14 @@ jobs:
           echo "Timed out waiting for recovery PR checks." >&2
           exit 1
 
+      - name: Auto-merge verified recovery PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
+        run: |
+          set -euo pipefail
+          gh pr merge "$PR_NUMBER" --squash --delete-branch --subject "chore: merge autonomous recovery" --body "Autonomous recovery PR verified by PR CI. Production validation remains authoritative on main."
+
       - name: Upload agent diagnostics
         if: always()
         uses: actions/upload-artifact@v4
