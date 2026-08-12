@@ -26,12 +26,14 @@ const normalizePhone=(value:string)=>value.replace(/\D/g,"").replace(/^84(?=0)/,
 const sessionMs=(value:string|null)=>{if(!value)return null;const normalized=value.includes(" ")&&!value.includes("T")?value.replace(" ","T"):value;const parsed=new Date(normalized.length===10?`${normalized}T23:59:59+07:00`:normalized);return Number.isNaN(parsed.getTime())?null:parsed.getTime();};
 const path=(value:string|null)=>{const v=(value||"").trim().toLowerCase().replace(/\s+/g," ");if(v==="pianohouse"||v.startsWith("piano"))return "Piano";if(v==="architect"||v.startsWith("architect")||v.startsWith("mỹ thuật")||v.startsWith("my thuat"))return "Mỹ thuật";if(v==="little piner"||v.startsWith("little piner"))return "Little Piner";return null;};
 const parseNotifyRecipients=(value:string)=>value.split(";").map((email)=>email.trim()).filter((email)=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
+const escapeHtml=(value:string)=>value.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\"/g,"&quot;");
+const renderEmailContent=(template:string,values:Record<string,string>)=>template.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g,(_,key)=>escapeHtml(values[key]??""));
 
 async function query(env:Env,ds:string,filter?:unknown){
   const response=await fetch(`https://api.notion.com/v1/data_sources/${ds}/query`,{method:"POST",headers:headers(env),body:JSON.stringify(filter?{filter}:{})});
   if(response.ok)return response;
   if(ds===env.NOTION_OS_SESSION_DATA_SOURCE_ID&&env.NOTION_OS_SESSION_DATABASE_ID)return fetch(`https://api.notion.com/v1/databases/${env.NOTION_OS_SESSION_DATABASE_ID}/query`,{method:"POST",headers:headers(env,"2022-06-28"),body:JSON.stringify(filter?{filter}:{})});
-  if(ds===env.NOTION_OS_BOOKING_DATA_SOURCE_ID&&env.NOTION_OS_BOOKING_DATABASE_ID)return fetch(`https://api.notion.com/v1/databases/${env.NOTION_OS_BOOKING_DATABASE_ID}/query`,{method:"POST",headers:headers(env,"2022-06-28"),body:JSON.stringify(filter?{filter}:{})});
+  if(ds===env.NOTION_OS_BOOKING_DATA_SOURCE_ID&&env.NOTION_OS_BOOKING_DATABASE_ID)return fetch(`https://api.notion.com/v1/databases/${env.NOTION_OS_BOOKING_DATABASE_ID}/query`,{method:"POST",headers:headers(env,"2022-06-28"),body:JSON.stringify(filter?{filter}:{} )});
   return response;
 }
 
@@ -85,10 +87,13 @@ async function sendNotification(env:Env,bookingId:string,session:any,phone:strin
   const recipients=parseNotifyRecipients(String(notifyTo));
   const fromName=await getConfig(env,"os_notify_from_name","PINO Open Studio");
   const fromEmail=await getConfig(env,"os_notify_from_email",env.OS_NOTIFY_FROM||"onboarding@resend.dev");
+  const contentTemplate=await getConfig(env,"os_notify_email_content","A new Open Studio registration has been received.\n\nSession: {{session_topic}}\nDate: {{session_date}}\nZalo / phone: {{phone}}\nParent: {{parent_status}}\nBooking: {{booking_id}}\n\nStatus: Pending — please follow up with the family via Zalo.");
   if(!env.RESEND_API_KEY||recipients.length===0)return {sent:false,reason:"email_not_configured"};
+  const values={session_topic:String(session.topic||""),session_date:String(session.date||"TBD"),phone,parent_status:parentId?"Matched in CRM":"Not matched",booking_id:bookingId};
+  const rendered=renderEmailContent(String(contentTemplate),values);
+  const html=rendered.split(/\n\s*\n/).map((paragraph)=>`<p>${paragraph.replace(/\n/g,"<br />")}</p>`).join("");
   const from=`${fromName} <${fromEmail}>`;
-  const html=`<h2>New Open Studio registration</h2><p><strong>Session:</strong> ${session.topic}</p><p><strong>Date:</strong> ${session.date||"TBD"}</p><p><strong>Zalo / phone:</strong> ${phone}</p><p><strong>Parent:</strong> ${parentId?"Matched in CRM":"Not matched"}</p><p><strong>Booking:</strong> ${bookingId}</p><p>Status: <strong>Pending</strong> — follow up with the family via Zalo.</p>`;
-  const response=await fetch("https://api.resend.com/emails",{method:"POST",headers:{Authorization:`Bearer ${env.RESEND_API_KEY}`,"Content-Type":"application/json"},body:JSON.stringify({from,to:recipients,subject:`Open Studio · New registration · ${session.topic}`,html})});
+  const response=await fetch("https://api.resend.com/emails",{method:"POST",headers:{Authorization:`Bearer ${env.RESEND_API_KEY}`,"Content-Type":"application/json"},body:JSON.stringify({from,to:recipients,subject:`Open Studio · New registration · ${session.topic}`,html,text:rendered})});
   if(!response.ok)return {sent:false,reason:"email_send_failed"};
   return {sent:true,recipientCount:recipients.length};
 }
