@@ -19,6 +19,10 @@ NOTION_SYLLABUS_DATA_SOURCE_ID = "3168156e-326f-80f3-abf6-000b79aa7614"
 NOTION_WEB_CONFIG_DATA_SOURCE_ID = "b244894f-b69a-4874-aa0d-0c4b0326af0a"
 OS_NOTIFY_TO = "pinostaff2024@gmail.com"
 
+[[send_email]]
+name = "EMAIL"
+remote = true
+
 [env.preview.vars]
 ENVIRONMENT = "preview"
 
