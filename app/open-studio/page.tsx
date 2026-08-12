@@ -9,7 +9,7 @@ type Session = { id: string; topic: string; type: string; path: string | null; d
 // a cross-origin browser dependency that the live E2E path does not need.
 const SESSIONS_API = "/api/os-sessions";
 
-function parseSessionDate(value: string | null) { if (!value) return null; const normalized = value.length === 10 ? `${value}T23:59:59+07:00` : value; const date = new Date(normalized); return Number.isNaN(date.getTime()) ? null : date; }
+function parseSessionDate(value: string | null) { if (!value) return null; const normalized = value.length === 10 ? `${value}T23:59:59-12:00` : value; const date = new Date(normalized); return Number.isNaN(date.getTime()) ? null : date; }
 function formatSessionDate(value: string | null) { const date = parseSessionDate(value); if (!date) return "Ngày đang cập nhật"; return new Intl.DateTimeFormat("vi-VN", { weekday: "short", day: "numeric", month: "numeric", hour: value && value.length > 10 ? "2-digit" : undefined, minute: value && value.length > 10 ? "2-digit" : undefined, timeZone: "Asia/Ho_Chi_Minh" }).format(date); }
 
 export default function OpenStudioPage() {
