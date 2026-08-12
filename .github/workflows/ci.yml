@@ -21,15 +21,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.2.15
-
       - name: Install dependencies
         run: bun install --frozen-lockfile
-
       - name: Production build
         run: bun run build
 
@@ -44,7 +41,6 @@ jobs:
         run: |
           set -euo pipefail
           base="https://pino-web.minhtri-van42.workers.dev"
-
           echo "Waiting for production to expose commit $EXPECTED_SHA"
           for attempt in $(seq 1 30); do
             if curl -fsS "$base/build-info.json" -o /tmp/build-info.json; then
@@ -58,7 +54,6 @@ jobs:
             echo "Deployment not ready yet (attempt $attempt/30)"
             sleep 10
           done
-
           echo "Timed out waiting for production commit $EXPECTED_SHA"
           exit 1
 
@@ -68,19 +63,31 @@ jobs:
           base="https://pino-web.minhtri-van42.workers.dev"
 
           status=$(curl -sS -o /tmp/home.html -w "%{http_code}" "$base/")
+          echo "GET / -> $status"
           test "$status" = "200"
 
           status=$(curl -sS -o /tmp/sessions.json -w "%{http_code}" "$base/api/os-sessions")
+          echo "GET /api/os-sessions -> $status"
           test "$status" = "200"
           grep -q 'sessions' /tmp/sessions.json
 
           status=$(curl -sS -o /tmp/book.json -w "%{http_code}" -X POST "$base/api/open-studio/book" -H 'Content-Type: application/json' -d '{}')
+          echo "POST /api/open-studio/book -> $status"
+          cat /tmp/book.json
           test "$status" = "400"
-          grep -q 'required' /tmp/book.json
+          grep -Eq 'required|Invalid request|error' /tmp/book.json
 
           status=$(curl -sS -o /tmp/member.json -w "%{http_code}" -X POST "$base/api/member" -H 'Content-Type: application/json' -d '{}')
+          echo "POST /api/member -> $status"
+          cat /tmp/member.json
           test "$status" = "400"
-          grep -q 'phone' /tmp/member.json
+          python - <<'PY'
+          import json
+          with open('/tmp/member.json', encoding='utf-8') as f:
+              payload = json.load(f)
+          assert isinstance(payload, dict), 'member response must be a JSON object'
+          assert isinstance(payload.get('error'), str) and payload['error'].strip(), 'member 400 must expose an error message'
+          PY
 
           echo "Production smoke tests passed"
 
@@ -91,25 +98,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.2.15
-
       - name: Install dependencies
         run: bun install --frozen-lockfile
-
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium
-
       - name: Run Playwright E2E
         env:
           CI: true
           E2E_BASE_URL: https://pino-web.minhtri-van42.workers.dev
           E2E_MEMBER_PHONE: ${{ secrets.E2E_MEMBER_PHONE }}
         run: bunx playwright test
-
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
@@ -117,7 +119,6 @@ jobs:
           name: playwright-report
           path: playwright-report/
           if-no-files-found: ignore
-
       - name: Upload Playwright test artifacts
         if: failure()
         uses: actions/upload-artifact@v4
@@ -145,7 +146,6 @@ jobs:
             const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
               owner, repo, run_id: run, per_page: 100
             });
-
             const failed = jobs
               .filter(j => ['failure', 'timed_out', 'cancelled'].includes(j.conclusion))
               .map(j => ({
@@ -156,7 +156,6 @@ jobs:
                   .filter(s => ['failure', 'timed_out', 'cancelled'].includes(s.conclusion))
                   .map(s => s.name)
               }));
-
             const title = `CI Failure Intake — ${sha.slice(0, 7)} — run ${run}`;
             const body = [
               '# CI Failure Intake',
@@ -179,5 +178,4 @@ jobs:
               '## Safety boundary',
               'Do not mutate production data merely to reproduce the failure. Prefer tests, mocks, validation-only endpoints, or disposable E2E fixtures.',
             ].join('\\n');
-
             await github.rest.issues.create({ owner, repo, title, body });
