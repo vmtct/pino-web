@@ -1,9 +1,12 @@
 import memberWorker from "./worker-member-v2";
+import { getMember } from "./lib/member";
 import { validateMemberBooking } from "./lib/member-booking-validation";
 
 type Env = {
   ENVIRONMENT?: string;
   NOTION_TOKEN: string;
+  NOTION_PARENT_DATA_SOURCE_ID: string;
+  NOTION_STUDENT_DATA_SOURCE_ID: string;
   NOTION_OS_SESSION_DATA_SOURCE_ID: string;
   NOTION_OS_SESSION_DATABASE_ID?: string;
   NOTION_OS_BOOKING_DATA_SOURCE_ID: string;
@@ -35,20 +38,24 @@ async function notionPage(env: Env, pageId: string) {
 }
 
 async function fallbackSessions(env: Env) {
-  const response = await querySessions(env);
-  if (!response.ok) return null;
-  const data = await response.json() as any;
-  const sessions = (data.results || []).map((page: any) => ({
-    id: page.id,
-    topic: text(page.properties?.Topic) || "Untitled session",
-    type: text(page.properties?.Type),
-    path: null,
-    date: date(page.properties?.Date),
-    capacity: null,
-    confirmedCount: null,
-    availableSeats: null,
-  })).sort((a: any, b: any) => (a.date || "9999").localeCompare(b.date || "9999"));
-  return json({ sessions });
+  try {
+    const response = await querySessions(env);
+    if (!response.ok) return null;
+    const data = await response.json() as any;
+    const sessions = (data.results || []).map((page: any) => ({
+      id: page.id,
+      topic: text(page.properties?.Topic) || "Untitled session",
+      type: text(page.properties?.Type),
+      path: null,
+      date: date(page.properties?.Date),
+      capacity: null,
+      confirmedCount: null,
+      availableSeats: null,
+    })).sort((a: any, b: any) => (a.date || "9999").localeCompare(b.date || "9999"));
+    return json({ sessions });
+  } catch {
+    return null;
+  }
 }
 
 function isMock(page: any) { return page?.properties?.["Mock Data"]?.checkbox === true; }
@@ -83,6 +90,13 @@ const handler = {
     if (request.method === "OPTIONS") return memberWorker.fetch(request, env as any);
     const url = new URL(request.url);
 
+    if (request.method === "POST" && url.pathname === "/api/member") {
+      let body: any;
+      try { body = await request.json(); } catch { return json({ error: "Invalid request." }, 400); }
+      const result = await getMember(env, typeof body?.phone === "string" ? body.phone : "");
+      return result.ok ? json(result) : json(result, result.status);
+    }
+
     if (request.method === "POST" && url.pathname === "/api/member/book/validate") {
       let body: any;
       try { body = await request.json(); } catch { return json({ error: "Invalid request." }, 400); }
@@ -91,7 +105,12 @@ const handler = {
     }
 
     if (isProduction(env) && url.pathname === "/api/os-sessions" && request.method === "GET") {
-      const response = await memberWorker.fetch(request, env as any);
+      let response: Response;
+      try {
+        response = await memberWorker.fetch(request, env as any);
+      } catch {
+        response = json({ error: "Could not load sessions." }, 502);
+      }
       if (!response.ok && !url.searchParams.get("id")) {
         const fallback = await fallbackSessions(env);
         if (fallback) return fallback;
