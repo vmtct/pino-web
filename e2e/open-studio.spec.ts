@@ -120,4 +120,29 @@ test.describe('Open Studio public journey', () => {
     await expect(page).toHaveURL(/\/open-studio\/session\?id=/);
     await expect(page.locator('main')).toBeVisible();
   });
+
+  test('past session remains read-only even when opened directly', async ({ page, request }) => {
+    const response = await request.get('/api/os-sessions');
+    expect(response.ok()).toBeTruthy();
+    const data = await response.json();
+    const now = Date.now();
+    const cutoff = now - 7 * 24 * 60 * 60 * 1000;
+    const parseDate = (value: string | null) => {
+      if (!value) return null;
+      const normalized = value.length === 10 ? `${value}T23:59:59+07:00` : value;
+      const parsed = new Date(normalized);
+      return Number.isNaN(parsed.getTime()) ? null : parsed.getTime();
+    };
+    const past = (data.sessions || []).find((session: { type?: string; date?: string | null }) => {
+      const time = parseDate(session.date ?? null);
+      return session.type === 'Open Studio' && time !== null && time < now && time >= cutoff;
+    });
+
+    test.skip(!past, 'No recent past Open Studio session is currently available.');
+
+    await page.goto(`/open-studio/session?id=${encodeURIComponent(past.id)}`);
+    await expect(page.getByRole('heading', { name: past.topic })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Session đã kết thúc/i })).toBeDisabled();
+    await expect(page.locator('.mobile-book-bar')).toHaveCount(0);
+  });
 });
