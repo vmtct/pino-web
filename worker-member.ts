@@ -76,7 +76,7 @@ async function filterProductionSessions(env: Env, response: Response, requestedI
     const page = await notionPage(env, session.id);
     if (!page) {
       if (requestedId) return json({ error: "Session not found." }, 404);
-      return json({ error: "Could not validate production session data." }, 502);
+      continue;
     }
     if (isMock(page)) continue;
     const bookingResponse = await notionQuery(env, env.NOTION_OS_BOOKING_DATA_SOURCE_ID, {
@@ -86,7 +86,10 @@ async function filterProductionSessions(env: Env, response: Response, requestedI
         { property: "Mock Data", checkbox: { equals: false } },
       ],
     });
-    if (!bookingResponse) return json({ error: "Could not validate production booking data." }, 502);
+    if (!bookingResponse) {
+      sessions.push({ ...session, confirmedCount: null, availableSeats: null });
+      continue;
+    }
     const bookingData = (await bookingResponse.json()) as any;
     const confirmedCount = bookingData.results?.length || 0;
     sessions.push({
