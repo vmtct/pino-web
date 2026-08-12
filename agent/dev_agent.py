@@ -14,7 +14,16 @@ BRANCH = os.environ.get("AGENT_BRANCH", "")
 FAILURE_CONTEXT_FILE = REPO / ".agent-failure.log"
 
 
-def run_cmd(command: str, timeout: int = 120) -> str:
+def run_cmd(command: str, timeout: int = 180) -> str:
+    blocked = [
+        "git push origin main",
+        "git push --force",
+        "git reset --hard",
+        "gh pr merge",
+    ]
+    if any(item in command for item in blocked):
+        return "BLOCKED: unsafe command. Recovery agent may only push its recovery branch and open a PR."
+
     p = subprocess.run(
         command,
         cwd=REPO,
@@ -24,16 +33,13 @@ def run_cmd(command: str, timeout: int = 120) -> str:
         stderr=subprocess.STDOUT,
         timeout=timeout,
     )
-    output = p.stdout[-12000:]
+    output = p.stdout[-16000:]
     return f"exit_code={p.returncode}\n{output}"
 
 
 @function_tool
 def shell(command: str) -> str:
-    """Run a non-interactive shell command in the checked-out repository. Never print secrets."""
-    blocked = ["git push origin main", "git push --force", "git reset --hard"]
-    if any(x in command for x in blocked):
-        return "BLOCKED: unsafe git command. Use the agent recovery branch only."
+    """Run a non-interactive repository command. Never print secrets."""
     return run_cmd(command)
 
 
@@ -45,61 +51,88 @@ def read_file(path: str) -> str:
         return "BLOCKED: path outside repository"
     if not target.exists() or not target.is_file():
         return "FILE NOT FOUND"
-    return target.read_text(encoding="utf-8")[:16000]
+    return target.read_text(encoding="utf-8")[:24000]
+
+
+@function_tool
+def write_file(path: str, content: str) -> str:
+    """Write a UTF-8 text file inside the recovery repository branch."""
+    target = (REPO / path).resolve()
+    if REPO not in target.parents or target == REPO:
+        return "BLOCKED: path outside repository"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(content, encoding="utf-8")
+    return f"WROTE {path} ({len(content)} bytes)"
 
 
 agent = Agent(
     name="PINO Autonomous Dev Agent",
     model=os.environ.get("OPENAI_AGENT_MODEL", "gpt-5.6-sol"),
     instructions=f"""
-You are the autonomous recovery engineer for the PINO web app.
+You are the autonomous recovery engineer for PINO's current GitHub Actions workflow.
 
-A GitHub Actions production/CI workflow failed.
 Repository: vmtct/pino-web
-Failed run: {RUN_ID}
-Failed head SHA: {HEAD_SHA}
+Failed CI run: {RUN_ID}
+Failed commit: {HEAD_SHA}
 Recovery branch: {BRANCH}
 Workspace: {REPO}
-Failure context file: {FAILURE_CONTEXT_FILE}
+Failure context: {FAILURE_CONTEXT_FILE}
 
-Your job is to diagnose and repair the failure, then leave a clean recovery branch with a commit that passes CI.
+CURRENT PIPELINE CONTRACT
+- CI builds on both main pushes and pull requests.
+- Production smoke and Playwright E2E run after a successful main deployment.
+- The smoke suite validates /, /api/os-sessions, booking validation, and member validation.
+- Playwright runs against the deployed production URL.
+- A failure-intake issue may exist, but the workflow run and its job logs are the authoritative evidence.
 
-MANDATORY SAFETY RULES:
-- Work ONLY on the recovery branch {BRANCH}.
-- NEVER push to main.
-- NEVER force push.
-- NEVER modify real customer data, Notion records, production bookings, passes, or secrets.
-- Do not expose secret values in output.
-- Prefer the smallest correct code change.
-- Inspect the actual failure before changing code; do not guess.
-- Run the relevant tests/build locally after changes.
-- Commit only source/test/config changes needed for the fix.
-- If the failure is infrastructure-only or cannot be safely fixed from code, stop and explain why.
+MISSION
+Diagnose the actual failed CI run, make the smallest correct source/test/config change, verify it, push only the recovery branch, and open a recovery PR. Never claim success without evidence.
 
-RECOVERY LOOP:
-1. FIRST read `{FAILURE_CONTEXT_FILE}` if it exists. It is a compact capture of the failed CI output. Use it as primary failure evidence.
-2. Inspect repository status/diff and use `gh run view {RUN_ID} --log-failed` only when additional context is needed.
-3. Identify the root cause and affected files.
-4. Make the smallest correct fix.
-5. Run relevant local checks (at minimum the failing test/build when practical).
-6. Commit the fix to {BRANCH} and push it.
-7. Use `gh run list --branch {BRANCH}` and `gh run view` to inspect the new CI run.
-8. If the new CI fails, inspect its logs and make another fix.
-9. Repeat for at most {MAX_FIX_ATTEMPTS} total fix attempts.
-10. Finish only when CI is green or when a clear blocker requires human intervention. Do not create a fake success.
+MANDATORY SAFETY RULES
+- Work ONLY on recovery branch {BRANCH}.
+- NEVER push to main and NEVER force-push.
+- NEVER merge a PR.
+- NEVER mutate production data, Notion records, bookings, passes, or secrets.
+- Do not expose secret values in output or commit them.
+- Do not weaken, skip, or delete tests merely to make CI green.
+- Do not change production smoke/E2E assertions to hide a real regression.
+- Prefer a root-cause fix over a retry or symptom patch.
+- If the failure is caused by an unavailable secret, GitHub permission, Cloudflare outage, or another external blocker that code cannot safely fix, stop and report the blocker.
 
-Be decisive. Start with the captured failure, then inspect only files relevant to that failure. Avoid broad repository dumps and redundant exploration. Report the exact final state.
+EVIDENCE-FIRST LOOP
+1. Read {FAILURE_CONTEXT_FILE} first.
+2. Inspect `git status`, the failed commit diff, and the workflow definition.
+3. Inspect the failed run with `gh run view {RUN_ID} --json jobs,conclusion,headSha,url` and fetch failed job logs with `gh run view {RUN_ID} --log-failed` when needed.
+4. If Playwright failed, inspect `playwright-report` / test-results artifacts when available. Do not infer the failure from the job name alone.
+5. Reproduce locally or against the exact preview/production target when safe. Prefer read-only endpoints and validation requests.
+6. Identify the root cause before editing.
+7. Make the smallest correct fix. Add or strengthen a regression test when practical.
+8. Run the relevant local checks: at minimum the failing test/build, plus typecheck if available.
+9. Inspect the final diff and ensure no secrets/generated noise are included.
+10. Commit to {BRANCH} and push it.
+11. Wait for the new CI run on {BRANCH}; inspect its result and logs.
+12. If CI fails because of the patch, iterate up to {MAX_FIX_ATTEMPTS} total fix attempts.
+13. If CI is green, create a non-draft PR to `main` with `gh pr create`. Do not merge it.
+14. If a blocker requires human action, stop cleanly and explain the exact action needed.
+
+IMPORTANT CURRENT-WORKFLOW BEHAVIOR
+- PR CI is validation for the recovery branch; production smoke/E2E are authoritative only after deployment to main.
+- Never report Production Smoke or Production Verify as passed just because PR build/E2E passed.
+- Never use production writes to reproduce a UI/API issue.
+- For Open Studio, treat `/api/os-sessions` availability and past-session read-only detail behavior as separate checks.
+
+OUTPUT
+End with a concise machine-readable summary containing: root cause, files changed, tests run, recovery branch, new CI run, and whether a PR was opened. Never fabricate a green status.
 """,
-    tools=[shell, read_file],
+    tools=[shell, read_file, write_file],
 )
 
 
 async def main() -> None:
     prompt = (
-        f"CI run {RUN_ID} failed for commit {HEAD_SHA}. "
-        f"Recover it on branch {BRANCH}. Read {FAILURE_CONTEXT_FILE} first, "
-        "diagnose the real root cause, make the smallest safe fix, verify it, "
-        "push the recovery branch, and verify CI. "
+        f"Recover failed CI run {RUN_ID} for commit {HEAD_SHA} on branch {BRANCH}. "
+        f"Read {FAILURE_CONTEXT_FILE} first. Diagnose from actual CI evidence, fix safely, "
+        f"verify locally, push {BRANCH}, verify the resulting CI, and open a recovery PR if green. "
         f"Use at most {MAX_FIX_ATTEMPTS} fix attempts and {MAX_TURNS} agent turns."
     )
     result = await Runner.run(agent, prompt, max_turns=MAX_TURNS)
