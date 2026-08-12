@@ -25,6 +25,7 @@ const select=(p:any)=>p?.select?.name||p?.status?.name||null;
 const normalizePhone=(value:string)=>value.replace(/\D/g,"").replace(/^84(?=0)/,"0");
 const sessionMs=(value:string|null)=>{if(!value)return null;const normalized=value.includes(" ")&&!value.includes("T")?value.replace(" ","T"):value;const parsed=new Date(normalized.length===10?`${normalized}T23:59:59+07:00`:normalized);return Number.isNaN(parsed.getTime())?null:parsed.getTime();};
 const path=(value:string|null)=>{const v=(value||"").trim().toLowerCase().replace(/\s+/g," ");if(v==="pianohouse"||v.startsWith("piano"))return "Piano";if(v==="architect"||v.startsWith("architect")||v.startsWith("mỹ thuật")||v.startsWith("my thuat"))return "Mỹ thuật";if(v==="little piner"||v.startsWith("little piner"))return "Little Piner";return null;};
+const parseNotifyRecipients=(value:string)=>value.split(";").map((email)=>email.trim()).filter((email)=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
 
 async function query(env:Env,ds:string,filter?:unknown){
   const response=await fetch(`https://api.notion.com/v1/data_sources/${ds}/query`,{method:"POST",headers:headers(env),body:JSON.stringify(filter?{filter}:{})});
@@ -81,14 +82,15 @@ async function resolveParent(env:Env,phone:string){
 
 async function sendNotification(env:Env,bookingId:string,session:any,phone:string,parentId:string|null){
   const notifyTo=await getConfig(env,"os_notify_email",env.OS_NOTIFY_TO||"");
+  const recipients=parseNotifyRecipients(String(notifyTo));
   const fromName=await getConfig(env,"os_notify_from_name","PINO Open Studio");
   const fromEmail=await getConfig(env,"os_notify_from_email",env.OS_NOTIFY_FROM||"onboarding@resend.dev");
-  if(!env.RESEND_API_KEY||!notifyTo)return {sent:false,reason:"email_not_configured"};
+  if(!env.RESEND_API_KEY||recipients.length===0)return {sent:false,reason:"email_not_configured"};
   const from=`${fromName} <${fromEmail}>`;
   const html=`<h2>New Open Studio registration</h2><p><strong>Session:</strong> ${session.topic}</p><p><strong>Date:</strong> ${session.date||"TBD"}</p><p><strong>Zalo / phone:</strong> ${phone}</p><p><strong>Parent:</strong> ${parentId?"Matched in CRM":"Not matched"}</p><p><strong>Booking:</strong> ${bookingId}</p><p>Status: <strong>Pending</strong> — follow up with the family via Zalo.</p>`;
-  const response=await fetch("https://api.resend.com/emails",{method:"POST",headers:{Authorization:`Bearer ${env.RESEND_API_KEY}`,"Content-Type":"application/json"},body:JSON.stringify({from,to:[notifyTo],subject:`Open Studio · New registration · ${session.topic}`,html})});
+  const response=await fetch("https://api.resend.com/emails",{method:"POST",headers:{Authorization:`Bearer ${env.RESEND_API_KEY}`,"Content-Type":"application/json"},body:JSON.stringify({from,to:recipients,subject:`Open Studio · New registration · ${session.topic}`,html})});
   if(!response.ok)return {sent:false,reason:"email_send_failed"};
-  return {sent:true};
+  return {sent:true,recipientCount:recipients.length};
 }
 
 export async function createPublicBooking(env:Env,phone:string,sessionId:string){
