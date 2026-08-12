@@ -39,16 +39,6 @@ async function notionPage(env: Env, pageId: string) {
   return (await response.json()) as any;
 }
 
-async function notionQuery(env: Env, dataSourceId: string, filter: unknown) {
-  const response = await fetch(`https://api.notion.com/v1/data_sources/${dataSourceId}/query`, {
-    method: "POST",
-    headers: notionHeaders(env),
-    body: JSON.stringify({ filter }),
-  });
-  if (response.ok) return response;
-  return null;
-}
-
 function isMock(page: any) {
   return page?.properties?.["Mock Data"]?.checkbox === true;
 }
@@ -61,39 +51,44 @@ async function rejectMockSessionInProduction(env: Env, sessionId: string | null)
   return null;
 }
 
+/**
+ * The canonical session feed already calculates confirmedCount/availableSeats.
+ * Do not re-query the booking data source here: a secondary booking lookup must
+ * never make the entire Open Studio calendar unavailable. If booking data is
+ * temporarily degraded, the canonical feed can still render the session and
+ * the UI can treat availability as unavailable/unknown rather than hiding the
+ * schedule.
+ */
 async function filterProductionSessions(env: Env, response: Response, requestedId: string | null = null) {
   if (!isProduction(env)) return response;
+
   let payload: any;
-  try { payload = await response.clone().json(); } catch { return response; }
+  try {
+    payload = await response.clone().json();
+  } catch {
+    return response;
+  }
+
   if (!Array.isArray(payload?.sessions)) return response;
 
   const sourceSessions: any[] = requestedId
     ? payload.sessions.filter((session: any) => session?.id === requestedId)
     : payload.sessions;
-  const sessions: any[] = [];
 
+  const sessions: any[] = [];
   for (const session of sourceSessions) {
     const page = await notionPage(env, session.id);
+
+    // The canonical session feed has already loaded this page. If validation
+    // cannot be performed, keep the session rather than turning a transient
+    // Notion validation failure into a 502 for the whole calendar.
     if (!page) {
-      if (requestedId) return json({ error: "Session not found." }, 404);
-      return json({ error: "Could not validate production session data." }, 502);
+      sessions.push(session);
+      continue;
     }
+
     if (isMock(page)) continue;
-    const bookingResponse = await notionQuery(env, env.NOTION_OS_BOOKING_DATA_SOURCE_ID, {
-      and: [
-        { property: "OS Session", relation: { contains: session.id } },
-        { property: "Status", select: { equals: "Confirmed" } },
-        { property: "Mock Data", checkbox: { equals: false } },
-      ],
-    });
-    if (!bookingResponse) return json({ error: "Could not validate production booking data." }, 502);
-    const bookingData = (await bookingResponse.json()) as any;
-    const confirmedCount = bookingData.results?.length || 0;
-    sessions.push({
-      ...session,
-      confirmedCount,
-      availableSeats: typeof session.capacity === "number" ? Math.max(0, session.capacity - confirmedCount) : session.availableSeats,
-    });
+    sessions.push(session);
   }
 
   if (requestedId && sessions.length === 0) return json({ error: "Session not found." }, 404);
@@ -107,7 +102,11 @@ const handler = {
 
     if (request.method === "POST" && url.pathname === "/api/member/book/validate") {
       let body: any;
-      try { body = await request.json(); } catch { return json({ error: "Invalid request." }, 400); }
+      try {
+        body = await request.json();
+      } catch {
+        return json({ error: "Invalid request." }, 400);
+      }
       const result = await validateMemberBooking(env, body);
       return result.ok ? json(result) : json(result, result.status);
     }
@@ -119,8 +118,18 @@ const handler = {
 
     if (isProduction(env) && request.method === "POST" && (url.pathname === "/api/member/book" || url.pathname === "/api/open-studio/book")) {
       let body: any = null;
-      try { body = await request.clone().json(); } catch { body = null; }
-      const sessionId = typeof body?.sessionId === "string" ? body.sessionId : typeof body?.osSessionId === "string" ? body.osSessionId : typeof body?.session === "string" ? body.session : null;
+      try {
+        body = await request.clone().json();
+      } catch {
+        body = null;
+      }
+      const sessionId = typeof body?.sessionId === "string"
+        ? body.sessionId
+        : typeof body?.osSessionId === "string"
+          ? body.osSessionId
+          : typeof body?.session === "string"
+            ? body.session
+            : null;
       const blocked = await rejectMockSessionInProduction(env, sessionId);
       if (blocked) return blocked;
     }
