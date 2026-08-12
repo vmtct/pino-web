@@ -1,7 +1,7 @@
 name = "pino-web"
 compatibility_date = "2026-08-10"
 main = "worker-member.ts"
-keep_vars = false
+keep_vars = true
 
 # Environment controls whether Notion Mock Data is exposed.
 # Production hides mock fixtures; preview keeps them visible for testing.
