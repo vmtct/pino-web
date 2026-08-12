@@ -24,10 +24,11 @@ async function notionPage(env: Env, pageId: string) {
 }
 
 async function fallbackSessions(env: Env) {
-  const response = await fetch(`https://api.notion.com/v1/data_sources/${env.NOTION_OS_SESSION_DATA_SOURCE_ID}/query`, { method: "POST", headers: notionHeaders(env), body: "{}" });
-  if (!response.ok) return null;
-  const data = await response.json() as any;
-  const sessions = (data.results || []).map((page: any) => ({
+  try {
+    const response = await fetch(`https://api.notion.com/v1/data_sources/${env.NOTION_OS_SESSION_DATA_SOURCE_ID}/query`, { method: "POST", headers: notionHeaders(env), body: "{}" });
+    if (!response.ok) return null;
+    const data = await response.json() as any;
+    const sessions = (data.results || []).map((page: any) => ({
     id: page.id,
     topic: text(page.properties?.Topic) || "Untitled session",
     type: text(page.properties?.Type),
@@ -37,7 +38,10 @@ async function fallbackSessions(env: Env) {
     confirmedCount: null,
     availableSeats: null,
   })).sort((a: any, b: any) => (a.date || "9999").localeCompare(b.date || "9999"));
-  return json({ sessions });
+    return json({ sessions });
+  } catch {
+    return null;
+  }
 }
 
 function isMock(page: any) { return page?.properties?.["Mock Data"]?.checkbox === true; }
@@ -80,7 +84,12 @@ const handler = {
     }
 
     if (isProduction(env) && url.pathname === "/api/os-sessions" && request.method === "GET") {
-      const response = await memberWorker.fetch(request, env as any);
+      let response: Response;
+      try {
+        response = await memberWorker.fetch(request, env as any);
+      } catch {
+        response = json({ error: "Could not load sessions." }, 502);
+      }
       if (!response.ok && !url.searchParams.get("id")) {
         const fallback = await fallbackSessions(env);
         if (fallback) return fallback;
