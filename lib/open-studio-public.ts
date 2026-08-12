@@ -10,7 +10,7 @@ type Env = {
   NOTION_PATH_PROGRAM_DATA_SOURCE_ID: string;
   NOTION_SYLLABUS_DATA_SOURCE_ID?: string;
   NOTION_WEB_CONFIG_DATA_SOURCE_ID: string;
-  RESEND_API_KEY?: string;
+  EMAIL?: { send: (message: any) => Promise<any> };
   OS_NOTIFY_TO?: string;
   OS_NOTIFY_FROM?: string;
 };
@@ -86,16 +86,19 @@ async function sendNotification(env:Env,bookingId:string,session:any,phone:strin
   const notifyTo=await getConfig(env,"os_notify_email",env.OS_NOTIFY_TO||"");
   const recipients=parseNotifyRecipients(String(notifyTo));
   const fromName=await getConfig(env,"os_notify_from_name","PINO Open Studio");
-  const fromEmail=await getConfig(env,"os_notify_from_email",env.OS_NOTIFY_FROM||"onboarding@resend.dev");
+  const fromEmail=await getConfig(env,"os_notify_from_email",env.OS_NOTIFY_FROM||"");
   const contentTemplate=await getConfig(env,"os_notify_email_content","A new Open Studio registration has been received.\n\nSession: {{session_topic}}\nDate: {{session_date}}\nZalo / phone: {{phone}}\nParent: {{parent_status}}\nBooking: {{booking_id}}\n\nStatus: Pending — please follow up with the family via Zalo.");
-  if(!env.RESEND_API_KEY||recipients.length===0)return {sent:false,reason:"email_not_configured"};
+  if(!env.EMAIL||recipients.length===0||!fromEmail)return {sent:false,reason:"email_not_configured"};
   const values={session_topic:String(session.topic||""),session_date:String(session.date||"TBD"),phone,parent_status:parentId?"Matched in CRM":"Not matched",booking_id:bookingId};
   const rendered=renderEmailContent(String(contentTemplate),values);
   const html=rendered.split(/\n\s*\n/).map((paragraph)=>`<p>${paragraph.replace(/\n/g,"<br />")}</p>`).join("");
-  const from=`${fromName} <${fromEmail}>`;
-  const response=await fetch("https://api.resend.com/emails",{method:"POST",headers:{Authorization:`Bearer ${env.RESEND_API_KEY}`,"Content-Type":"application/json"},body:JSON.stringify({from,to:recipients,subject:`Open Studio · New registration · ${session.topic}`,html,text:rendered})});
-  if(!response.ok)return {sent:false,reason:"email_send_failed"};
-  return {sent:true,recipientCount:recipients.length};
+  const subject=renderEmailContent("Open Studio · New registration · {{session_topic}}",values);
+  try{
+    const response=await env.EMAIL.send({from:{email:fromEmail,name:String(fromName)},to:recipients,subject,html,text:rendered});
+    return {sent:true,recipientCount:recipients.length,messageId:response?.messageId};
+  }catch(error){
+    return {sent:false,reason:"email_send_failed"};
+  }
 }
 
 export async function createPublicBooking(env:Env,phone:string,sessionId:string){
