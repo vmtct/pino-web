@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -160,7 +161,7 @@ jobs:
             const body = [
               '# CI Failure Intake',
               '',
-              `- **Commit:** \`${sha}\``,
+              `- **Commit:** \\`${sha}\\``,
               `- **Run:** ${run}`,
               `- **Run URL:** ${context.serverUrl}/${owner}/${repo}/actions/runs/${run}`,
               `- **Build:** ${process.env.BUILD_RESULT}`,
@@ -177,6 +178,6 @@ jobs:
               '',
               '## Safety boundary',
               'Do not mutate production data merely to reproduce the failure. Prefer tests, mocks, validation-only endpoints, or disposable E2E fixtures.',
-            ].join('\n');
+            ].join('\\n');
 
             await github.rest.issues.create({ owner, repo, title, body });
