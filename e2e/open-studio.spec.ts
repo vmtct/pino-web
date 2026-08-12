@@ -18,6 +18,58 @@ test.describe('Open Studio public journey', () => {
     return { sessions, emptyState };
   }
 
+  async function attachBrowserDiagnostics(page: import('@playwright/test').Page) {
+    const diagnostics: {
+      consoleErrors: string[];
+      pageErrors: string[];
+      sessionApi?: { status: number; ok: boolean; body: unknown };
+    } = { consoleErrors: [], pageErrors: [] };
+
+    page.on('console', message => {
+      if (message.type() === 'error') diagnostics.consoleErrors.push(message.text());
+    });
+    page.on('pageerror', error => diagnostics.pageErrors.push(error.message));
+
+    page.on('response', async response => {
+      if (!response.url().includes('/api/os-sessions')) return;
+      try {
+        diagnostics.sessionApi = {
+          status: response.status(),
+          ok: response.ok(),
+          body: await response.json(),
+        };
+      } catch (error) {
+        diagnostics.sessionApi = {
+          status: response.status(),
+          ok: response.ok(),
+          body: { parseError: String(error) },
+        };
+      }
+    });
+
+    return diagnostics;
+  }
+
+  async function dumpBrowserDiagnostics(
+    page: import('@playwright/test').Page,
+    diagnostics: Awaited<ReturnType<typeof attachBrowserDiagnostics>>,
+  ) {
+    const renderedCards = await page.locator('a.session-card').count();
+    const loadingCount = await page.getByText(/Đang xem lịch Open Studio/i).count();
+    const emptyCount = await page.getByText(/Chưa có session sắp tới/i).count();
+    const errorCount = await page.getByText(/Lịch Open Studio đang tạm thời chưa tải được/i).count();
+
+    console.log('[OS E2E DIAGNOSTICS]', JSON.stringify({
+      renderedCards,
+      loadingCount,
+      emptyCount,
+      errorCount,
+      sessionApi: diagnostics.sessionApi,
+      consoleErrors: diagnostics.consoleErrors,
+      pageErrors: diagnostics.pageErrors,
+    }, null, 2));
+  }
+
   test('live session API exposes current Open Studio data', async ({ request }) => {
     const response = await request.get('/api/os-sessions');
     expect(response.ok()).toBeTruthy();
@@ -30,6 +82,7 @@ test.describe('Open Studio public journey', () => {
   });
 
   test('landing exposes live Open Studio sessions and a member entry point', async ({ page }) => {
+    const diagnostics = await attachBrowserDiagnostics(page);
     const sessionResponse = page.waitForResponse(response => response.url().includes('/api/os-sessions'));
     await page.goto('/open-studio');
 
@@ -41,15 +94,18 @@ test.describe('Open Studio public journey', () => {
     await expect(page.getByRole('link', { name: /Vào Member Space/i })).toBeVisible();
 
     const { sessions } = await waitForSessionState(page);
+    await dumpBrowserDiagnostics(page, diagnostics);
     await expect(sessions).not.toHaveCount(0);
     await expect(sessions.first()).toBeVisible();
     await expect(sessions.first()).toHaveAttribute('href', /\/open-studio\/session\?id=/);
   });
 
   test('session detail route resolves when a live session is available', async ({ page }) => {
+    const diagnostics = await attachBrowserDiagnostics(page);
     await page.goto('/open-studio');
     const { sessions } = await waitForSessionState(page);
 
+    await dumpBrowserDiagnostics(page, diagnostics);
     await expect(sessions).not.toHaveCount(0);
     const session = sessions.first();
     await expect(session).toBeVisible();
