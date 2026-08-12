@@ -1,21 +1,120 @@
 name: Autonomous Recovery
 
-# PINO Agency is intentionally paused. Keep this workflow file for easy reactivation.
 on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: write
   actions: read
   pull-requests: write
+  issues: write
 
 concurrency:
-  group: autonomous-recovery-main
-  cancel-in-progress: true
+  group: autonomous-recovery-${{ github.event.workflow_run.id || github.run_id }}
+  cancel-in-progress: false
 
 jobs:
   recover:
-    if: ${{ false }}
+    # Only react to a failed CI run on main. Manual runs are intentionally disabled
+    # unless a FAILED_RUN_ID/FAILED_HEAD_SHA/AGENT_BRANCH is supplied by an operator.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'failure' &&
+       github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - run: echo "PINO Agency is paused. No autonomous recovery will run."
+      - name: Resolve failed revision
+        id: context
+        env:
+          EVENT_RUN_ID: ${{ github.event.workflow_run.id }}
+          EVENT_SHA: ${{ github.event.workflow_run.head_sha }}
+          EVENT_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -euo pipefail
+          if [ -n "${EVENT_RUN_ID:-}" ]; then
+            echo "run_id=$EVENT_RUN_ID" >> "$GITHUB_OUTPUT"
+            echo "head_sha=$EVENT_SHA" >> "$GITHUB_OUTPUT"
+            echo "head_branch=$EVENT_BRANCH" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_id=${FAILED_RUN_ID:-}" >> "$GITHUB_OUTPUT"
+            echo "head_sha=${FAILED_HEAD_SHA:-}" >> "$GITHUB_OUTPUT"
+            echo "head_branch=main" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout failed revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.context.outputs.head_sha }}
+          fetch-depth: 0
+
+      - name: Create recovery branch
+        id: branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.context.outputs.head_sha }}
+          RUN_ID: ${{ steps.context.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          BRANCH="agent/recovery-${RUN_ID}"
+          git switch -c "$BRANCH" "$SHA"
+          git push --set-upstream origin "$BRANCH"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Capture failed CI context
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.context.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          gh run view "$RUN_ID" --json name,displayTitle,conclusion,headSha,jobs,url > .agent-run.json
+          gh run view "$RUN_ID" --log-failed > .agent-failure.log 2>&1 || true
+          if [ ! -s .agent-failure.log ]; then
+            echo "No failed-step log was returned; inspect the workflow run and jobs directly with gh." > .agent-failure.log
+          fi
+
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('.agent-failure.log')
+          text = p.read_text(encoding='utf-8', errors='replace')
+          max_chars = 28000
+          if len(text) > max_chars:
+              text = text[:5000] + "\n\n[... CI LOG TRUNCATED ...]\n\n" + text[-23000:]
+          p.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install agent runtime
+        run: python -m pip install --disable-pip-version-check openai-agents
+
+      - name: Run autonomous recovery agent
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_AGENT_MODEL: gpt-5.6-sol
+          OPENAI_AGENT_MAX_TURNS: '40'
+          MAX_FIX_ATTEMPTS: '3'
+          GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_WORKSPACE: ${{ github.workspace }}
+          FAILED_RUN_ID: ${{ steps.context.outputs.run_id }}
+          FAILED_HEAD_SHA: ${{ steps.context.outputs.head_sha }}
+          AGENT_BRANCH: ${{ steps.branch.outputs.branch }}
+        run: python agent/dev_agent.py
+
+      - name: Upload agent diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: autonomous-recovery-${{ steps.context.outputs.run_id }}
+          path: |
+            .agent-run.json
+            .agent-failure.log
+          if-no-files-found: ignore
