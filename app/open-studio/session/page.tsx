@@ -8,6 +8,8 @@ type Session = { id: string | number; topic: string; type: string; path: string 
 function parseDate(value: string | null) { if (!value) return null; const normalized = value.length === 10 ? `${value}T23:59:59+07:00` : value; const parsed = new Date(normalized); return Number.isNaN(parsed.getTime()) ? null : parsed; }
 function dateLabel(value: string | null) { const parsed = parseDate(value); if (!parsed) return "Ngày đang cập nhật"; return new Intl.DateTimeFormat("vi-VN", { weekday: "long", day: "numeric", month: "numeric", year: "numeric", timeZone: "Asia/Ho_Chi_Minh" }).format(parsed); }
 function timeLabel(value: string | null) { const parsed = parseDate(value); if (!parsed || !value || value.length <= 10) return ""; return new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" }).format(parsed); }
+function normalizeId(value: string | number | null | undefined) { return String(value ?? "").trim(); }
+function isOpenStudio(session: Session) { return String(session.type ?? "").trim().toLowerCase() === "open studio"; }
 
 export default function SessionDetailPage() {
   const router = useRouter();
@@ -16,19 +18,42 @@ export default function SessionDetailPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get("id");
+    const id = normalizeId(new URLSearchParams(window.location.search).get("id"));
     if (!id) { setError("Không tìm thấy session."); setLoading(false); return; }
     let active = true;
-    fetch("/api/os-sessions", { cache: "no-store" })
-      .then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || "Không thể tải session."); return Array.isArray(d.sessions) ? d.sessions : []; })
-      .then((sessions: Session[]) => {
-        // URLSearchParams always gives a string. Normalize API ids so numeric/string ids resolve identically.
-        const found = sessions.find(item => String(item.id) === id && String(item.type).toLowerCase() === "open studio");
+
+    const fetchJson = async (url: string) => {
+      const response = await fetch(url, { cache: "no-store", headers: { "Cache-Control": "no-cache" } });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || `Không thể tải session (${response.status}).`);
+      return data;
+    };
+
+    const resolveSession = async () => {
+      // Try an id-scoped response first, then fall back to the collection endpoint.
+      // The fallback keeps this page compatible with worker deployments that only expose the collection route.
+      try {
+        const scoped = await fetchJson(`/api/os-sessions?id=${encodeURIComponent(id)}&_=${Date.now()}`);
+        const scopedSessions = Array.isArray(scoped.sessions) ? scoped.sessions : scoped.session ? [scoped.session] : [];
+        const found = scopedSessions.find((item: Session) => normalizeId(item.id) === id && isOpenStudio(item));
+        if (found) return found;
+      } catch {
+        // Fall through to the collection endpoint.
+      }
+
+      const data = await fetchJson(`/api/os-sessions?_=${Date.now()}`);
+      const sessions = Array.isArray(data.sessions) ? data.sessions as Session[] : [];
+      return sessions.find(item => normalizeId(item.id) === id && isOpenStudio(item)) || null;
+    };
+
+    resolveSession()
+      .then(found => {
         if (!found) throw new Error("Session không tồn tại hoặc đã đóng.");
         if (active) setSession(found);
       })
       .catch(e => { if (active) setError(e instanceof Error ? e.message : "Không thể tải session."); })
       .finally(() => { if (active) setLoading(false); });
+
     return () => { active = false; };
   }, []);
 
