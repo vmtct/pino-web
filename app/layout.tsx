@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import CmsHydrator from "./cms-hydrator";
 
 export const metadata: Metadata = {
   title: "PINO — Creative Club for Kids",
@@ -14,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi">
-      <body>{children}</body>
+      <body><CmsHydrator />{children}</body>
     </html>
   );
 }
