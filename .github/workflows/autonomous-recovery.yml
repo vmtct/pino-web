@@ -1,9 +1,8 @@
 name: Autonomous Recovery
 
+# PINO Agency is intentionally paused. Keep this workflow file for easy reactivation.
 on:
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -16,84 +15,7 @@ concurrency:
 
 jobs:
   recover:
-    # Only recover failures from main. Agent branches are handled inside the agent loop.
-    if: ${{ github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.head_branch == 'main' }}
+    if: ${{ false }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
-      - name: Checkout failed revision
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
-          fetch-depth: 0
-
-      - name: Create recovery branch
-        id: branch
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SHA: ${{ github.event.workflow_run.head_sha }}
-          RUN_ID: ${{ github.event.workflow_run.id }}
-        run: |
-          BRANCH="agent/recovery-${RUN_ID}"
-          git switch -c "$BRANCH" "$SHA"
-          git push --set-upstream origin "$BRANCH"
-          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
-
-      - name: Capture failed CI context
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RUN_ID: ${{ github.event.workflow_run.id }}
-        run: |
-          gh run view "$RUN_ID" --log-failed > .agent-failure.log 2>&1 || true
-          if [ ! -s .agent-failure.log ]; then
-            echo "No failed-step log was returned; inspect the run directly with gh." > .agent-failure.log
-          fi
-          # Keep the first diagnostic header and the tail where build/test failures usually surface.
-          # This prevents a huge CI log from consuming the agent's initial token budget.
-          python - <<'PY'
-          from pathlib import Path
-          p = Path('.agent-failure.log')
-          text = p.read_text(encoding='utf-8', errors='replace')
-          max_chars = 24000
-          if len(text) > max_chars:
-              head = text[:4000]
-              tail = text[-20000:]
-              text = head + "\n\n[... CI LOG TRUNCATED FOR AGENT CONTEXT ...]\n\n" + tail
-          p.write_text(text, encoding='utf-8')
-          PY
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install agent runtime
-        run: python -m pip install --disable-pip-version-check openai-agents
-
-      - name: Run autonomous recovery agent
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          OPENAI_AGENT_MODEL: gpt-5.6-sol
-          OPENAI_AGENT_MAX_TURNS: '40'
-          GITHUB_TOKEN: ${{ github.token }}
-          GH_TOKEN: ${{ github.token }}
-          GITHUB_WORKSPACE: ${{ github.workspace }}
-          FAILED_RUN_ID: ${{ github.event.workflow_run.id }}
-          FAILED_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-          AGENT_BRANCH: ${{ steps.branch.outputs.branch }}
-          MAX_FIX_ATTEMPTS: '3'
-        run: python agent/dev_agent.py
-
-      - name: Open recovery PR
-        if: success()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          BRANCH: ${{ steps.branch.outputs.branch }}
-          RUN_ID: ${{ github.event.workflow_run.id }}
-        run: |
-          gh pr create \
-            --base main \
-            --head "$BRANCH" \
-            --title "fix: autonomous recovery for CI run $RUN_ID" \
-            --body "Autonomous recovery agent repaired the failed CI run $RUN_ID. Review the diff and CI checks before merging." \
-            --draft
+      - run: echo "PINO Agency is paused. No autonomous recovery will run."
