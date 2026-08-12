@@ -10,6 +10,7 @@ on:
 permissions:
   contents: read
   issues: write
+  checks: read
 
 concurrency:
   group: pino-web-${{ github.ref }}
@@ -35,27 +36,53 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Wait for Cloudflare deployment
+      - name: Wait for Cloudflare Workers Build
         env:
+          GH_TOKEN: ${{ github.token }}
           EXPECTED_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          base="https://pino-web.minhtri-van42.workers.dev"
-          echo "Waiting for production to expose commit $EXPECTED_SHA"
-          for attempt in $(seq 1 30); do
-            if curl -fsS "$base/build-info.json" -o /tmp/build-info.json; then
-              deployed_sha=$(python -c 'import json; print(json.load(open("/tmp/build-info.json"))["commit"])')
-              echo "Production commit: $deployed_sha"
-              if [ "$deployed_sha" = "$EXPECTED_SHA" ]; then
-                echo "Production deployment confirmed"
-                exit 0
+          echo "Waiting for Cloudflare Workers Build for $EXPECTED_SHA"
+          for attempt in $(seq 1 36); do
+            check=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${EXPECTED_SHA}/check-runs?per_page=100" \
+              --jq '[.check_runs[] | select(.name == "Workers Builds: pino-web")] | sort_by(.started_at) | last // empty')
+
+            if [ -n "$check" ]; then
+              status=$(printf '%s' "$check" | python -c 'import json,sys; print(json.load(sys.stdin).get("status", ""))')
+              conclusion=$(printf '%s' "$check" | python -c 'import json,sys; print(json.load(sys.stdin).get("conclusion", ""))')
+              details=$(printf '%s' "$check" | python -c 'import json,sys; print(json.load(sys.stdin).get("details_url", ""))')
+              echo "Cloudflare Workers Build: status=$status conclusion=$conclusion"
+
+              if [ "$status" = "completed" ]; then
+                if [ "$conclusion" = "success" ]; then
+                  echo "Cloudflare deployment/build confirmed: $details"
+                  exit 0
+                fi
+                echo "Cloudflare Workers Build failed: $details"
+                exit 1
               fi
+            else
+              echo "Cloudflare check not created yet"
             fi
-            echo "Deployment not ready yet (attempt $attempt/30)"
+
+            echo "Waiting for Cloudflare deployment (attempt $attempt/36)"
             sleep 10
           done
-          echo "Timed out waiting for production commit $EXPECTED_SHA"
+
+          echo "Timed out waiting for Cloudflare Workers Build"
           exit 1
+
+      - name: Verify deployed Worker identity
+        run: |
+          set -euo pipefail
+          base="https://pino-web.minhtri-van42.workers.dev"
+          status=$(curl -sS -o /tmp/build-info.json -w "%{http_code}" "$base/build-info.json")
+          echo "GET /build-info.json -> $status"
+          test "$status" = "200"
+          cat /tmp/build-info.json
+          deployed_sha=$(python -c 'import json; print(json.load(open("/tmp/build-info.json"))["commit"])')
+          echo "Production commit: $deployed_sha"
+          test "$deployed_sha" = "$GITHUB_SHA"
 
       - name: Run production smoke tests
         run: |
