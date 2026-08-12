@@ -19,7 +19,10 @@ export default function SessionDetailPage() {
     const id = new URLSearchParams(window.location.search).get("id");
     if (!id) { setError("Không tìm thấy session."); setLoading(false); return; }
     let active = true;
-    const endpoint = `/api/os-sessions?id=${encodeURIComponent(id)}`;
+    // The public session API is the source of truth for both upcoming and recent-past sessions.
+    // Do not use the id-filtered endpoint here: that endpoint may apply booking-window semantics,
+    // while this detail page must still resolve the last 7 days in read-only mode.
+    const endpoint = `/api/os-sessions`;
     fetch(endpoint, { cache: "no-store" }).then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || "Không thể tải session."); return d.sessions || []; })
       .then((sessions: Session[]) => { const found = sessions.find(item => item.id === id && item.type === "Open Studio"); if (!found) throw new Error("Session không tồn tại hoặc đã đóng."); if (active) setSession(found); })
       .catch(e => { if (active) setError(e instanceof Error ? e.message : "Không thể tải session."); })
