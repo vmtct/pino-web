@@ -41,7 +41,6 @@ export async function getWebImages(env: ImageEnv): Promise<Record<string, ImageA
       filter: {
         and: [
           { property: "Environment", select: { equals: "Production" } },
-          { property: "Status", status: { equals: "Ready" } },
           { property: "Active", checkbox: { equals: true } },
         ],
       },
