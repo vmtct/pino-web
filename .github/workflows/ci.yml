@@ -161,7 +161,7 @@ jobs:
             const body = [
               '# CI Failure Intake',
               '',
-              `- **Commit:** \\`${sha}\\``,
+              `- **Commit:** ${sha}`,
               `- **Run:** ${run}`,
               `- **Run URL:** ${context.serverUrl}/${owner}/${repo}/actions/runs/${run}`,
               `- **Build:** ${process.env.BUILD_RESULT}`,
