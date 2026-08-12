@@ -1,1 +1,0 @@
-Open Studio past-session detail investigation: the production E2E failure should be resolved by making the detail page use the same canonical session source as the landing page and explicitly preserve recent past sessions as read-only. This note is temporary and should be removed after the implementation is validated.
