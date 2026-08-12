@@ -6,7 +6,13 @@ const root = process.cwd();
 const publicDir = join(root, "public");
 mkdirSync(publicDir, { recursive: true });
 
-let commit = process.env.GITHUB_SHA || process.env.CF_PAGES_COMMIT_SHA || "unknown";
+// Workers Builds injects WORKERS_CI_COMMIT_SHA at build time. Keep the
+// GitHub/Pages fallbacks for local and GitHub Actions builds.
+let commit =
+  process.env.WORKERS_CI_COMMIT_SHA ||
+  process.env.GITHUB_SHA ||
+  process.env.CF_PAGES_COMMIT_SHA ||
+  "unknown";
 
 if (commit === "unknown") {
   try {
@@ -19,8 +25,8 @@ if (commit === "unknown") {
 const builtAt = new Date().toISOString();
 const info = { commit, builtAt };
 
-// Keep a public artifact for Next/static deployments and a Worker-native copy
-// because the production smoke test runs against the Cloudflare Worker route.
+// Keep a public artifact for diagnostics and a Worker-native copy because the
+// production smoke test verifies the deployed Worker, not the static export.
 writeFileSync(join(publicDir, "build-info.json"), `${JSON.stringify(info, null, 2)}\n`);
 writeFileSync(
   join(root, "worker-build-info.ts"),
