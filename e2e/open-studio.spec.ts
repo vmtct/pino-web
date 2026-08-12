@@ -5,11 +5,16 @@ test.describe('Open Studio public journey', () => {
     await page.goto('/open-studio');
 
     await expect(page.getByRole('heading', { name: /Nếu hôm nay con được tự chọn/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /Xem các buổi đang có/i }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /Chọn một buổi cho con/i }).first()).toBeVisible();
 
     const sessions = page.locator('a.session-card');
-    await expect(sessions.first()).toBeVisible({ timeout: 15_000 });
-    await expect(sessions.first()).toHaveAttribute('href', /\/open-studio\/session\?id=/);
+    const emptyState = page.locator('.session-empty');
+    await expect(sessions.first().or(emptyState)).toBeVisible({ timeout: 15_000 });
+    if (await sessions.count()) {
+      await expect(sessions.first()).toHaveAttribute('href', /\/open-studio\/session\?id=/);
+    } else {
+      await expect(emptyState).toContainText('Chưa có session sắp tới');
+    }
 
     await expect(page.getByRole('link', { name: /Vào Member Space/i })).toBeVisible();
   });
@@ -17,7 +22,9 @@ test.describe('Open Studio public journey', () => {
   test('session detail route resolves from a live session link', async ({ page }) => {
     await page.goto('/open-studio');
     const session = page.locator('a.session-card').first();
-    await expect(session).toBeVisible({ timeout: 15_000 });
+    const emptyState = page.locator('.session-empty');
+    await expect(session.or(emptyState)).toBeVisible({ timeout: 15_000 });
+    test.skip(await session.count() === 0, 'No live session is currently published');
 
     const href = await session.getAttribute('href');
     expect(href).toMatch(/^\/open-studio\/session\?id=.+/);
