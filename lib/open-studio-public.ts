@@ -1,3 +1,5 @@
+import { getConfig } from "./web-config";
+
 type Env = {
   NOTION_TOKEN: string;
   NOTION_PARENT_DATA_SOURCE_ID: string;
@@ -7,6 +9,7 @@ type Env = {
   NOTION_OS_SESSION_DATABASE_ID?: string;
   NOTION_PATH_PROGRAM_DATA_SOURCE_ID: string;
   NOTION_SYLLABUS_DATA_SOURCE_ID?: string;
+  NOTION_WEB_CONFIG_DATA_SOURCE_ID: string;
   RESEND_API_KEY?: string;
   OS_NOTIFY_TO?: string;
   OS_NOTIFY_FROM?: string;
@@ -20,7 +23,7 @@ const number=(p:any)=>typeof p?.number==="number"?p.number:typeof p?.formula?.nu
 const relationIds=(p:any):string[]=>Array.isArray(p?.relation)?p.relation.map((r:any)=>r.id).filter(Boolean):[];
 const select=(p:any)=>p?.select?.name||p?.status?.name||null;
 const normalizePhone=(value:string)=>value.replace(/\D/g,"").replace(/^84(?=0)/,"0");
-const sessionMs=(value:string|null)=>{if(!value)return null;const normalized=value.includes(" ")&&!value.includes("T")?value.replace(" ","T"):value;const parsed=new Date(normalized.length===10?`${normalized}T23:59:59+07:00`:normalized);return Number.isNaN(parsed.getTime())?null:parsed.getTime()};
+const sessionMs=(value:string|null)=>{if(!value)return null;const normalized=value.includes(" ")&&!value.includes("T")?value.replace(" ","T"):value;const parsed=new Date(normalized.length===10?`${normalized}T23:59:59+07:00`:normalized);return Number.isNaN(parsed.getTime())?null:parsed.getTime();};
 const path=(value:string|null)=>{const v=(value||"").trim().toLowerCase().replace(/\s+/g," ");if(v==="pianohouse"||v.startsWith("piano"))return "Piano";if(v==="architect"||v.startsWith("architect")||v.startsWith("mỹ thuật")||v.startsWith("my thuat"))return "Mỹ thuật";if(v==="little piner"||v.startsWith("little piner"))return "Little Piner";return null;};
 
 async function query(env:Env,ds:string,filter?:unknown){
@@ -58,19 +61,7 @@ export async function getPublicSessions(env:Env,params:URLSearchParams){
     const capacity=number(page.properties?.Capacity);
     const confirmedCount=number(page.properties?.["Confirmed Count"]);
     const availableSeats=number(page.properties?.["Available Seats"]);
-    items.push({
-      id:page.id,
-      topic:text(page.properties?.Topic)||"Untitled session",
-      type:text(page.properties?.Type),
-      path:paths[0]||null,
-      date:date(page.properties?.Date),
-      availableSeats:availableSeats??(capacity!==null&&confirmedCount!==null?Math.max(0,capacity-confirmedCount):null),
-      capacity,
-      confirmedCount:confirmedCount??0,
-      cover:null,
-      avatar:null,
-      syllabus
-    });
+    items.push({id:page.id,topic:text(page.properties?.Topic)||"Untitled session",type:text(page.properties?.Type),path:paths[0]||null,date:date(page.properties?.Date),availableSeats:availableSeats??(capacity!==null&&confirmedCount!==null?Math.max(0,capacity-confirmedCount):null),capacity,confirmedCount:confirmedCount??0,cover:null,avatar:null,syllabus});
   }
   items.sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
   const requestedPath=params.get("path");
@@ -89,10 +80,13 @@ async function resolveParent(env:Env,phone:string){
 }
 
 async function sendNotification(env:Env,bookingId:string,session:any,phone:string,parentId:string|null){
-  if(!env.RESEND_API_KEY||!env.OS_NOTIFY_TO)return {sent:false,reason:"email_not_configured"};
-  const from=env.OS_NOTIFY_FROM||"PINO Open Studio <onboarding@resend.dev>";
+  const notifyTo=await getConfig(env,"os_notify_email",env.OS_NOTIFY_TO||"");
+  const fromName=await getConfig(env,"os_notify_from_name","PINO Open Studio");
+  const fromEmail=await getConfig(env,"os_notify_from_email",env.OS_NOTIFY_FROM||"onboarding@resend.dev");
+  if(!env.RESEND_API_KEY||!notifyTo)return {sent:false,reason:"email_not_configured"};
+  const from=`${fromName} <${fromEmail}>`;
   const html=`<h2>New Open Studio registration</h2><p><strong>Session:</strong> ${session.topic}</p><p><strong>Date:</strong> ${session.date||"TBD"}</p><p><strong>Zalo / phone:</strong> ${phone}</p><p><strong>Parent:</strong> ${parentId?"Matched in CRM":"Not matched"}</p><p><strong>Booking:</strong> ${bookingId}</p><p>Status: <strong>Pending</strong> — follow up with the family via Zalo.</p>`;
-  const response=await fetch("https://api.resend.com/emails",{method:"POST",headers:{Authorization:`Bearer ${env.RESEND_API_KEY}`,"Content-Type":"application/json"},body:JSON.stringify({from,to:[env.OS_NOTIFY_TO],subject:`Open Studio · New registration · ${session.topic}`,html})});
+  const response=await fetch("https://api.resend.com/emails",{method:"POST",headers:{Authorization:`Bearer ${env.RESEND_API_KEY}`,"Content-Type":"application/json"},body:JSON.stringify({from,to:[notifyTo],subject:`Open Studio · New registration · ${session.topic}`,html})});
   if(!response.ok)return {sent:false,reason:"email_send_failed"};
   return {sent:true};
 }
@@ -100,6 +94,9 @@ async function sendNotification(env:Env,bookingId:string,session:any,phone:strin
 export async function createPublicBooking(env:Env,phone:string,sessionId:string){
   const normalized=normalizePhone(phone);
   if(!/^0\d{9,10}$/.test(normalized))return json({error:"Vui lòng nhập số điện thoại Zalo hợp lệ."},400);
+  const registrationEnabled=await getConfig(env,"os_registration_enabled",true);
+  if(!registrationEnabled)return json({error:"Open Studio registration is temporarily closed."},503);
+  const bookingWindowDays=await getConfig(env,"os_booking_window_days",7);
   const sessions=await getPublicSessions(env,new URLSearchParams());
   const sessionData=await sessions.json() as any;
   if(!sessions.ok)return sessions;
@@ -107,18 +104,23 @@ export async function createPublicBooking(env:Env,phone:string,sessionId:string)
   if(!session)return json({error:"Session không tồn tại hoặc đã đóng."},404);
   const start=sessionMs(session.date);if(start===null)return json({error:"Session chưa có ngày giờ hợp lệ."},409);
   if(start<Date.now())return json({error:"Session này đã bắt đầu và chỉ còn để xem."},409);
-  if(start>Date.now()+7*24*60*60*1000)return json({error:"Session này chưa mở đăng ký."},409);
+  if(start>Date.now()+bookingWindowDays*24*60*60*1000)return json({error:"Session này chưa mở đăng ký."},409);
   if(session.availableSeats!==null&&session.availableSeats<=0)return json({error:"Session này đã đầy."},409);
   const parent=await resolveParent(env,normalized);if(typeof parent==="object"&&parent.error)return json({error:"Không thể kiểm tra thông tin phụ huynh."},502);
-  const duplicateFilter:any={and:[{property:"OS Session",relation:{contains:sessionId}},{property:"Note",rich_text:{contains:normalized}},{or:[{property:"Status",select:{equals:"Pending"}},{property:"Status",select:{equals:"Confirmed"}}]}]};
-  const existingResponse=await query(env,env.NOTION_OS_BOOKING_DATA_SOURCE_ID,duplicateFilter);
-  if(existingResponse.ok){const existing=await existingResponse.json() as any;if((existing.results?.length||0)>0)return json({ok:true,alreadyRegistered:true,bookingId:existing.results[0].id,status:text(existing.results[0].properties?.Status)||"Pending"});}
+  const duplicateProtection=await getConfig(env,"os_duplicate_registration_protection",true);
+  if(duplicateProtection){
+    const duplicateFilter:any={and:[{property:"OS Session",relation:{contains:sessionId}},{property:"Note",rich_text:{contains:normalized}},{or:[{property:"Status",select:{equals:"Pending"}},{property:"Status",select:{equals:"Confirmed"}}]}]};
+    const existingResponse=await query(env,env.NOTION_OS_BOOKING_DATA_SOURCE_ID,duplicateFilter);
+    if(existingResponse.ok){const existing=await existingResponse.json() as any;if((existing.results?.length||0)>0)return json({ok:true,alreadyRegistered:true,bookingId:existing.results[0].id,status:text(existing.results[0].properties?.Status)||"Pending"});}
+  }
+  const defaultStatus=await getConfig(env,"os_default_booking_status","Pending");
   const note=`Source: public Open Studio\nZalo / phone: ${normalized}\nIdentity: ${parent?"matched parent":"new contact — human follow-up required"}`;
-  const properties:any={Name:{title:[{text:{content:`Open Studio · ${session.topic} · ${normalized}`}}]},"OS Session":{relation:[{id:sessionId}]},Status:{select:{name:"Pending"}},Note:{rich_text:[{text:{content:note}}]},...(parent?{Parent:{relation:[{id:parent}]}}:{})};
+  const properties:any={Name:{title:[{text:{content:`Open Studio · ${session.topic} · ${normalized}`}}]},"OS Session":{relation:[{id:sessionId}]},Status:{select:{name:defaultStatus}},Note:{rich_text:[{text:{content:note}}]},...(parent?{Parent:{relation:[{id:parent}]}}:{})};
   const bookingResponse=await createPage(env,env.NOTION_OS_BOOKING_DATA_SOURCE_ID,properties);
   if(!bookingResponse.ok){const detail=(await bookingResponse.text()).slice(0,500);return json({error:"Không thể tạo đăng ký.",detail},502);}
   const booking=await bookingResponse.json() as any;
   if(!booking.id)return json({error:"Đăng ký được tạo nhưng thiếu Booking ID."},502);
   const email=await sendNotification(env,booking.id,session,normalized,parent||null);
-  return json({ok:true,bookingId:booking.id,status:"Pending",parentId:parent||null,emailNotified:email.sent,message:"Đăng ký thành công. PINO sẽ liên hệ bạn qua Zalo để xác nhận."});
+  const successMessage=await getConfig(env,"os_success_message","Đăng ký thành công. PINO sẽ liên hệ bạn qua Zalo để xác nhận.");
+  return json({ok:true,bookingId:booking.id,status:defaultStatus,parentId:parent||null,emailNotified:email.sent,message:successMessage});
 }
