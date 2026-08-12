@@ -5,7 +5,6 @@ on:
     workflows: ["CI"]
     types: [completed]
     branches: [main]
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -14,50 +13,27 @@ permissions:
   issues: write
 
 concurrency:
-  group: autonomous-recovery-${{ github.event.workflow_run.id || github.run_id }}
+  group: autonomous-recovery-${{ github.event.workflow_run.id }}
   cancel-in-progress: false
 
 jobs:
   recover:
-    # Only react to a failed CI run on main. Manual runs are intentionally disabled
-    # unless a FAILED_RUN_ID/FAILED_HEAD_SHA/AGENT_BRANCH is supplied by an operator.
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'failure' &&
-       github.event.workflow_run.head_branch == 'main')
+    if: ${{ github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.head_branch == 'main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - name: Resolve failed revision
-        id: context
-        env:
-          EVENT_RUN_ID: ${{ github.event.workflow_run.id }}
-          EVENT_SHA: ${{ github.event.workflow_run.head_sha }}
-          EVENT_BRANCH: ${{ github.event.workflow_run.head_branch }}
-        run: |
-          set -euo pipefail
-          if [ -n "${EVENT_RUN_ID:-}" ]; then
-            echo "run_id=$EVENT_RUN_ID" >> "$GITHUB_OUTPUT"
-            echo "head_sha=$EVENT_SHA" >> "$GITHUB_OUTPUT"
-            echo "head_branch=$EVENT_BRANCH" >> "$GITHUB_OUTPUT"
-          else
-            echo "run_id=${FAILED_RUN_ID:-}" >> "$GITHUB_OUTPUT"
-            echo "head_sha=${FAILED_HEAD_SHA:-}" >> "$GITHUB_OUTPUT"
-            echo "head_branch=main" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Checkout failed revision
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.context.outputs.head_sha }}
+          ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
 
       - name: Create recovery branch
         id: branch
         env:
           GH_TOKEN: ${{ github.token }}
-          SHA: ${{ steps.context.outputs.head_sha }}
-          RUN_ID: ${{ steps.context.outputs.run_id }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
           set -euo pipefail
           BRANCH="agent/recovery-${RUN_ID}"
@@ -68,7 +44,7 @@ jobs:
       - name: Capture failed CI context
         env:
           GH_TOKEN: ${{ github.token }}
-          RUN_ID: ${{ steps.context.outputs.run_id }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
           set -euo pipefail
           gh run view "$RUN_ID" --json name,displayTitle,conclusion,headSha,jobs,url > .agent-run.json
@@ -104,8 +80,8 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           GH_TOKEN: ${{ github.token }}
           GITHUB_WORKSPACE: ${{ github.workspace }}
-          FAILED_RUN_ID: ${{ steps.context.outputs.run_id }}
-          FAILED_HEAD_SHA: ${{ steps.context.outputs.head_sha }}
+          FAILED_RUN_ID: ${{ github.event.workflow_run.id }}
+          FAILED_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           AGENT_BRANCH: ${{ steps.branch.outputs.branch }}
         run: python agent/dev_agent.py
 
@@ -113,7 +89,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: autonomous-recovery-${{ steps.context.outputs.run_id }}
+          name: autonomous-recovery-${{ github.event.workflow_run.id }}
           path: |
             .agent-run.json
             .agent-failure.log
