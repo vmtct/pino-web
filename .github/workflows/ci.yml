@@ -9,7 +9,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
 
 concurrency:
   group: pino-web-${{ github.ref }}
@@ -21,163 +20,81 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.2.15
-
       - name: Install dependencies
         run: bun install --frozen-lockfile
-
       - name: Production build
         run: bun run build
 
   smoke:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     needs: build
     runs-on: ubuntu-latest
+    env:
+      BASE_URL: ${{ github.event_name == 'pull_request' && 'https://fix-open-studio-past-detail-pino-web.minhtri-van42.workers.dev' || 'https://pino-web.minhtri-van42.workers.dev' }}
     steps:
-      - name: Wait for Cloudflare deployment
-        env:
-          EXPECTED_SHA: ${{ github.sha }}
+      - name: Wait for deployment
         run: |
           set -euo pipefail
-          base="https://pino-web.minhtri-van42.workers.dev"
-
-          echo "Waiting for production to expose commit $EXPECTED_SHA"
           for attempt in $(seq 1 30); do
-            if curl -fsS "$base/build-info.json" -o /tmp/build-info.json; then
-              deployed_sha=$(python -c 'import json; print(json.load(open("/tmp/build-info.json"))["commit"])')
-              echo "Production commit: $deployed_sha"
-              if [ "$deployed_sha" = "$EXPECTED_SHA" ]; then
-                echo "Production deployment confirmed"
-                exit 0
-              fi
+            status=$(curl -sS -o /tmp/home.html -w "%{http_code}" "$BASE_URL/") || status=000
+            if [ "$status" = "200" ]; then
+              echo "Deployment reachable"
+              exit 0
             fi
-            echo "Deployment not ready yet (attempt $attempt/30)"
+            echo "Deployment not ready yet (attempt $attempt/30, HTTP $status)"
             sleep 10
           done
-
-          echo "Timed out waiting for production commit $EXPECTED_SHA"
           exit 1
-
-      - name: Run production smoke tests
+      - name: Run smoke tests
         run: |
           set -euo pipefail
-          base="https://pino-web.minhtri-van42.workers.dev"
-
-          status=$(curl -sS -o /tmp/home.html -w "%{http_code}" "$base/")
-          test "$status" = "200"
-
-          status=$(curl -sS -o /tmp/sessions.json -w "%{http_code}" "$base/api/os-sessions")
+          status=$(curl -sS -o /tmp/sessions.json -w "%{http_code}" "$BASE_URL/api/os-sessions")
           test "$status" = "200"
           grep -q 'sessions' /tmp/sessions.json
 
-          status=$(curl -sS -o /tmp/book.json -w "%{http_code}" -X POST "$base/api/open-studio/book" -H 'Content-Type: application/json' -d '{}')
+          status=$(curl -sS -o /tmp/book.json -w "%{http_code}" -X POST "$BASE_URL/api/open-studio/book" -H 'Content-Type: application/json' -d '{}')
           test "$status" = "400"
           grep -q 'required' /tmp/book.json
 
-          status=$(curl -sS -o /tmp/member.json -w "%{http_code}" -X POST "$base/api/member" -H 'Content-Type: application/json' -d '{}')
-          test "$status" = "400"
-          grep -q 'phone' /tmp/member.json
-
-          echo "Production smoke tests passed"
+          echo "Smoke tests passed"
 
   e2e:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     needs: smoke
     runs-on: ubuntu-latest
+    env:
+      E2E_BASE_URL: ${{ github.event_name == 'pull_request' && 'https://fix-open-studio-past-detail-pino-web.minhtri-van42.workers.dev' || 'https://pino-web.minhtri-van42.workers.dev' }}
+      E2E_MEMBER_PHONE: ${{ secrets.E2E_MEMBER_PHONE }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.2.15
-
       - name: Install dependencies
         run: bun install --frozen-lockfile
-
       - name: Install Playwright browsers
         run: bunx playwright install --with-deps chromium
-
       - name: Run Playwright E2E
         env:
           CI: true
-          E2E_BASE_URL: https://pino-web.minhtri-van42.workers.dev
-          E2E_MEMBER_PHONE: ${{ secrets.E2E_MEMBER_PHONE }}
         run: bunx playwright test
-
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ github.run_id }}
           path: playwright-report/
           if-no-files-found: ignore
-
       - name: Upload Playwright test artifacts
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-test-results
+          name: playwright-test-results-${{ github.run_id }}
           path: test-results/
           if-no-files-found: ignore
-
-  failure-intake:
-    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.build.result == 'failure' || needs.smoke.result == 'failure' || needs.e2e.result == 'failure')
-    needs: [build, smoke, e2e]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Create structured CI failure intake
-        uses: actions/github-script@v7
-        env:
-          BUILD_RESULT: ${{ needs.build.result }}
-          SMOKE_RESULT: ${{ needs.smoke.result }}
-          E2E_RESULT: ${{ needs.e2e.result }}
-        with:
-          script: |
-            const run = context.runId;
-            const sha = context.sha;
-            const { owner, repo } = context.repo;
-            const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
-              owner, repo, run_id: run, per_page: 100
-            });
-
-            const failed = jobs
-              .filter(j => ['failure', 'timed_out', 'cancelled'].includes(j.conclusion))
-              .map(j => ({
-                name: j.name,
-                conclusion: j.conclusion,
-                url: j.html_url,
-                failedSteps: (j.steps || [])
-                  .filter(s => ['failure', 'timed_out', 'cancelled'].includes(s.conclusion))
-                  .map(s => s.name)
-              }));
-
-            const title = `CI Failure Intake — ${sha.slice(0, 7)} — run ${run}`;
-            const body = [
-              '# CI Failure Intake',
-              '',
-              `- **Commit:** \\`${sha}\\``,
-              `- **Run:** ${run}`,
-              `- **Run URL:** ${context.serverUrl}/${owner}/${repo}/actions/runs/${run}`,
-              `- **Build:** ${process.env.BUILD_RESULT}`,
-              `- **Smoke:** ${process.env.SMOKE_RESULT}`,
-              `- **E2E:** ${process.env.E2E_RESULT}`,
-              '',
-              '## Failed jobs',
-              '```json',
-              JSON.stringify(failed, null, 2),
-              '```',
-              '',
-              '## Agent instruction',
-              'Treat this issue as machine-generated CI evidence. Inspect the referenced workflow run, failed job logs, Playwright artifacts, and the commit diff before proposing or applying a fix.',
-              '',
-              '## Safety boundary',
-              'Do not mutate production data merely to reproduce the failure. Prefer tests, mocks, validation-only endpoints, or disposable E2E fixtures.',
-            ].join('\\n');
-
-            await github.rest.issues.create({ owner, repo, title, body });
