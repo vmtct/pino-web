@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-type Session = { id: string; topic: string; type: string; path: string | null; date: string | null; availableSeats: number | null; capacity: number | null; confirmedCount: number; cover: string | null; avatar: string | null };
+type Session = { id: string | number; topic: string; type: string; path: string | null; date: string | null; availableSeats: number | null; capacity: number | null; confirmedCount: number; cover: string | null; avatar: string | null };
 
 function parseDate(value: string | null) { if (!value) return null; const normalized = value.length === 10 ? `${value}T23:59:59+07:00` : value; const parsed = new Date(normalized); return Number.isNaN(parsed.getTime()) ? null : parsed; }
 function dateLabel(value: string | null) { const parsed = parseDate(value); if (!parsed) return "Ngày đang cập nhật"; return new Intl.DateTimeFormat("vi-VN", { weekday: "long", day: "numeric", month: "numeric", year: "numeric", timeZone: "Asia/Ho_Chi_Minh" }).format(parsed); }
@@ -19,28 +19,31 @@ export default function SessionDetailPage() {
     const id = new URLSearchParams(window.location.search).get("id");
     if (!id) { setError("Không tìm thấy session."); setLoading(false); return; }
     let active = true;
-    // The public session API is the source of truth for both upcoming and recent-past sessions.
-    // Do not use the id-filtered endpoint here: that endpoint may apply booking-window semantics,
-    // while this detail page must still resolve the last 7 days in read-only mode.
-    const endpoint = `/api/os-sessions`;
-    fetch(endpoint, { cache: "no-store" }).then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || "Không thể tải session."); return d.sessions || []; })
-      .then((sessions: Session[]) => { const found = sessions.find(item => item.id === id && item.type === "Open Studio"); if (!found) throw new Error("Session không tồn tại hoặc đã đóng."); if (active) setSession(found); })
+    fetch("/api/os-sessions", { cache: "no-store" })
+      .then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || "Không thể tải session."); return Array.isArray(d.sessions) ? d.sessions : []; })
+      .then((sessions: Session[]) => {
+        // URLSearchParams always gives a string. Normalize API ids so numeric/string ids resolve identically.
+        const found = sessions.find(item => String(item.id) === id && String(item.type).toLowerCase() === "open studio");
+        if (!found) throw new Error("Session không tồn tại hoặc đã đóng.");
+        if (active) setSession(found);
+      })
       .catch(e => { if (active) setError(e instanceof Error ? e.message : "Không thể tải session."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, []);
 
-  const join = () => { if (!session || expired || soldOut) return; const next = `/open-studio/member/book?session=${encodeURIComponent(session.id)}`; const phone = sessionStorage.getItem("pino_member_phone"); router.push(phone ? next : `/open-studio/member?next=${encodeURIComponent(next)}`); };
-
   if (loading) return <main className="session-page"><div className="loading">Đang mở session…</div><style jsx>{`.session-page{min-height:100vh;background:#f4f0e7;color:#171713}.loading{max-width:1120px;margin:auto;padding:100px 24px;color:#777269}`}</style></main>;
   if (error || !session) return <main className="session-page"><nav><a href="/open-studio">PINO<span>•</span></a></nav><section className="error-state"><p className="eyebrow">OPEN STUDIO</p><h1>Buổi này không còn mở.</h1><p>{error || "Hãy xem các session khác đang có."}</p><a href="/open-studio#sessions">Xem các buổi đang có →</a></section><style jsx>{`.session-page{min-height:100vh;background:#f4f0e7;color:#171713}.session-page nav{max-width:1120px;margin:auto;padding:24px;border-bottom:1px solid rgba(23,23,19,.15)}.session-page nav a{font-weight:700;font-size:24px;letter-spacing:-.08em;color:#171713;text-decoration:none}.session-page nav span{color:#d65b42}.error-state{max-width:760px;margin:auto;padding:110px 24px}.eyebrow{font-size:10px;letter-spacing:.14em;font-weight:700;color:#777269}.error-state h1{font-size:clamp(52px,7vw,84px);line-height:.92;letter-spacing:-.06em;margin:12px 0 20px}.error-state p:not(.eyebrow){color:#777269;line-height:1.6}.error-state a{display:inline-block;margin-top:24px;background:#171713;color:#fff;padding:14px 18px;text-decoration:none;font-weight:700;font-size:13px}`}</style></main>;
 
-  const expired = (() => { const parsed = parseDate(session.date); return !parsed || parsed.getTime() < Date.now(); })();
+  const parsed = parseDate(session.date);
+  const expired = !parsed || parsed.getTime() < Date.now();
   const soldOut = session.availableSeats !== null && session.availableSeats <= 0;
   const unavailable = expired || soldOut;
   const time = timeLabel(session.date);
   const statusLabel = expired ? "Session đã kết thúc" : soldOut ? "Session đã đầy" : session.availableSeats === null ? "Chỗ đang được cập nhật" : `${session.availableSeats} chỗ còn lại`;
   const ctaLabel = expired ? "Session đã kết thúc" : soldOut ? "Session đã đầy" : session.availableSeats === null ? "Đang cập nhật chỗ" : "Chọn session này →";
+  const join = () => { if (unavailable) return; const next = `/open-studio/member/book?session=${encodeURIComponent(String(session.id))}`; const phone = sessionStorage.getItem("pino_member_phone"); router.push(phone ? next : `/open-studio/member?next=${encodeURIComponent(next)}`); };
+
   return <main className="session-page">
     <nav className="nav"><a href="/open-studio">PINO<span>•</span></a><a href="/open-studio#sessions">← Các buổi đang có</a></nav>
     <section className="detail-hero"><div className="visual" style={session.cover ? { backgroundImage: `url(${session.cover})` } : undefined}><span>{session.path || "OPEN STUDIO"}</span></div><div className="copy"><p className="eyebrow">OPEN STUDIO · {session.path || "DISCOVERY"}</p><h1>{session.topic}</h1><p className="lede">Một buổi sáng tạo có cấu trúc vừa đủ để con thử, khám phá và tự tạo ra một điều gì đó.</p><div className="meta"><div><small>KHI NÀO</small><strong>{dateLabel(session.date)}{time ? ` · ${time}` : ""}</strong></div><div><small>CHỖ TRỐNG</small><strong>{statusLabel}</strong></div></div><button className="join" disabled={unavailable} onClick={join}>{ctaLabel}</button><p className="note">Bạn có thể đăng nhập bằng số điện thoại đã đăng ký với PINO. Hệ thống sẽ kiểm tra Pass phù hợp trước khi xác nhận.</p></div></section>
