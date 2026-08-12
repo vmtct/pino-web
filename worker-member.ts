@@ -5,6 +5,7 @@ type Env = {
   ENVIRONMENT?: string;
   NOTION_TOKEN: string;
   NOTION_OS_SESSION_DATA_SOURCE_ID: string;
+  NOTION_OS_SESSION_DATABASE_ID?: string;
   NOTION_OS_BOOKING_DATA_SOURCE_ID: string;
   NOTION_OS_PASS_DATA_SOURCE_ID: string;
   NOTION_RUNNING_CLASS_DATA_SOURCE_ID: string;
@@ -12,10 +13,20 @@ type Env = {
 };
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store, no-cache, must-revalidate", "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type", "Access-Control-Allow-Methods": "GET, POST, OPTIONS" } });
-const notionHeaders = (env: Env) => ({ Authorization: `Bearer ${env.NOTION_TOKEN}`, "Content-Type": "application/json", "Notion-Version": "2026-03-11" });
+const notionHeaders = (env: Env, version = "2026-03-11") => ({ Authorization: `Bearer ${env.NOTION_TOKEN}`, "Content-Type": "application/json", "Notion-Version": version });
 const isProduction = (env: Env) => (env.ENVIRONMENT || "production") === "production";
 const text = (p: any) => p?.title?.[0]?.plain_text || p?.rich_text?.[0]?.plain_text || p?.select?.name || p?.status?.name || "";
 const date = (p: any) => p?.date?.start || null;
+
+async function querySessions(env: Env) {
+  const body = "{}";
+  const primary = await fetch(`https://api.notion.com/v1/data_sources/${env.NOTION_OS_SESSION_DATA_SOURCE_ID}/query`, { method: "POST", headers: notionHeaders(env), body });
+  if (primary.ok) return primary;
+  if (env.NOTION_OS_SESSION_DATABASE_ID) {
+    return fetch(`https://api.notion.com/v1/databases/${env.NOTION_OS_SESSION_DATABASE_ID}/query`, { method: "POST", headers: notionHeaders(env, "2022-06-28"), body });
+  }
+  return primary;
+}
 
 async function notionPage(env: Env, pageId: string) {
   const response = await fetch(`https://api.notion.com/v1/pages/${pageId}`, { headers: notionHeaders(env) });
@@ -24,7 +35,7 @@ async function notionPage(env: Env, pageId: string) {
 }
 
 async function fallbackSessions(env: Env) {
-  const response = await fetch(`https://api.notion.com/v1/data_sources/${env.NOTION_OS_SESSION_DATA_SOURCE_ID}/query`, { method: "POST", headers: notionHeaders(env), body: "{}" });
+  const response = await querySessions(env);
   if (!response.ok) return null;
   const data = await response.json() as any;
   const sessions = (data.results || []).map((page: any) => ({
