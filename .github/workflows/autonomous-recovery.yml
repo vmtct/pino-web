@@ -16,11 +16,15 @@ concurrency:
   group: autonomous-recovery-${{ github.event.workflow_run.id }}
   cancel-in-progress: false
 
+env:
+  MAX_PR_WAIT_MINUTES: '30'
+  PR_POLL_SECONDS: '30'
+
 jobs:
   recover:
     if: ${{ github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.head_branch == 'main' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Checkout failed revision
         uses: actions/checkout@v4
@@ -52,7 +56,6 @@ jobs:
           if [ ! -s .agent-failure.log ]; then
             echo "No failed-step log was returned; inspect the workflow run and jobs directly with gh." > .agent-failure.log
           fi
-
           python - <<'PY'
           from pathlib import Path
           p = Path('.agent-failure.log')
@@ -84,6 +87,70 @@ jobs:
           FAILED_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           AGENT_BRANCH: ${{ steps.branch.outputs.branch }}
         run: python agent/dev_agent.py
+
+      - name: Find recovery PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ steps.branch.outputs.branch }}
+        run: |
+          set -euo pipefail
+          for i in {1..10}; do
+            PR_NUMBER="$(gh pr list --head "$BRANCH" --base main --state open --json number --jq '.[0].number // empty')"
+            if [ -n "$PR_NUMBER" ]; then
+              echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Recovery agent did not open a PR." >&2
+          exit 1
+
+      - name: Wait for recovery PR checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
+        run: |
+          set -euo pipefail
+          deadline=$(( $(date +%s) + MAX_PR_WAIT_MINUTES * 60 ))
+          while [ "$(date +%s)" -lt "$deadline" ]; do
+            STATE="$(gh pr view "$PR_NUMBER" --json state --jq '.state')"
+            if [ "$STATE" != "OPEN" ]; then
+              echo "PR is no longer open: $STATE"
+              exit 0
+            fi
+
+            CHECKS="$(gh pr checks "$PR_NUMBER" 2>&1 || true)"
+            echo "$CHECKS"
+
+            if echo "$CHECKS" | grep -Eq '(^|[[:space:]])(fail|cancelled|timed_out|failure)([[:space:]]|$)'; then
+              echo "Recovery PR checks failed. Agent must diagnose the failed PR CI." >&2
+              exit 1
+            fi
+
+            if echo "$CHECKS" | grep -q 'no checks reported'; then
+              sleep "$PR_POLL_SECONDS"
+              continue
+            fi
+
+            if ! echo "$CHECKS" | grep -Eq '(^|[[:space:]])(pending|queued|in_progress)([[:space:]]|$)'; then
+              echo "All reported recovery PR checks passed."
+              exit 0
+            fi
+
+            sleep "$PR_POLL_SECONDS"
+          done
+
+          echo "Timed out waiting for recovery PR checks." >&2
+          exit 1
+
+      - name: Auto-merge verified recovery PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
+        run: |
+          set -euo pipefail
+          gh pr merge "$PR_NUMBER" --squash --delete-branch --subject "chore: merge autonomous recovery" --body "Autonomous recovery PR verified by PR CI. Production validation remains authoritative on main."
 
       - name: Upload agent diagnostics
         if: always()
