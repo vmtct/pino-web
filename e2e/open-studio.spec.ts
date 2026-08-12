@@ -2,20 +2,22 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Open Studio public journey', () => {
   async function waitForSessionState(page: import('@playwright/test').Page) {
-    const sessions = page.locator('a.session-card');
-    const emptyState = page.getByText(/Chưa có session sắp tới/i);
+    const upcoming = page.locator('a.session-card');
+    const recentPast = page.locator('.session-card-past');
+    const emptyState = page.getByText(/Chưa có session để hiển thị/i);
     const loading = page.getByText(/Đang xem lịch Open Studio/i);
 
     await expect.poll(async () => {
-      const [sessionCount, emptyCount, loadingCount] = await Promise.all([
-        sessions.count(),
+      const [upcomingCount, pastCount, emptyCount, loadingCount] = await Promise.all([
+        upcoming.count(),
+        recentPast.count(),
         emptyState.count(),
         loading.count(),
       ]);
-      return sessionCount > 0 ? 'sessions' : emptyCount > 0 ? 'empty' : loadingCount > 0 ? 'loading' : 'pending';
+      return upcomingCount > 0 || pastCount > 0 ? 'sessions' : emptyCount > 0 ? 'empty' : loadingCount > 0 ? 'loading' : 'pending';
     }, { timeout: 15_000 }).toMatch(/sessions|empty/);
 
-    return { sessions, emptyState };
+    return { upcoming, recentPast, emptyState };
   }
 
   async function attachBrowserDiagnostics(page: import('@playwright/test').Page) {
@@ -33,17 +35,9 @@ test.describe('Open Studio public journey', () => {
     page.on('response', async response => {
       if (!response.url().includes('/api/os-sessions')) return;
       try {
-        diagnostics.sessionApi = {
-          status: response.status(),
-          ok: response.ok(),
-          body: await response.json(),
-        };
+        diagnostics.sessionApi = { status: response.status(), ok: response.ok(), body: await response.json() };
       } catch (error) {
-        diagnostics.sessionApi = {
-          status: response.status(),
-          ok: response.ok(),
-          body: { parseError: String(error) },
-        };
+        diagnostics.sessionApi = { status: response.status(), ok: response.ok(), body: { parseError: String(error) } };
       }
     });
 
@@ -54,13 +48,15 @@ test.describe('Open Studio public journey', () => {
     page: import('@playwright/test').Page,
     diagnostics: Awaited<ReturnType<typeof attachBrowserDiagnostics>>,
   ) {
-    const renderedCards = await page.locator('a.session-card').count();
+    const renderedUpcoming = await page.locator('a.session-card').count();
+    const renderedPast = await page.locator('.session-card-past').count();
     const loadingCount = await page.getByText(/Đang xem lịch Open Studio/i).count();
-    const emptyCount = await page.getByText(/Chưa có session sắp tới/i).count();
+    const emptyCount = await page.getByText(/Chưa có session để hiển thị/i).count();
     const errorCount = await page.getByText(/Lịch Open Studio đang tạm thời chưa tải được/i).count();
 
     console.log('[OS E2E DIAGNOSTICS]', JSON.stringify({
-      renderedCards,
+      renderedUpcoming,
+      renderedPast,
       loadingCount,
       emptyCount,
       errorCount,
@@ -93,23 +89,30 @@ test.describe('Open Studio public journey', () => {
     await expect(page.getByRole('link', { name: /Chọn (một )?buổi cho con/i }).first()).toBeVisible();
     await expect(page.getByRole('link', { name: /Vào Member Space/i })).toBeVisible();
 
-    const { sessions } = await waitForSessionState(page);
+    const { upcoming, recentPast } = await waitForSessionState(page);
     await dumpBrowserDiagnostics(page, diagnostics);
-    await expect(sessions).not.toHaveCount(0);
-    await expect(sessions.first()).toBeVisible();
-    await expect(sessions.first()).toHaveAttribute('href', /\/open-studio\/session\?id=/);
+
+    expect((await upcoming.count()) + (await recentPast.count())).toBeGreaterThan(0);
+    if (await recentPast.count()) {
+      await expect(recentPast.first()).toContainText(/ĐÃ DIỄN RA/);
+      await expect(recentPast.first()).toContainText(/Chỉ để tham khảo/);
+      await expect(recentPast.first()).not.toHaveAttribute('href', /./);
+    }
   });
 
-  test('session detail route resolves when a live session is available', async ({ page }) => {
+  test('session detail route resolves when a live upcoming session is available', async ({ page }) => {
     const diagnostics = await attachBrowserDiagnostics(page);
     await page.goto('/open-studio');
-    const { sessions } = await waitForSessionState(page);
+    const { upcoming, recentPast } = await waitForSessionState(page);
 
     await dumpBrowserDiagnostics(page, diagnostics);
-    await expect(sessions).not.toHaveCount(0);
-    const session = sessions.first();
-    await expect(session).toBeVisible();
+    if (await upcoming.count() === 0) {
+      expect(await recentPast.count()).toBeGreaterThan(0);
+      return;
+    }
 
+    const session = upcoming.first();
+    await expect(session).toBeVisible();
     const href = await session.getAttribute('href');
     expect(href).toMatch(/^\/open-studio\/session\?id=.+/);
 
