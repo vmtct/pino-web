@@ -9,9 +9,9 @@ test.describe('Open Studio public journey', () => {
     await expect(page.getByRole('link', { name: /Vào Member Space/i })).toBeVisible();
 
     const sessions = page.locator('a.session-card');
-    const sessionCount = await sessions.count();
+    await expect(page.locator('.session-loading')).toHaveCount(0, { timeout: 15_000 });
 
-    if (sessionCount > 0) {
+    if (await sessions.count() > 0) {
       await expect(sessions.first()).toBeVisible({ timeout: 15_000 });
       await expect(sessions.first()).toHaveAttribute('href', /\/open-studio\/session\?id=/);
     } else {
@@ -22,6 +22,7 @@ test.describe('Open Studio public journey', () => {
   test('session detail route resolves when a live session is available', async ({ page }) => {
     await page.goto('/open-studio');
     const session = page.locator('a.session-card').first();
+    await expect(page.locator('.session-loading')).toHaveCount(0, { timeout: 15_000 });
 
     if (await session.count() === 0) {
       await expect(page.getByText(/Chưa có session sắp tới/i)).toBeVisible();
