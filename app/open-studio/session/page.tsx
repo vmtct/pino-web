@@ -19,7 +19,8 @@ export default function SessionDetailPage() {
     const id = new URLSearchParams(window.location.search).get("id");
     if (!id) { setError("Không tìm thấy session."); setLoading(false); return; }
     let active = true;
-    fetch("/api/os-sessions").then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || "Không thể tải session."); return d.sessions || []; })
+    const endpoint = `/api/os-sessions?id=${encodeURIComponent(id)}`;
+    fetch(endpoint, { cache: "no-store" }).then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || "Không thể tải session."); return d.sessions || []; })
       .then((sessions: Session[]) => { const found = sessions.find(item => item.id === id && item.type === "Open Studio"); if (!found) throw new Error("Session không tồn tại hoặc đã đóng."); if (active) setSession(found); })
       .catch(e => { if (active) setError(e instanceof Error ? e.message : "Không thể tải session."); })
       .finally(() => { if (active) setLoading(false); });
