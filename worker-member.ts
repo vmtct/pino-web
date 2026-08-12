@@ -16,6 +16,7 @@ const json = (body: unknown, status = 200) =>
     status,
     headers: {
       "Content-Type": "application/json",
+      "Cache-Control": "no-store, no-cache, must-revalidate",
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Headers": "Content-Type",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -60,15 +61,23 @@ async function rejectMockSessionInProduction(env: Env, sessionId: string | null)
   return null;
 }
 
-async function filterProductionSessions(env: Env, response: Response) {
+async function filterProductionSessions(env: Env, response: Response, requestedId: string | null = null) {
   if (!isProduction(env)) return response;
   let payload: any;
   try { payload = await response.clone().json(); } catch { return response; }
   if (!Array.isArray(payload?.sessions)) return response;
+
+  const sourceSessions: any[] = requestedId
+    ? payload.sessions.filter((session: any) => session?.id === requestedId)
+    : payload.sessions;
   const sessions: any[] = [];
-  for (const session of payload.sessions) {
+
+  for (const session of sourceSessions) {
     const page = await notionPage(env, session.id);
-    if (!page) return json({ error: "Could not validate production session data." }, 502);
+    if (!page) {
+      if (requestedId) return json({ error: "Session not found." }, 404);
+      return json({ error: "Could not validate production session data." }, 502);
+    }
     if (isMock(page)) continue;
     const bookingResponse = await notionQuery(env, env.NOTION_OS_BOOKING_DATA_SOURCE_ID, {
       and: [
@@ -80,8 +89,14 @@ async function filterProductionSessions(env: Env, response: Response) {
     if (!bookingResponse) return json({ error: "Could not validate production booking data." }, 502);
     const bookingData = (await bookingResponse.json()) as any;
     const confirmedCount = bookingData.results?.length || 0;
-    sessions.push({ ...session, confirmedCount, availableSeats: typeof session.capacity === "number" ? Math.max(0, session.capacity - confirmedCount) : session.availableSeats });
+    sessions.push({
+      ...session,
+      confirmedCount,
+      availableSeats: typeof session.capacity === "number" ? Math.max(0, session.capacity - confirmedCount) : session.availableSeats,
+    });
   }
+
+  if (requestedId && sessions.length === 0) return json({ error: "Session not found." }, 404);
   return json({ ...payload, sessions });
 }
 
@@ -99,7 +114,7 @@ const handler = {
 
     if (isProduction(env) && url.pathname === "/api/os-sessions" && request.method === "GET") {
       const response = await memberWorker.fetch(request, env as any);
-      return filterProductionSessions(env, response);
+      return filterProductionSessions(env, response, url.searchParams.get("id"));
     }
 
     if (isProduction(env) && request.method === "POST" && (url.pathname === "/api/member/book" || url.pathname === "/api/open-studio/book")) {
