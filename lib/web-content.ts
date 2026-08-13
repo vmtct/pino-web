@@ -42,7 +42,7 @@ export async function getWebContent(env: ContentEnv): Promise<Record<string, str
       filter: {
         and: [
           { property: "Environment", select: { equals: "Production" } },
-          { property: "Status", status: { equals: "Published" } },
+          { property: "Status", select: { equals: "Published" } },
           { property: "Active", checkbox: { equals: true } },
           { property: "Language", select: { equals: "vi" } },
         ],
