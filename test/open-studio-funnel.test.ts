@@ -12,6 +12,7 @@ import {
   groupSessionsByLocalDate,
   isSessionFull,
   mapRegistrationError,
+  publicSyllabusTitle,
   serializeRegistration,
   sessionCover,
   sessionImageAlt,
@@ -128,6 +129,7 @@ test("22. Existing schedule adapter still proxies canonical GET", async () => {
   assert.equal((await response.json() as { sessions: CoreSession[] }).sessions.length, 1);
 });
 test("Session media alt combines public Syllabus title and Path", () => assert.equal(sessionImageAlt(makeSession()), "Những khu vườn biết kể chuyện — Art"));
+test("Development suffixes are not exposed in public titles", () => assert.equal(publicSyllabusTitle("Nhân vật Rạn San Hô — Dev"), "Nhân vật Rạn San Hô"));
 test("PINO date and time formatting never exposes raw UTC", () => {
   assert.match(formatLocalDate(makeSession().startsAt), /15\/08/);
   assert.equal(formatLocalTimeRange(makeSession().startsAt, makeSession().endsAt), "09:00–10:00");

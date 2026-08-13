@@ -15,6 +15,7 @@ import {
   isCoreSession,
   isSessionFull,
   mapRegistrationError,
+  publicSyllabusTitle,
   serializeRegistration,
   sessionCover,
   sessionImageAlt,
@@ -252,7 +253,7 @@ export default function OpenStudioPage() {
                       </div>
                       <div className="os-card-body">
                         <div className="os-card-meta"><span>{formatAgeRange(session.syllabus.ageMin, session.syllabus.ageMax)}</span><span className={`os-seats${isFull ? " is-full" : ""}`}><i aria-hidden="true" />{isFull ? "Đã đủ chỗ" : `Còn ${session.availability.remainingSeats} chỗ`}</span></div>
-                        <h4>{session.syllabus.title}</h4>
+                        <h4>{publicSyllabusTitle(session.syllabus.title)}</h4>
                         {session.syllabus.shortDescription ? <p>{session.syllabus.shortDescription}</p> : null}
                         <div className="os-card-when"><span>{formatLocalDate(session.startsAt)}</span><strong>{formatLocalTimeRange(session.startsAt, session.endsAt)}</strong></div>
                         <button type="button" disabled={isFull} aria-pressed={selected} onClick={() => selectSession(session)}>{isFull ? "Đã đủ chỗ" : selected ? "Đang xem" : "Khám phá"}<span aria-hidden="true">{isFull ? "" : "→"}</span></button>
@@ -272,7 +273,7 @@ export default function OpenStudioPage() {
             </div>
             <div className="os-detail-copy">
               <p className="eyebrow">{selectedSession.path.displayName} · {formatAgeRange(selectedSession.syllabus.ageMin, selectedSession.syllabus.ageMax)}</p>
-              <h3 id="session-detail-title">{selectedSession.syllabus.title}</h3>
+              <h3 id="session-detail-title">{publicSyllabusTitle(selectedSession.syllabus.title)}</h3>
               <div className="os-detail-when"><strong>{formatLocalDate(selectedSession.startsAt)}</strong><span>{formatLocalTimeRange(selectedSession.startsAt, selectedSession.endsAt)} · Giờ Việt Nam</span><span className="os-seats"><i aria-hidden="true" />Còn {selectedSession.availability.remainingSeats} chỗ</span></div>
               {selectedSession.syllabus.publicDescription ? <section><h4>Con sẽ làm gì?</h4><p>{selectedSession.syllabus.publicDescription}</p></section> : null}
               {selectedSession.syllabus.skillSummary ? <section><h4>Con sẽ khám phá</h4><p>{selectedSession.syllabus.skillSummary}</p></section> : null}

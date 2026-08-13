@@ -83,7 +83,8 @@ export const groupSessionsByLocalDate = (sessions: CoreSession[]) => {
 
 export const sessionThumbnail = (session: CoreSession) => session.syllabus.thumbnailUrl;
 export const sessionCover = (session: CoreSession) => session.syllabus.coverUrl || session.syllabus.thumbnailUrl;
-export const sessionImageAlt = (session: CoreSession) => `${session.syllabus.title} — ${session.path.displayName}`;
+export const publicSyllabusTitle = (title: string) => title.replace(/\s+(?:—|-)\s*dev(?:elopment)?$/i, "").trim();
+export const sessionImageAlt = (session: CoreSession) => `${publicSyllabusTitle(session.syllabus.title)} — ${session.path.displayName}`;
 
 export const serializeRegistration = (sessionId: string, form: RegistrationForm): RegistrationPayload => ({
   sessionId,
