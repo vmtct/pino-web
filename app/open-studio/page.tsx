@@ -1,64 +1,234 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { HouseArtwork, PrimaryCta, PublicFooter, PublicNav, SectionIntro } from "../components/public-site";
+import "./page.css";
 
-type Session = { id: string | number; topic: string; type: string; path: string | null; date: string | null; availableSeats: number | null; capacity: number | null; confirmedCount: number; cover: string | null; avatar: string | null };
-const API = "/api/os-sessions";
-const PAST_DAYS = 7;
+const SCHEDULE_ENDPOINT = "/api/pino-core/open-studio/sessions";
+const PINO_TIMEZONE = "Asia/Ho_Chi_Minh";
 
-function parseDate(value: string | null) { if (!value) return null; const normalized = value.length === 10 ? `${value}T23:59:59+07:00` : value; const d = new Date(normalized); return Number.isNaN(d.getTime()) ? null : d; }
-function dayKey(value: string | null) { const d = parseDate(value); if (!d) return "unknown"; return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit", day: "2-digit" }).format(d); }
-function dayLabel(value: string | null) { const d = parseDate(value); if (!d) return "Ngày"; return new Intl.DateTimeFormat("vi-VN", { weekday: "short", day: "numeric", month: "numeric", timeZone: "Asia/Ho_Chi_Minh" }).format(d); }
-function dayPill(value: string | null) { const d = parseDate(value); if (!d) return { weekday: "—", date: "—" }; return { weekday: new Intl.DateTimeFormat("vi-VN", { weekday: "short", timeZone: "Asia/Ho_Chi_Minh" }).format(d), date: new Intl.DateTimeFormat("vi-VN", { day: "numeric", month: "numeric", timeZone: "Asia/Ho_Chi_Minh" }).format(d) }; }
-function formatDate(value: string | null) { const d = parseDate(value); if (!d) return "Ngày đang cập nhật"; const timed = Boolean(value && value.length > 10); return new Intl.DateTimeFormat("vi-VN", { weekday: "short", day: "numeric", month: "numeric", ...(timed ? { hour: "2-digit", minute: "2-digit" } : {}), timeZone: "Asia/Ho_Chi_Minh" }).format(d); }
+type CoreSession = {
+  id: string;
+  path: { id: string; code: string; displayName: string };
+  startsAt: string;
+  endsAt: string;
+  bookingClosesAt: string;
+  timezone: string;
+  availability: { remainingSeats: number; isFull: boolean };
+  access: { kind: "explore" | string; trialPremium: boolean };
+};
+
+type ScheduleResponse = { sessions: CoreSession[] };
+type ScheduleStatus = "loading" | "success" | "error";
+
+const dateKey = (iso: string) => new Intl.DateTimeFormat("en-CA", {
+  timeZone: PINO_TIMEZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+}).format(new Date(iso));
+
+const dateLabel = (iso: string) => {
+  const value = new Intl.DateTimeFormat("vi-VN", {
+    timeZone: PINO_TIMEZONE,
+    weekday: "long",
+    day: "2-digit",
+    month: "2-digit",
+  }).format(new Date(iso));
+  return value.charAt(0).toUpperCase() + value.slice(1);
+};
+
+const timeLabel = (startsAt: string, endsAt: string) => {
+  const formatter = new Intl.DateTimeFormat("vi-VN", {
+    timeZone: PINO_TIMEZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  return `${formatter.format(new Date(startsAt))}–${formatter.format(new Date(endsAt))}`;
+};
+
+function isCoreSession(value: unknown): value is CoreSession {
+  if (!value || typeof value !== "object") return false;
+  const session = value as Partial<CoreSession>;
+  return typeof session.id === "string"
+    && typeof session.path?.displayName === "string"
+    && typeof session.startsAt === "string"
+    && typeof session.endsAt === "string"
+    && typeof session.availability?.remainingSeats === "number"
+    && typeof session.availability?.isFull === "boolean";
+}
+
+const paths = [
+  { age: "3–6 tuổi", name: "Little Piner Art", note: "Màu sắc, vật liệu và đôi tay tò mò." },
+  { age: "3–6 tuổi", name: "Little Piner Piano", note: "Âm thanh, nhịp điệu và niềm vui đầu tiên." },
+  { age: "7+ tuổi", name: "Art", note: "Quan sát, ý tưởng và ngôn ngữ tạo hình riêng." },
+  { age: "7+ tuổi", name: "Piano", note: "Cảm thụ, kỹ thuật và cách kể chuyện bằng âm nhạc." },
+];
 
 export default function OpenStudioPage() {
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [selectedDay, setSelectedDay] = useState("");
+  const [status, setStatus] = useState<ScheduleStatus>("loading");
+  const [sessions, setSessions] = useState<CoreSession[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  useEffect(() => { let active = true; fetch(API, { cache: "no-store" }).then(r => { if (!r.ok) throw new Error(); return r.json(); }).then(data => { if (active) setSessions(Array.isArray(data.sessions) ? data.sessions.filter((s: Session) => String(s.type).toLowerCase() === "open studio") : []); }).catch(() => active && setError(true)).finally(() => active && setLoading(false)); return () => { active = false; }; }, []);
+  const loadSessions = useCallback(async () => {
+    setStatus("loading");
+    try {
+      const response = await fetch(SCHEDULE_ENDPOINT, { cache: "no-store", headers: { Accept: "application/json" } });
+      if (!response.ok) throw new Error(`Schedule request failed (${response.status})`);
+      const data = await response.json() as ScheduleResponse;
+      if (!data || !Array.isArray(data.sessions)) throw new Error("Invalid schedule response");
+      setSessions(data.sessions.filter(isCoreSession).sort((a, b) => a.startsAt.localeCompare(b.startsAt)));
+      setStatus("success");
+    } catch {
+      setSessions([]);
+      setStatus("error");
+    }
+  }, []);
 
-  const { upcoming, past } = useMemo(() => {
-    const now = Date.now(); const cutoff = now - PAST_DAYS * 86400000;
-    const dated = sessions.map(session => ({ session, time: parseDate(session.date)?.getTime() || 0 })).filter(x => x.time);
-    return {
-      upcoming: dated.filter(x => x.time >= now).sort((a,b) => a.time-b.time).slice(0, 12).map(x => x.session),
-      past: dated.filter(x => x.time < now && x.time >= cutoff).sort((a,b) => b.time-a.time).map(x => x.session),
-    };
+  useEffect(() => { void loadSessions(); }, [loadSessions]);
+
+  const groupedSessions = useMemo(() => {
+    const groups = new Map<string, CoreSession[]>();
+    for (const session of sessions) {
+      const key = dateKey(session.startsAt);
+      groups.set(key, [...(groups.get(key) || []), session]);
+    }
+    return Array.from(groups.entries());
   }, [sessions]);
 
-  const days = useMemo(() => { const seen = new Set<string>(); return upcoming.filter(s => { const key = dayKey(s.date); if (seen.has(key)) return false; seen.add(key); return true; }); }, [upcoming]);
-  const activeDay = selectedDay || (days[0] ? dayKey(days[0].date) : "");
-  const visibleUpcoming = upcoming.filter(s => dayKey(s.date) === activeDay);
+  const selectedSession = sessions.find((session) => session.id === selectedId) || null;
 
-  return <main className="intake-page open-studio-landing">
-    <nav className="nav shell"><a className="wordmark" href="/">PINO<span>•</span></a><div className="nav-links"><a href="#sessions">Các buổi đang có</a><a href="#how">Cách hoạt động</a></div><a className="nav-cta" href="#sessions">Chọn buổi cho con →</a></nav>
-    <section className="os-ad-hero shell"><div className="hero-copy"><p className="eyebrow">PINO OPEN STUDIO · 1 BUỔI KHÁM PHÁ</p><h1>Nếu hôm nay con <em>được tự chọn?</em></h1><p className="hero-lede">Một buổi chiều để con vẽ, chơi nhạc và khám phá điều mình thích. Không thêm áp lực. Chỉ là một khoảng thời gian thật sự của riêng con.</p><div className="hero-actions"><a className="button button-dark" href="#sessions">Chọn một buổi cho con →</a><a className="text-link" href="#how">Open Studio là gì?</a></div><div className="hero-proof"><span>ART</span><i>·</i><span>PIANO</span><i>·</i><span>LITTLE PINER</span><i>·</i><span>3–15 TUỔI</span></div></div><div className="hero-art os-hero-art" aria-hidden="true"><div className="orb orb-a" /><div className="orb orb-b" /><div className="orb orb-c" /><div className="scribble">✦</div><div className="art-note"><strong>make</strong><br />something today.</div></div></section>
-    <section className="statement"><div className="statement-inner shell"><p className="eyebrow">KHÔNG PHẢI THÊM MỘT LỚP HỌC</p><h2>Một buổi chiều để con <em>tự mình khám phá.</em></h2><p>Open Studio là khoảng thời gian có cấu trúc vừa đủ để con được chọn, thử và tạo ra một điều gì đó — trong một không gian sáng tạo của PINO.</p></div></section>
+  return (
+    <main className="open-studio-page">
+      <PublicNav />
 
-    <section className="os-sessions-section" id="sessions"><div className="shell"><div className="section-heading"><div><p className="eyebrow">THIS WEEK AT PINO</p><h2>Con có thể<br /><em>khám phá gì?</em></h2></div><p>Chọn một ngày phù hợp với gia đình. Mỗi session là một điểm bắt đầu — không cần biết trước con sẽ thích gì.</p></div>
-      {loading ? <div className="session-empty">Đang xem lịch Open Studio…</div> : error ? <div className="session-empty"><strong>Lịch Open Studio đang tạm thời chưa tải được.</strong><br/>Vui lòng thử tải lại trang sau ít phút.</div> : <>
-        {upcoming.length > 0 && <div className="schedule-wrap">
-          {days.length > 1 && <div className="day-selector" aria-label="Chọn ngày Open Studio">{days.map(day => { const key = dayKey(day.date); const pill = dayPill(day.date); return <button key={key} className={`day-pill${key === activeDay ? " is-active" : ""}`} aria-pressed={key === activeDay} onClick={() => setSelectedDay(key)}><span>{pill.weekday}</span><strong>{pill.date}</strong></button>; })}</div>}
-          <div className="selected-day-heading"><p className="eyebrow">OPEN STUDIO</p><h3>{activeDay ? dayLabel(visibleUpcoming[0]?.date || days[0]?.date) : "Các buổi sắp tới"}</h3></div>
-          <div className="session-grid">{visibleUpcoming.map((session,index) => { const unavailable = session.availableSeats === 0 || session.availableSeats === null; return <a className={`session-card session-card-${(index%3)+1}${unavailable ? " is-unavailable" : ""}`} key={String(session.id)} href={`/open-studio/session?id=${encodeURIComponent(String(session.id))}`}><div className="session-card-top"><span>{session.path || "Open Studio"}</span><span>{session.availableSeats === 0 ? "FULL" : session.availableSeats === null ? "CHECK" : "OPEN"}</span></div><div className="session-card-body"><p className="session-date">{formatDate(session.date)}</p><h3>{session.topic}</h3><p className="session-experience">Một buổi {session.path === "Piano" ? "khám phá âm nhạc" : session.path === "Little Piner" ? "khám phá dành cho bé" : "sáng tạo"} tại PINO.</p><p className="session-seats">{session.availableSeats === null ? "Đang cập nhật chỗ" : session.availableSeats === 0 ? "Đã đầy · Xem chi tiết" : `${session.availableSeats} chỗ còn lại`} <span>→</span></p></div></a>; })}</div><p className="session-helper">Chọn một buổi để xem chi tiết. Bạn chưa cần đăng nhập để khám phá.</p>
-        </div>}
-        {past.length > 0 && <div className="recent-sessions"><div className="recent-sessions-heading"><div><p className="eyebrow">RECENTLY AT PINO</p><h3>Những buổi vừa diễn ra</h3></div><p>7 ngày gần nhất — để bạn thấy những gì các bạn nhỏ đã khám phá tại PINO.</p></div><div className="session-grid recent-session-grid">{past.map((session,index)=><div className={`session-card session-card-past session-card-${(index%3)+1}`} key={String(session.id)}><div className="session-card-top"><span>{session.path || "Open Studio"}</span><span>ĐÃ DIỄN RA</span></div><div className="session-card-body"><p className="session-date">{formatDate(session.date)}</p><h3>{session.topic}</h3><p className="session-experience">Một buổi khám phá đã diễn ra tại PINO.</p><p className="session-seats session-readonly">Session đã kết thúc · Chỉ để tham khảo</p></div></div>)}</div></div>}
-        {upcoming.length === 0 && past.length === 0 && <div className="session-empty"><strong>Chưa có session để hiển thị.</strong><br/>Lịch mới sẽ được cập nhật tại đây.</div>}
-      </>}
-    </div></section>
+      <section className="os-hero shell" aria-labelledby="open-studio-title">
+        <div className="os-hero-copy">
+          <p className="eyebrow">PINO HOUSE · OPEN STUDIO</p>
+          <h1 id="open-studio-title">Cho con một buổi chiều <em>ý nghĩa.</em></h1>
+          <p className="os-lead">Một khoảng thời gian nhẹ nhàng để con chạm vào nghệ thuật, âm nhạc và tìm điều mình thật sự muốn khám phá.</p>
+          <div className="os-hero-actions">
+            <PrimaryCta href="#sessions">Xem lịch Open Studio</PrimaryCta>
+            <a className="os-text-link" href="#what-is">Open Studio là gì? <span aria-hidden="true">↓</span></a>
+          </div>
+          <p className="os-soft-note"><span aria-hidden="true">✳</span> Không áp lực · Không phải buổi học thử bán hàng</p>
+        </div>
+        <HouseArtwork />
+      </section>
 
-    <section className="how-it-works" id="how"><div className="shell"><div className="section-heading"><div><p className="eyebrow">HOW IT WORKS</p><h2>Chọn một buổi.<br/><em>Rồi bắt đầu.</em></h2></div><p>Không cần biết trước con sẽ thích gì. Chỉ cần chọn một buổi để bắt đầu.</p></div><div className="steps-grid"><div className="step-card"><span>01 · CHỌN</span><h3>Chọn một buổi</h3><p>Xem lịch và tìm một session phù hợp với thời gian của gia đình.</p></div><div className="step-card"><span>02 · KHÁM PHÁ</span><h3>Con đến PINO</h3><p>Một buổi Art, Piano hoặc Little Piner — với đủ khoảng trống để con tự khám phá.</p></div><div className="step-card"><span>03 · TẠO RA</span><h3>Con làm một điều</h3><p>Một bức tranh, một giai điệu, một ý tưởng — thứ con mang về là của riêng con.</p></div><div className="step-card"><span>04 · QUAY LẠI</span><h3>Thích thì khám phá tiếp</h3><p>Open Studio được thiết kế để mỗi lần quay lại có thể là một điều mới.</p></div></div></div></section>
-    <section className="os-start"><div className="shell"><div className="os-start-grid"><div><p className="eyebrow">READY WHEN YOU ARE</p><h2>Một buổi chiều.<br/><em>Một điều mới.</em></h2><p>Chọn một session đang mở để xem chi tiết. Khi sẵn sàng, PINO sẽ kiểm tra Pass và giúp bạn đặt chỗ.</p></div><div className="direct-book-card"><p className="eyebrow">ALREADY A PINO MEMBER?</p><h3>Đã có Open Studio Pass?</h3><p>Đăng nhập để xem Pass của bé và đặt chỗ ngay.</p><a className="button button-dark" href="/open-studio/member">Vào Member Space →</a></div></div></div></section>
-    <footer className="footer shell"><div className="wordmark">PINO<span>•</span></div><p>Creative club for curious kids.</p><span>© {new Date().getFullYear()} PINO</span></footer>
-    {!loading && !error && upcoming.length > 0 && <a className="mobile-session-cta" href="#sessions"><span>Open Studio</span><strong>Chọn một buổi cho con →</strong></a>}
-    <style jsx global>{`
-      .open-studio-landing{--os-shadow:0 22px 60px rgba(23,23,19,.08);overflow:hidden}.open-studio-landing .nav{position:sticky;top:0;z-index:20;background:rgba(244,240,231,.92);backdrop-filter:blur(14px)}
-      .os-ad-hero{min-height:700px;display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(40px,7vw,110px);align-items:center;padding-top:70px;padding-bottom:80px}.hero-copy{position:relative;z-index:2}.hero-copy h1{font-size:clamp(58px,7.2vw,104px);max-width:800px}.hero-copy h1 em{color:#5e6b2b}.hero-lede{max-width:590px}.hero-art{min-height:540px;box-shadow:var(--os-shadow)}.statement-inner{max-width:1180px}.statement h2{max-width:940px}
-      .os-sessions-section{padding:130px 0 115px;background:#f4f0e7}.os-sessions-section .section-heading{margin-bottom:48px}.schedule-wrap{position:relative}.day-selector{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 18px;margin-bottom:22px;scrollbar-width:none}.day-selector::-webkit-scrollbar{display:none}.day-pill{min-width:92px;border:1px solid rgba(23,23,19,.14);background:#ebe5d9;padding:12px 14px;text-align:left;cursor:pointer;color:#777269;transition:.2s}.day-pill span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.12em;font-weight:700}.day-pill strong{display:block;margin-top:5px;color:#171713;font-size:15px}.day-pill.is-active{background:#171713;border-color:#171713;color:#fff;transform:translateY(-2px);box-shadow:0 10px 24px rgba(23,23,19,.12)}.day-pill.is-active strong{color:#fff}.selected-day-heading{display:flex;align-items:baseline;justify-content:space-between;margin:0 0 18px;border-top:1px solid rgba(23,23,19,.12);padding-top:20px}.selected-day-heading .eyebrow{margin:0}.selected-day-heading h3{margin:0;font-size:22px;letter-spacing:-.03em}
-      .session-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.session-card{min-height:390px;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;border:1px solid rgba(23,23,19,.1);background:#e8e0d1;box-shadow:0 8px 26px rgba(23,23,19,.04);transition:transform .22s ease,box-shadow .22s ease}.session-card:hover{transform:translateY(-5px);box-shadow:var(--os-shadow)}.session-card::before{content:"";display:block;height:7px;width:100%;background:#d65b42}.session-card-2::before{background:#9bbfd8}.session-card-3::before{background:#a8c86b}.session-card-top{display:flex;justify-content:space-between;gap:16px;padding:20px 22px 0;font-size:9px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#6d685f}.session-card-top span:last-child{color:#53631f}.session-card-body{padding:24px 22px 22px;margin-top:auto}.session-date{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#777269;margin-bottom:15px}.session-card h3{font-size:34px;line-height:.96;letter-spacing:-.05em;margin:0 0 18px}.session-experience{font-size:13px;line-height:1.55;color:#777269}.session-seats{margin:22px 0 0;font-size:11px;font-weight:700}.session-seats span{float:right;font-size:18px}.session-card-past{opacity:.72;filter:saturate(.75)}.session-readonly{color:#777269}.recent-sessions{margin-top:95px}.recent-sessions-heading{display:flex;justify-content:space-between;gap:50px;align-items:end;margin-bottom:24px}.recent-sessions-heading h3{font-size:38px;letter-spacing:-.05em;margin:0}.recent-sessions-heading>p{max-width:420px;color:#777269;font-size:13px;line-height:1.55}.session-helper{color:#777269;font-size:11px;margin-top:18px}.session-empty{padding:50px 0;color:#777269}.how-it-works{padding:120px 0}.steps-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(23,23,19,.15);margin-top:55px}.step-card{background:#f4f0e7;padding:28px}.step-card span{font-size:9px;font-weight:700;color:#777269;letter-spacing:.12em}.step-card h3{margin:35px 0 10px;font-size:24px}.step-card p{font-size:13px;line-height:1.55;color:#777269}.os-start{background:#171713;color:#f4f0e7;padding:100px 0}.os-start-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:60px;align-items:center}.os-start h2{font-size:clamp(54px,7vw,92px);line-height:.9;letter-spacing:-.06em;margin:0 0 24px}.os-start h2 em{font-family:"DM Serif Display",serif;font-weight:400}.os-start p{color:rgba(244,240,231,.65);max-width:560px;line-height:1.55}.direct-book-card{padding:28px;border:1px solid rgba(244,240,231,.18)}.direct-book-card h3{font-size:26px;margin:0 0 10px}.direct-book-card .button{display:inline-block;margin-top:10px}.footer{padding-top:45px;padding-bottom:45px;display:flex;justify-content:space-between;align-items:center;gap:20px}.mobile-session-cta{display:none}@media(max-width:800px){.os-ad-hero{grid-template-columns:1fr;min-height:auto;padding-top:45px}.hero-art{min-height:340px}.session-grid{grid-template-columns:1fr}.day-pill{min-width:86px}.selected-day-heading{display:block}.selected-day-heading h3{margin-top:6px}.recent-sessions-heading{display:block}.recent-sessions-heading>p{margin-top:12px}.steps-grid{grid-template-columns:1fr 1fr}.os-start-grid{grid-template-columns:1fr}.footer{display:block}.footer>*{margin-bottom:10px}.mobile-session-cta{display:flex;position:fixed;left:12px;right:12px;bottom:12px;z-index:40;justify-content:space-between;align-items:center;background:#171713;color:#fff;padding:12px 14px;text-decoration:none;box-shadow:0 10px 30px rgba(0,0,0,.18)}.mobile-session-cta span{font-size:8px;letter-spacing:.12em;opacity:.6}.mobile-session-cta strong{font-size:11px}}@media(max-width:520px){.steps-grid{grid-template-columns:1fr}.os-sessions-section{padding-top:90px}.session-card{min-height:340px}}
-    `}</style>
-  </main>;
+      <section className="os-purpose shell" id="what-is" aria-labelledby="purpose-title">
+        <SectionIntro
+          id="purpose-title"
+          eyebrow="01 · OPEN STUDIO LÀ GÌ?"
+          title={<>Một cánh cửa mở vào <em>thế giới của con.</em></>}
+          copy="Open Studio là buổi trải nghiệm miễn phí, nơi trẻ được tự do quan sát, thử làm và trò chuyện cùng mentor trong không gian PINO House."
+        />
+        <div className="os-purpose-grid" id="why-pino">
+          <article><span>01</span><h3>Đến để khám phá</h3><p>Không cần biết trước, không cần làm giống ai. Con bắt đầu bằng sự tò mò của chính mình.</p></article>
+          <article><span>02</span><h3>Được người lớn lắng nghe</h3><p>Mentor quan sát cách con phản ứng, đặt câu hỏi và tạo ra — thay vì chỉ chấm một kết quả.</p></article>
+          <article><span>03</span><h3>Ra về với một dấu ấn</h3><p>Một trải nghiệm, một câu chuyện hoặc một tác phẩm nhỏ để cả nhà cùng tiếp tục trò chuyện.</p></article>
+        </div>
+      </section>
+
+      <section className="os-paths" id="paths" aria-labelledby="paths-title">
+        <div className="shell">
+          <SectionIntro
+            id="paths-title"
+            eyebrow="02 · DÀNH CHO AI?"
+            title={<>Bốn lối vào, <em>một ngôi nhà.</em></>}
+            copy="Chọn theo độ tuổi và điều con muốn thử. Không cần quyết định một lộ trình dài ngay hôm nay."
+          />
+          <div className="os-path-grid">
+            {paths.map((path, index) => <article key={path.name}>
+              <div><span>{String(index + 1).padStart(2, "0")}</span><small>{path.age}</small></div>
+              <h3>{path.name}</h3><p>{path.note}</p>
+            </article>)}
+          </div>
+        </div>
+      </section>
+
+      <section className="os-model shell" id="journey" aria-labelledby="model-title">
+        <SectionIntro id="model-title" eyebrow="03 · EXPLORE & JOURNEY" title={<>Bắt đầu nhẹ nhàng. <em>Đi xa khi sẵn sàng.</em></>} />
+        <div className="os-model-grid">
+          <article className="os-model-card os-model-explore">
+            <p className="eyebrow">FREE · EXPLORE</p><h3>Open Studio</h3>
+            <p>Những lần ghé PINO để khám phá chủ đề, chất liệu và trải nghiệm mới — không ràng buộc.</p>
+            <ul><li>Một buổi chiều có chủ đích</li><li>Không gian và mentor PINO</li><li>Tự do thử điều con tò mò</li></ul>
+          </article>
+          <article className="os-model-card os-model-journey">
+            <p className="eyebrow">PREMIUM · JOURNEY + EXPLORE</p><h3>Premium Journey</h3>
+            <p>Một hành trình học tập có cấu trúc cho gia đình muốn con đi sâu và trưởng thành bền vững.</p>
+            <ul><li>Lộ trình và tiến trình rõ ràng</li><li>Mentor đồng hành sâu hơn</li><li>Tác phẩm, portfolio và đặc quyền PINO</li></ul>
+          </article>
+        </div>
+      </section>
+
+      <section className="os-schedule" id="sessions" aria-labelledby="sessions-title">
+        <div className="shell">
+          <SectionIntro
+            id="sessions-title"
+            eyebrow="04 · LỊCH SẮP TỚI"
+            title={<>Chọn một buổi <em>phù hợp với con.</em></>}
+            copy="Giờ hiển thị theo múi giờ Việt Nam. Chọn buổi chỉ để đánh dấu lựa chọn; chưa gửi đăng ký ở bước này."
+          />
+
+          <div className="os-schedule-panel" aria-live="polite" aria-busy={status === "loading"}>
+            {status === "loading" ? <div className="os-state os-loading">
+              <span className="os-spinner" aria-hidden="true" /><div><strong>Đang mở lịch Open Studio…</strong><p>PINO đang tìm những buổi gần nhất cho gia đình.</p></div>
+            </div> : null}
+
+            {status === "error" ? <div className="os-state os-error-state">
+              <span aria-hidden="true">↻</span><div><strong>Lịch đang tạm nghỉ một chút.</strong><p>Phần còn lại của Open Studio vẫn ở đây. Bạn có thể thử lại hoặc liên hệ PINO để hỏi lịch gần nhất.</p>
+              <button type="button" onClick={() => void loadSessions()}>Thử tải lại</button></div>
+            </div> : null}
+
+            {status === "success" && groupedSessions.length === 0 ? <div className="os-state os-empty-state">
+              <span aria-hidden="true">✳</span><div><strong>Lịch mới đang được chuẩn bị.</strong><p>Chưa có buổi Open Studio sắp tới. Hãy quay lại sau hoặc nhắn PINO để được báo khi lịch mở.</p></div>
+            </div> : null}
+
+            {status === "success" && groupedSessions.length > 0 ? <div className="os-day-list">
+              {groupedSessions.map(([key, daySessions]) => <section className="os-day" key={key} aria-labelledby={`day-${key}`}>
+                <h3 id={`day-${key}`}>{dateLabel(daySessions[0].startsAt)}</h3>
+                <div className="os-session-list">
+                  {daySessions.map((session) => {
+                    const isFull = session.availability.isFull || session.availability.remainingSeats <= 0;
+                    const selected = selectedId === session.id;
+                    return <article className={`os-session${selected ? " is-selected" : ""}${isFull ? " is-full" : ""}`} key={session.id}>
+                      <div className="os-session-time"><span>{timeLabel(session.startsAt, session.endsAt)}</span><small>Giờ Việt Nam</small></div>
+                      <div className="os-session-path"><small>PATH</small><strong>{session.path.displayName}</strong></div>
+                      <div className={`os-seats${isFull ? " is-full" : ""}`}><span aria-hidden="true" />{isFull ? "Đã đủ chỗ" : `Còn ${session.availability.remainingSeats} chỗ`}</div>
+                      <button type="button" disabled={isFull} aria-pressed={selected} onClick={() => setSelectedId(session.id)}>{isFull ? "Đã đủ chỗ" : selected ? "Đã chọn" : "Chọn buổi này"}</button>
+                    </article>;
+                  })}
+                </div>
+              </section>)}
+            </div> : null}
+          </div>
+
+          {selectedSession ? <div className="os-selection" role="status">
+            <span aria-hidden="true">✓</span><div><strong>Đã chọn {selectedSession.path.displayName} · {dateLabel(selectedSession.startsAt)}, {timeLabel(selectedSession.startsAt, selectedSession.endsAt)}</strong>
+            <p>Ở bước tiếp theo, phụ huynh sẽ điền thông tin để PINO giữ chỗ. Form đăng ký chưa được mở trong phiên bản này.</p></div>
+          </div> : null}
+        </div>
+      </section>
+
+      <section className="os-next shell" aria-labelledby="next-title">
+        <SectionIntro id="next-title" eyebrow="05 · SAU KHI CHỌN BUỔI" title={<>Ba bước đơn giản, <em>không áp lực.</em></>} />
+        <ol>
+          <li><span>01</span><div><h3>Chọn buổi phù hợp</h3><p>Xem ngày, giờ, lộ trình và số chỗ còn lại ngay trên lịch.</p></div></li>
+          <li><span>02</span><div><h3>Để lại thông tin</h3><p>Khi luồng đăng ký mở, phụ huynh chỉ cần cung cấp thông tin cần thiết để giữ chỗ.</p></div></li>
+          <li><span>03</span><div><h3>Cùng con đến PINO</h3><p>PINO sẽ xác nhận trước buổi trải nghiệm để gia đình biết cần chuẩn bị gì.</p></div></li>
+        </ol>
+      </section>
+
+      <section className="os-final shell" aria-labelledby="final-title">
+        <div><p className="eyebrow">MỘT BUỔI CHIỀU CÓ THỂ MỞ RA MỘT HÀNH TRÌNH</p><h2 id="final-title">Hãy để con bắt đầu bằng <em>sự tò mò.</em></h2>
+        <p>Open Studio là lời mời khám phá. Premium Journey chỉ bắt đầu khi gia đình và con thực sự muốn đi sâu hơn.</p><PrimaryCta href="#sessions">Xem lịch Open Studio</PrimaryCta></div>
+        <HouseArtwork compact />
+      </section>
+
+      <PublicFooter />
+    </main>
+  );
 }

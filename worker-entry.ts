@@ -15,10 +15,33 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
   },
 });
 
+const PINO_CORE_OPEN_STUDIO_SESSIONS = "https://pino-core-dev.minhtri-van42.workers.dev/v1/open-studio/sessions";
+
+async function getCoreOpenStudioSessions(request: Request) {
+  try {
+    const upstream = await fetch(PINO_CORE_OPEN_STUDIO_SESSIONS, {
+      headers: { Accept: "application/json" },
+      cf: { cacheEverything: true, cacheTtl: 60 },
+    } as RequestInit);
+    const body = await upstream.text();
+    return new Response(body, {
+      status: upstream.status,
+      headers: {
+        "Content-Type": upstream.headers.get("Content-Type") || "application/json",
+        "Cache-Control": upstream.ok ? "public, max-age=60, stale-while-revalidate=300" : "no-store",
+        "Access-Control-Allow-Origin": new URL(request.url).origin,
+      },
+    });
+  } catch {
+    return json({ error: "Open Studio schedule is temporarily unavailable." }, 502);
+  }
+}
+
 const handler = {
   async fetch(request: Request, env: Env) {
     const url = new URL(request.url);
     if (request.method === "GET" && url.pathname === "/build-info.json") return json(WORKER_BUILD_INFO);
+    if (request.method === "GET" && url.pathname === "/api/pino-core/open-studio/sessions") return getCoreOpenStudioSessions(request);
     if (request.method === "GET" && url.pathname === "/api/os-sessions") return getPublicSessions(env as any, url.searchParams);
     if (request.method === "GET" && url.pathname === "/api/web-content") {
       try { return json({ content: await getWebContent(env as any) }); }

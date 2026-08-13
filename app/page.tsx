@@ -1,217 +1,145 @@
+import { HouseArtwork, PrimaryCta, PublicFooter, PublicNav, SectionIntro } from "./components/public-site";
+
 const paths = [
-  { name: "Art", detail: "See, make, shape" },
-  { name: "Piano", detail: "Listen, play, express" },
+  { age: "3–6", name: "Little Piner Art", note: "Chạm, nhìn, tạo hình và kể chuyện bằng màu sắc.", tone: "coral" },
+  { age: "3–6", name: "Little Piner Piano", note: "Làm quen với nhịp điệu, âm thanh và niềm vui chơi nhạc.", tone: "blue" },
+  { age: "7+", name: "Art", note: "Phát triển ngôn ngữ thị giác, kỹ thuật và góc nhìn riêng.", tone: "sand" },
+  { age: "7+", name: "Piano", note: "Đi từ cảm âm đến biểu đạt và làm chủ tác phẩm.", tone: "lime" },
 ];
 
-const ageStages = [
-  { age: "3–6", title: "Little Piner", detail: "A first creative world where Art and Piano meet through play, rhythm and discovery." },
-  { age: "7+", title: "PINO", detail: "More depth, more choice, and a clearer path to grow in Art or Piano." },
+const journeyPoints = [
+  ["01", "Lộ trình rõ ràng", "Nội dung được sắp xếp để mỗi trải nghiệm nối tiếp và bồi đắp cho trải nghiệm trước."],
+  ["02", "Mentor đồng hành", "Con được quan sát, khích lệ và hỗ trợ đúng lúc — không bị ép vào một khuôn mẫu."],
+  ["03", "Dấu vết trưởng thành", "Tác phẩm, buổi trình diễn và portfolio giúp gia đình nhìn thấy hành trình của con."],
+  ["04", "Một hệ sinh thái", "Premium mở ra chiều sâu học tập, đặc quyền và những trải nghiệm phong phú hơn tại PINO."],
 ];
 
-const steps = [
-  { number: "01", title: "Pick a day", detail: "Choose an Open Studio session that fits your family." },
-  { number: "02", title: "Come to PINO", detail: "No preparation. No need to choose Art or Piano first." },
-  { number: "03", title: "Make something", detail: "Try, make, play and see what naturally clicks." },
-  { number: "04", title: "Come back", detail: "Use another pass when they are ready to keep going." },
+const faqs = [
+  ["Open Studio có phải là buổi học thử không?", "Không. Đây là một trải nghiệm khám phá độc lập, nhẹ nhàng và có giá trị riêng — không phải một buổi bán khóa học."],
+  ["Con cần biết vẽ hoặc chơi piano trước không?", "Không cần. Open Studio được thiết kế để trẻ bắt đầu bằng tò mò, thử nghiệm và lựa chọn của chính mình."],
+  ["Explore và Premium Journey khác nhau thế nào?", "Explore giúp con tự do khám phá PINO qua Open Studio. Premium kết hợp Explore với lộ trình dài hạn, mentor, sự tiến bộ và hệ thống tác phẩm."],
+  ["PINO House phù hợp với độ tuổi nào?", "Hiện PINO có bốn lộ trình cho hai nhóm tuổi: Little Piner Art và Piano cho 3–6 tuổi; Art và Piano cho trẻ từ 7 tuổi."],
 ];
 
 export default function Home() {
   return (
-    <main>
-      <nav className="nav shell" id="top">
-        <a className="wordmark" href="#top" aria-label="PINO home">
-          PINO<span>•</span>
-        </a>
-        <div className="nav-links">
-          <a href="#open-studio">Open Studio</a>
-          <a href="#paths">Art & Piano</a>
-          <a href="#membership">Membership</a>
-        </div>
-        <a className="nav-cta" href="/open-studio">Get a Free Pass</a>
-      </nav>
+    <main className="homepage">
+      <PublicNav />
 
-      <section className="hero shell">
-        <div className="hero-copy">
-          <p className="eyebrow">PINO OPEN STUDIO · AGES 3–15</p>
-          <h1>Cho con một<br />buổi chiều <em>thật ý nghĩa.</em></h1>
-          <p className="hero-lede">
-            Một buổi chiều để con thử Art và Piano — không cần chọn trước.
-            Bắt đầu với một Open Studio pass miễn phí và xem điều gì thật sự chạm đến con.
-          </p>
-          <div className="hero-actions">
-            <a className="button button-dark" href="/open-studio">Get their first pass</a>
-            <a className="text-link" href="#how-it-works">See how it works <span>→</span></a>
+      <section className="hp-hero shell" aria-labelledby="hero-title">
+        <div className="hp-hero-copy">
+          <p className="eyebrow">PINO HOUSE · CREATIVE HOME FOR KIDS</p>
+          <h1 id="hero-title">Một nơi để con<br /><em>khám phá mình.</em></h1>
+          <p className="hp-hero-lede">Nghệ thuật và âm nhạc trở thành cách con quan sát, biểu đạt và lớn lên — theo nhịp điệu của riêng mình.</p>
+          <div className="hp-hero-actions">
+            <PrimaryCta />
+            <a className="text-link" href="#journey">Tìm hiểu Premium Journey <span aria-hidden="true">↓</span></a>
           </div>
-          <div className="hero-proof">
+          <div className="hp-hero-proof" aria-label="Các trải nghiệm tại PINO">
             <span>ART</span><i>·</i><span>PIANO</span><i>·</i><span>OPEN STUDIO</span>
           </div>
         </div>
-        <div className="hero-art" aria-hidden="true">
-          <div className="orb orb-a" />
-          <div className="orb orb-b" />
-          <div className="orb orb-c" />
-          <div className="art-note">MAKE<br />MORE<br /><strong>YOU.</strong></div>
-          <div className="scribble">✳</div>
+        <HouseArtwork />
+      </section>
+
+      <section className="hp-belief" id="why-pino">
+        <div className="shell hp-belief-grid">
+          <p className="eyebrow">VÌ SAO PINO HOUSE</p>
+          <h2>Không chỉ học một kỹ năng.<br /><em>Con đang xây một tiếng nói riêng.</em></h2>
+          <p>PINO House là nơi trẻ có thời gian để thử, làm lại, theo đuổi một ý tưởng và nhìn thấy mình trưởng thành qua những điều tự tay tạo ra.</p>
         </div>
       </section>
 
-      <section className="statement">
-        <div className="shell statement-inner">
-          <p className="eyebrow">NOT ANOTHER AFTER-SCHOOL CLASS</p>
-          <h2>Come curious.<br /><em>Leave with a little more of yourself.</em></h2>
-          <p>
-            PINO is a creative club built around doing, not just being taught.
-            Kids can move between Art and Piano, try something new and build
-            confidence through small wins.
-          </p>
-        </div>
-      </section>
-
-      <section className="paths shell" id="paths">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">TWO WAYS TO CREATE</p>
-            <h2>Find their thing.</h2>
-          </div>
-          <p>Two core disciplines. One creative home. Open Studio is the easiest place to begin.</p>
-        </div>
-        <div className="path-grid two-paths">
-          {paths.map((path, index) => (
-            <article className={`path-card path-${index + 1}`} key={path.name}>
-              <span className="path-index">0{index + 1}</span>
-              <h3>{path.name}</h3>
-              <p>{path.detail}</p>
-              <span className="path-arrow">↗</span>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="ages shell">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">ONE CLUB · TWO STAGES</p>
-            <h2>Made to grow<br /><em>with them.</em></h2>
-          </div>
-          <p>The experience changes as children grow — from first creative confidence to deeper practice.</p>
-        </div>
-        <div className="age-grid">
-          {ageStages.map((stage, index) => (
-            <article className={`age-card age-${index + 1}`} key={stage.age}>
-              <span className="age-label">{stage.age}</span>
-              <h3>{stage.title}</h3>
-              <p>{stage.detail}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="open-studio" id="open-studio">
-        <div className="shell open-studio-inner">
-          <div>
-            <p className="eyebrow">THE EASIEST WAY IN</p>
-            <h2>Don&apos;t choose a path yet.<br /><em>Just come play.</em></h2>
-            <p>
-              Your first step into PINO is simple: get a free pass, explore an
-              Open Studio session, and let your child discover what feels right.
-            </p>
-            <a className="button button-light" href="/open-studio">Get their first Open Studio pass</a>
-          </div>
-          <div className="pass-card">
-            <span>FREE · 4 PASSES / MONTH</span>
-            <strong>4</strong>
-            <p>ways to experience PINO</p>
-            <div className="pass-list">
-              <span>01 · Piano</span>
-              <span>02 · Art</span>
-              <span>03 · Little Piner</span>
-              <span>04 · Bring a friend</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="how-it-works shell" id="how-it-works">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">WHAT HAPPENS?</p>
-            <h2>Four easy steps.</h2>
-          </div>
-          <p>No pressure to commit. Start by giving them one afternoon to explore.</p>
-        </div>
-        <div className="steps-grid">
-          {steps.map((step) => (
-            <article className="step-card" key={step.number}>
-              <span>{step.number}</span>
-              <h3>{step.title}</h3>
-              <p>{step.detail}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="membership shell" id="membership">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">MEMBERSHIP</p>
-            <h2>Start free.<br /><em>Stay for what matters.</em></h2>
-          </div>
-          <p>Try the club first. Upgrade when PINO becomes part of your rhythm.</p>
-        </div>
-        <div className="membership-grid">
-          <article className="membership-card">
-            <p className="eyebrow">FREE</p>
-            <h3>Explore</h3>
-            <p>Four monthly passes: Piano, Art, Little Piner, and one Bring-a-Friend pass.</p>
-            <ul>
-              <li>1 Piano pass</li>
-              <li>1 Art pass</li>
-              <li>1 Little Piner pass</li>
-              <li>1 Bring-a-Friend pass</li>
-            </ul>
-            <a className="card-link" href="/open-studio">Get my first pass →</a>
+      <section className="hp-model shell" aria-labelledby="model-title">
+        <SectionIntro eyebrow="HAI CÁCH ĐỂ ĐỒNG HÀNH" title={<><span id="model-title">Bắt đầu bằng khám phá.</span><br /><em>Đi xa bằng hành trình.</em></>} copy="Không cần quyết định tất cả ngay từ đầu. Gia đình có thể để con khám phá trước, rồi chọn chiều sâu khi con đã tìm thấy điều muốn theo đuổi." />
+        <div className="hp-model-grid">
+          <article className="hp-model-card hp-model-free">
+            <div className="hp-model-label"><span>FREE</span><strong>EXPLORE</strong></div>
+            <h3>Open Studio</h3>
+            <p>Một điểm vào nhẹ nhàng để con thử điều mới, gặp PINO và quay lại khám phá theo cách không áp lực.</p>
+            <PrimaryCta children="Bắt đầu khám phá" />
           </article>
-          <article className="membership-card premium">
-            <p className="eyebrow">PREMIUM · 14-DAY TRIAL</p>
-            <h3>Go deeper</h3>
-            <p>Full access to the PINO experience when your child finds something worth coming back for.</p>
-            <ul>
-              <li>Full PINO experience</li>
-              <li>Continue Art or Piano</li>
-              <li>14-day Premium trial</li>
-            </ul>
-            <a className="card-link" href="/open-studio">Try PINO first →</a>
+          <article className="hp-model-card hp-model-premium">
+            <div className="hp-model-label"><span>PREMIUM</span><strong>JOURNEY + EXPLORE</strong></div>
+            <h3>Premium Journey</h3>
+            <p>Một hành trình dài hạn có cấu trúc, mentor đồng hành, chiều sâu thực hành và dấu vết tiến bộ rõ ràng.</p>
+            <a className="text-link" href="#journey">Xem hành trình Premium <span aria-hidden="true">↓</span></a>
           </article>
         </div>
       </section>
 
-      <section className="afterwork shell">
-        <div className="afterwork-inner">
-          <div>
-            <p className="eyebrow">COMING LATER · AFTERWORK</p>
-            <h2>For grown-ups<br /><em>who need a little room to breathe.</em></h2>
+      <section className="hp-paths" id="paths">
+        <div className="shell">
+          <SectionIntro eyebrow="BỐN LỘ TRÌNH" title={<>Mỗi độ tuổi một nhịp.<br /><em>Mỗi đứa trẻ một hướng đi.</em></>} copy="Bốn lộ trình được xây quanh cách trẻ cảm nhận và phát triển ở từng giai đoạn — trong Art và Piano." />
+          <div className="hp-path-grid">
+            {paths.map((path, index) => (
+              <article className={`hp-path-card hp-path-${path.tone}`} key={path.name}>
+                <span className="hp-path-index">0{index + 1}</span>
+                <span className="hp-path-age">{path.age} TUỔI</span>
+                <div><h3>{path.name}</h3><p>{path.note}</p></div>
+              </article>
+            ))}
           </div>
-          <p>
-            A future PINO series for adults: healing, creative evenings built
-            around painting and piano. Come after work. Make something. Leave a
-            little lighter.
-          </p>
         </div>
       </section>
 
-      <section className="final-cta">
-        <div className="shell final-cta-inner">
-          <p className="eyebrow">READY TO LET THEM EXPLORE?</p>
-          <h2>Give them one afternoon<br /><em>to make, play and discover.</em></h2>
-          <a className="button button-dark" href="/open-studio">Get their first Open Studio pass</a>
+      <section className="hp-open-studio" id="open-studio">
+        <div className="shell hp-open-grid">
+          <div>
+            <p className="eyebrow">OPEN STUDIO · EXPLORE</p>
+            <h2>Cho con một buổi chiều<br /><em>thật ý nghĩa.</em></h2>
+            <p>Không cần chọn lộ trình trước. Con đến để làm, chơi, thử một điều mới và mang về một câu chuyện của riêng mình.</p>
+            <PrimaryCta />
+          </div>
+          <HouseArtwork compact />
         </div>
       </section>
 
-      <footer className="footer shell">
-        <div className="wordmark">PINO<span>•</span></div>
-        <p>Creative club for curious kids.</p>
-        <span>© {new Date().getFullYear()} PINO</span>
-      </footer>
+      <section className="hp-journey shell" id="journey">
+        <SectionIntro eyebrow="PREMIUM JOURNEY" title={<>Khi con muốn đi sâu hơn,<br /><em>PINO mở ra một hành trình.</em></>} copy="Premium không thay thế tự do khám phá. Premium cho sự tò mò ấy thời gian, cấu trúc và sự đồng hành để trở thành năng lực bền vững." />
+        <div className="hp-journey-grid">
+          {journeyPoints.map(([number, title, copy]) => <article key={number}><span>{number}</span><h3>{title}</h3><p>{copy}</p></article>)}
+        </div>
+      </section>
+
+      <section className="hp-space">
+        <div className="shell hp-space-grid">
+          <div className="hp-space-visual" aria-hidden="true"><span>PINO<br /><strong>HOUSE</strong></span><i>✳</i></div>
+          <div className="hp-space-copy">
+            <p className="eyebrow">KHÔNG GIAN PINO HOUSE</p>
+            <h2>Một ngôi nhà để<br /><em>ý tưởng được lớn lên.</em></h2>
+            <p>Không gian được tạo ra cho việc quan sát, chạm, nghe, thử và cùng nhau làm nên điều mới. Ấm áp như một ngôi nhà, đủ mở để mỗi đứa trẻ tìm thấy góc của riêng mình.</p>
+            <ul><li>Vật liệu và nhạc cụ trong tầm tay</li><li>Nhóm nhỏ, mentor quan sát gần</li><li>Tác phẩm được trân trọng và lưu giữ</li></ul>
+          </div>
+        </div>
+      </section>
+
+      <section className="hp-reassurance shell">
+        <SectionIntro eyebrow="DÀNH CHO PHỤ HUYNH" title={<>Nhẹ nhàng để bắt đầu.<br /><em>Đủ sâu để trưởng thành.</em></>} />
+        <div className="hp-reassurance-grid">
+          <article><strong>Không áp lực chọn sớm</strong><p>Con có thể khám phá trước khi gia đình nghĩ đến một hành trình dài hạn.</p></article>
+          <article><strong>Nhìn thấy điều con đang xây</strong><p>Tác phẩm và trải nghiệm tạo nên những dấu mốc cụ thể, không chỉ là một bảng điểm.</p></article>
+          <article><strong>Được biết con đang ở đâu</strong><p>Mentor đồng hành và chia sẻ để gia đình hiểu tiến trình, sở thích và bước tiếp theo của con.</p></article>
+        </div>
+      </section>
+
+      <section className="hp-faq shell" id="faq">
+        <SectionIntro eyebrow="CÂU HỎI THƯỜNG GẶP" title={<>Trước khi con<br /><em>bắt đầu khám phá.</em></>} />
+        <div className="hp-faq-list">
+          {faqs.map(([question, answer]) => <details key={question}><summary>{question}<span aria-hidden="true">+</span></summary><p>{answer}</p></details>)}
+        </div>
+      </section>
+
+      <section className="hp-final">
+        <div className="shell hp-final-inner">
+          <p className="eyebrow">MỘT BUỔI CHIỀU TẠI PINO</p>
+          <h2>Hãy để con bắt đầu<br /><em>bằng sự tò mò.</em></h2>
+          <p>Chọn một Open Studio phù hợp và để PINO chuẩn bị phần còn lại.</p>
+          <PrimaryCta />
+        </div>
+      </section>
+
+      <PublicFooter />
     </main>
   );
 }
