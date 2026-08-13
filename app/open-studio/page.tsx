@@ -1,63 +1,37 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { HouseArtwork, PrimaryCta, PublicFooter, PublicNav, SectionIntro } from "../components/public-site";
+import {
+  CoreSession,
+  REGISTRATION_SUCCESS_BODY,
+  REGISTRATION_SUCCESS_TITLE,
+  RegistrationForm,
+  createSubmissionAttempt,
+  formatAgeRange,
+  formatLocalDate,
+  formatLocalTimeRange,
+  groupSessionsByLocalDate,
+  isCoreSession,
+  isSessionFull,
+  mapRegistrationError,
+  serializeRegistration,
+  sessionCover,
+  sessionImageAlt,
+  sessionThumbnail,
+  validateRegistration,
+} from "../../lib/open-studio-funnel";
 import "./page.css";
 
 const SCHEDULE_ENDPOINT = "/api/pino-core/open-studio/sessions";
-const PINO_TIMEZONE = "Asia/Ho_Chi_Minh";
-
-type CoreSession = {
-  id: string;
-  path: { id: string; code: string; displayName: string };
-  startsAt: string;
-  endsAt: string;
-  bookingClosesAt: string;
-  timezone: string;
-  availability: { remainingSeats: number; isFull: boolean };
-  access: { kind: "explore" | string; trialPremium: boolean };
-};
+const CAPABILITY_ENDPOINT = "/api/pino-core/open-studio/capabilities";
+const REGISTRATION_ENDPOINT = "/api/pino-core/open-studio/registrations";
 
 type ScheduleResponse = { sessions: CoreSession[] };
 type ScheduleStatus = "loading" | "success" | "error";
+type SubmissionState = "idle" | "pending" | "success" | "error";
 
-const dateKey = (iso: string) => new Intl.DateTimeFormat("en-CA", {
-  timeZone: PINO_TIMEZONE,
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-}).format(new Date(iso));
-
-const dateLabel = (iso: string) => {
-  const value = new Intl.DateTimeFormat("vi-VN", {
-    timeZone: PINO_TIMEZONE,
-    weekday: "long",
-    day: "2-digit",
-    month: "2-digit",
-  }).format(new Date(iso));
-  return value.charAt(0).toUpperCase() + value.slice(1);
-};
-
-const timeLabel = (startsAt: string, endsAt: string) => {
-  const formatter = new Intl.DateTimeFormat("vi-VN", {
-    timeZone: PINO_TIMEZONE,
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-  return `${formatter.format(new Date(startsAt))}–${formatter.format(new Date(endsAt))}`;
-};
-
-function isCoreSession(value: unknown): value is CoreSession {
-  if (!value || typeof value !== "object") return false;
-  const session = value as Partial<CoreSession>;
-  return typeof session.id === "string"
-    && typeof session.path?.displayName === "string"
-    && typeof session.startsAt === "string"
-    && typeof session.endsAt === "string"
-    && typeof session.availability?.remainingSeats === "number"
-    && typeof session.availability?.isFull === "boolean";
-}
+const emptyForm: RegistrationForm = { contactName: "", phone: "", childName: "", childDateOfBirth: "" };
 
 const paths = [
   { age: "3–6 tuổi", name: "Little Piner Art", note: "Màu sắc, vật liệu và đôi tay tò mò." },
@@ -70,6 +44,15 @@ export default function OpenStudioPage() {
   const [status, setStatus] = useState<ScheduleStatus>("loading");
   const [sessions, setSessions] = useState<CoreSession[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [registrationEnabled, setRegistrationEnabled] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState<RegistrationForm>(emptyForm);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof RegistrationForm, string>>>({});
+  const [submission, setSubmission] = useState<SubmissionState>("idle");
+  const [submissionMessage, setSubmissionMessage] = useState("");
+  const attemptKey = useRef<string | null>(null);
+  const submissionInFlight = useRef(false);
+  const detailRef = useRef<HTMLDivElement>(null);
 
   const loadSessions = useCallback(async () => {
     setStatus("loading");
@@ -88,16 +71,81 @@ export default function OpenStudioPage() {
 
   useEffect(() => { void loadSessions(); }, [loadSessions]);
 
-  const groupedSessions = useMemo(() => {
-    const groups = new Map<string, CoreSession[]>();
-    for (const session of sessions) {
-      const key = dateKey(session.startsAt);
-      groups.set(key, [...(groups.get(key) || []), session]);
-    }
-    return Array.from(groups.entries());
-  }, [sessions]);
+  useEffect(() => {
+    let cancelled = false;
+    fetch(CAPABILITY_ENDPOINT, { cache: "no-store", headers: { Accept: "application/json" } })
+      .then(async (response) => response.ok ? response.json() as Promise<{ registrationEnabled?: boolean }> : { registrationEnabled: false })
+      .then((data) => { if (!cancelled) setRegistrationEnabled(data.registrationEnabled === true); })
+      .catch(() => { if (!cancelled) setRegistrationEnabled(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const groupedSessions = useMemo(() => groupSessionsByLocalDate(sessions), [sessions]);
 
   const selectedSession = sessions.find((session) => session.id === selectedId) || null;
+
+  const selectSession = (session: CoreSession) => {
+    if (isSessionFull(session)) return;
+    setSelectedId(session.id);
+    setShowForm(false);
+    setSubmission("idle");
+    setSubmissionMessage("");
+    setForm(emptyForm);
+    setFieldErrors({});
+    attemptKey.current = null;
+    window.setTimeout(() => detailRef.current?.focus(), 0);
+  };
+
+  const updateForm = (field: keyof RegistrationForm, value: string) => {
+    setForm((current) => ({ ...current, [field]: value }));
+    setFieldErrors((current) => ({ ...current, [field]: undefined }));
+    if (submission === "error") setSubmission("idle");
+    attemptKey.current = null;
+  };
+
+  const submitRegistration = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedSession || !registrationEnabled || submission === "pending" || submissionInFlight.current) return;
+    const errors = validateRegistration(form);
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      setSubmission("error");
+      setSubmissionMessage("Ba mẹ vui lòng kiểm tra các thông tin còn thiếu.");
+      return;
+    }
+
+    const key = createSubmissionAttempt(attemptKey.current, () => crypto.randomUUID());
+    attemptKey.current = key;
+    submissionInFlight.current = true;
+    setSubmission("pending");
+    setSubmissionMessage("");
+    try {
+      const response = await fetch(REGISTRATION_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Idempotency-Key": key },
+        body: JSON.stringify(serializeRegistration(selectedSession.id, form)),
+      });
+      const data = await response.json().catch(() => ({})) as { error?: { code?: string } };
+      if (!response.ok) {
+        const issue = mapRegistrationError(data.error?.code);
+        setSubmission("error");
+        setSubmissionMessage(issue.message);
+        attemptKey.current = null;
+        submissionInFlight.current = false;
+        if (issue.refreshSchedule) void loadSessions();
+        return;
+      }
+      setSubmission("success");
+      attemptKey.current = null;
+      submissionInFlight.current = false;
+    } catch {
+      const issue = mapRegistrationError();
+      setSubmission("error");
+      setSubmissionMessage(issue.message);
+      submissionInFlight.current = false;
+      // Keep the key so a network retry remains the same logical submission.
+    }
+  };
 
   return (
     <main className="open-studio-page">
@@ -170,12 +218,14 @@ export default function OpenStudioPage() {
             id="sessions-title"
             eyebrow="04 · LỊCH SẮP TỚI"
             title={<>Chọn một buổi <em>phù hợp với con.</em></>}
-            copy="Giờ hiển thị theo múi giờ Việt Nam. Chọn buổi chỉ để đánh dấu lựa chọn; chưa gửi đăng ký ở bước này."
+            copy="Mỗi buổi là một trải nghiệm thật, với chủ đề, độ tuổi và số chỗ được cập nhật từ lịch PINO."
           />
 
           <div className="os-schedule-panel" aria-live="polite" aria-busy={status === "loading"}>
-            {status === "loading" ? <div className="os-state os-loading">
-              <span className="os-spinner" aria-hidden="true" /><div><strong>Đang mở lịch Open Studio…</strong><p>PINO đang tìm những buổi gần nhất cho gia đình.</p></div>
+            {status === "loading" ? <div className="os-card-grid os-skeleton-grid" aria-label="Đang mở lịch Open Studio">
+              {[0, 1, 2].map((item) => <div className="os-session-card os-skeleton-card" key={item} aria-hidden="true">
+                <span className="os-skeleton-media" /><span className="os-skeleton-line wide" /><span className="os-skeleton-line" /><span className="os-skeleton-line short" />
+              </div>)}
             </div> : null}
 
             {status === "error" ? <div className="os-state os-error-state">
@@ -189,16 +239,24 @@ export default function OpenStudioPage() {
 
             {status === "success" && groupedSessions.length > 0 ? <div className="os-day-list">
               {groupedSessions.map(([key, daySessions]) => <section className="os-day" key={key} aria-labelledby={`day-${key}`}>
-                <h3 id={`day-${key}`}>{dateLabel(daySessions[0].startsAt)}</h3>
-                <div className="os-session-list">
+                <h3 id={`day-${key}`}>{formatLocalDate(daySessions[0].startsAt)}</h3>
+                <div className="os-card-grid">
                   {daySessions.map((session) => {
-                    const isFull = session.availability.isFull || session.availability.remainingSeats <= 0;
+                    const isFull = isSessionFull(session);
                     const selected = selectedId === session.id;
-                    return <article className={`os-session${selected ? " is-selected" : ""}${isFull ? " is-full" : ""}`} key={session.id}>
-                      <div className="os-session-time"><span>{timeLabel(session.startsAt, session.endsAt)}</span><small>Giờ Việt Nam</small></div>
-                      <div className="os-session-path"><small>PATH</small><strong>{session.path.displayName}</strong></div>
-                      <div className={`os-seats${isFull ? " is-full" : ""}`}><span aria-hidden="true" />{isFull ? "Đã đủ chỗ" : `Còn ${session.availability.remainingSeats} chỗ`}</div>
-                      <button type="button" disabled={isFull} aria-pressed={selected} onClick={() => setSelectedId(session.id)}>{isFull ? "Đã đủ chỗ" : selected ? "Đã chọn" : "Chọn buổi này"}</button>
+                    const thumbnail = sessionThumbnail(session);
+                    return <article className={`os-session-card${selected ? " is-selected" : ""}${isFull ? " is-full" : ""}`} key={session.id}>
+                      <div className={`os-card-media${thumbnail ? " has-image" : " is-fallback"}`}>
+                        {thumbnail ? <img src={thumbnail} alt={sessionImageAlt(session)} /> : <div className="os-media-fallback" role="img" aria-label={`Minh hoạ Open Studio — ${session.path.displayName}`}><span>OPEN</span><strong>STUDIO</strong><i aria-hidden="true">✳</i></div>}
+                        <span className="os-path-pill">{session.path.displayName}</span>
+                      </div>
+                      <div className="os-card-body">
+                        <div className="os-card-meta"><span>{formatAgeRange(session.syllabus.ageMin, session.syllabus.ageMax)}</span><span className={`os-seats${isFull ? " is-full" : ""}`}><i aria-hidden="true" />{isFull ? "Đã đủ chỗ" : `Còn ${session.availability.remainingSeats} chỗ`}</span></div>
+                        <h4>{session.syllabus.title}</h4>
+                        {session.syllabus.shortDescription ? <p>{session.syllabus.shortDescription}</p> : null}
+                        <div className="os-card-when"><span>{formatLocalDate(session.startsAt)}</span><strong>{formatLocalTimeRange(session.startsAt, session.endsAt)}</strong></div>
+                        <button type="button" disabled={isFull} aria-pressed={selected} onClick={() => selectSession(session)}>{isFull ? "Đã đủ chỗ" : selected ? "Đang xem" : "Khám phá"}<span aria-hidden="true">{isFull ? "" : "→"}</span></button>
+                      </div>
                     </article>;
                   })}
                 </div>
@@ -206,9 +264,36 @@ export default function OpenStudioPage() {
             </div> : null}
           </div>
 
-          {selectedSession ? <div className="os-selection" role="status">
-            <span aria-hidden="true">✓</span><div><strong>Đã chọn {selectedSession.path.displayName} · {dateLabel(selectedSession.startsAt)}, {timeLabel(selectedSession.startsAt, selectedSession.endsAt)}</strong>
-            <p>Ở bước tiếp theo, phụ huynh sẽ điền thông tin để PINO giữ chỗ. Form đăng ký chưa được mở trong phiên bản này.</p></div>
+          {!registrationEnabled && status === "success" ? <div className="os-registration-disabled os-registration-notice" role="status"><span aria-hidden="true">✳</span><div><strong>Đăng ký trực tuyến sắp mở</strong><p>Ba mẹ có thể xem lịch ngay hôm nay. PINO sẽ mở nhận đăng ký khi hệ thống chính thức sẵn sàng.</p></div></div> : null}
+
+          {selectedSession ? <div className="os-detail" ref={detailRef} tabIndex={-1} aria-labelledby="session-detail-title">
+            <div className={`os-detail-media${sessionCover(selectedSession) ? " has-image" : " is-fallback"}`}>
+              {sessionCover(selectedSession) ? <img src={sessionCover(selectedSession)!} alt={sessionImageAlt(selectedSession)} /> : <div className="os-media-fallback os-media-fallback-large" role="img" aria-label={`Minh hoạ Open Studio — ${selectedSession.path.displayName}`}><span>MAKE ROOM</span><strong>TO GROW.</strong><i aria-hidden="true">✳</i></div>}
+            </div>
+            <div className="os-detail-copy">
+              <p className="eyebrow">{selectedSession.path.displayName} · {formatAgeRange(selectedSession.syllabus.ageMin, selectedSession.syllabus.ageMax)}</p>
+              <h3 id="session-detail-title">{selectedSession.syllabus.title}</h3>
+              <div className="os-detail-when"><strong>{formatLocalDate(selectedSession.startsAt)}</strong><span>{formatLocalTimeRange(selectedSession.startsAt, selectedSession.endsAt)} · Giờ Việt Nam</span><span className="os-seats"><i aria-hidden="true" />Còn {selectedSession.availability.remainingSeats} chỗ</span></div>
+              {selectedSession.syllabus.publicDescription ? <section><h4>Con sẽ làm gì?</h4><p>{selectedSession.syllabus.publicDescription}</p></section> : null}
+              {selectedSession.syllabus.skillSummary ? <section><h4>Con sẽ khám phá</h4><p>{selectedSession.syllabus.skillSummary}</p></section> : null}
+
+              {!registrationEnabled ? <div className="os-registration-disabled" role="status"><span aria-hidden="true">✳</span><div><strong>Đăng ký trực tuyến sắp mở</strong><p>Ba mẹ vẫn có thể xem lịch và chọn trải nghiệm phù hợp. PINO sẽ mở nhận đăng ký sau khi hệ thống chính thức sẵn sàng.</p></div></div> : null}
+
+              {registrationEnabled && !showForm && submission !== "success" ? <button className="os-detail-cta" type="button" onClick={() => setShowForm(true)}>Đăng ký buổi này <span aria-hidden="true">→</span></button> : null}
+
+              {registrationEnabled && showForm && submission !== "success" ? <form className="os-registration-form" onSubmit={submitRegistration} noValidate>
+                <div className="os-form-heading"><p className="eyebrow">YÊU CẦU ĐĂNG KÝ</p><h4>Thông tin của gia đình</h4><p>PINO sẽ liên hệ để xác nhận chỗ. Một đăng ký dành cho một bé.</p></div>
+                <label>Họ tên phụ huynh<input name="contactName" autoComplete="name" value={form.contactName} onChange={(event) => updateForm("contactName", event.target.value)} aria-invalid={Boolean(fieldErrors.contactName)} aria-describedby={fieldErrors.contactName ? "contactName-error" : undefined} />{fieldErrors.contactName ? <small id="contactName-error">{fieldErrors.contactName}</small> : null}</label>
+                <label>Số điện thoại<input name="phone" type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={(event) => updateForm("phone", event.target.value)} aria-invalid={Boolean(fieldErrors.phone)} aria-describedby={fieldErrors.phone ? "phone-error" : undefined} />{fieldErrors.phone ? <small id="phone-error">{fieldErrors.phone}</small> : null}</label>
+                <label>Tên của con<input name="childName" autoComplete="off" value={form.childName} onChange={(event) => updateForm("childName", event.target.value)} aria-invalid={Boolean(fieldErrors.childName)} aria-describedby={fieldErrors.childName ? "childName-error" : undefined} />{fieldErrors.childName ? <small id="childName-error">{fieldErrors.childName}</small> : null}</label>
+                <label>Ngày sinh của con<input name="childDateOfBirth" type="date" value={form.childDateOfBirth} onChange={(event) => updateForm("childDateOfBirth", event.target.value)} aria-invalid={Boolean(fieldErrors.childDateOfBirth)} aria-describedby={fieldErrors.childDateOfBirth ? "childDateOfBirth-error" : undefined} />{fieldErrors.childDateOfBirth ? <small id="childDateOfBirth-error">{fieldErrors.childDateOfBirth}</small> : null}</label>
+                {submission === "error" ? <p className="os-submit-message is-error" role="alert">{submissionMessage}</p> : null}
+                <button className="os-detail-cta" type="submit" disabled={submission === "pending"}>{submission === "pending" ? "Đang gửi…" : "Gửi đăng ký"}<span aria-hidden="true">→</span></button>
+                <p className="os-form-note">Đây là yêu cầu đăng ký. PINO sẽ liên hệ để xác nhận buổi tham gia.</p>
+              </form> : null}
+
+              {registrationEnabled && submission === "success" ? <div className="os-registration-success" role="status"><span aria-hidden="true">✓</span><h4>{REGISTRATION_SUCCESS_TITLE}</h4><p>{REGISTRATION_SUCCESS_BODY}</p></div> : null}
+            </div>
           </div> : null}
         </div>
       </section>

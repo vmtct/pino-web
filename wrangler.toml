@@ -10,6 +10,10 @@ keep_vars = true
 # Production hides mock fixtures; preview keeps them visible for testing.
 [vars]
 ENVIRONMENT = "production"
+PINO_CORE_BASE_URL = "https://pino-core-dev.minhtri-van42.workers.dev"
+# Keep false while production pino-web reads from pino-core-dev. Change only after
+# an explicitly approved production pino-core cutover.
+PINO_CORE_REGISTRATION_ENABLED = "false"
 NOTION_PARENT_DATA_SOURCE_ID = "30e8156e-326f-81e4-9910-000b14c9637f"
 NOTION_STUDENT_DATA_SOURCE_ID = "30e8156e-326f-81a3-8485-000b921040ad"
 NOTION_OS_PASS_DATA_SOURCE_ID = "fe2dad4b-d701-4296-b4ae-06333876a776"
