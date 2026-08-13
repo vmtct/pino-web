@@ -3,10 +3,8 @@ compatibility_date = "2026-08-10"
 main = "worker-entry.ts"
 keep_vars = true
 
-# Production canonical domain. Cloudflare Custom Domain makes the Worker the origin.
-[[routes]]
-pattern = "pinohouse.art"
-custom_domain = true
+# Temporary production deployment uses the Workers.dev hostname.
+# The custom domain pinohouse.art will be reattached after DNS cutover.
 
 # Environment controls whether Notion Mock Data is exposed.
 # Production hides mock fixtures; preview keeps them visible for testing.
