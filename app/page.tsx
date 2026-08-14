@@ -1,24 +1,25 @@
 import { HouseArtwork, PrimaryCta, PublicFooter, PublicNav, SectionIntro } from "./components/public-site";
+import { CmsText } from "./cms-hydrator";
 
 const paths = [
-  { age: "3–6", name: "Little Piner Art", note: "Chạm, nhìn, tạo hình và kể chuyện bằng màu sắc.", tone: "coral" },
-  { age: "3–6", name: "Little Piner Piano", note: "Làm quen với nhịp điệu, âm thanh và niềm vui chơi nhạc.", tone: "blue" },
-  { age: "7+", name: "Art", note: "Phát triển ngôn ngữ thị giác, kỹ thuật và góc nhìn riêng.", tone: "sand" },
-  { age: "7+", name: "Piano", note: "Đi từ cảm âm đến biểu đạt và làm chủ tác phẩm.", tone: "lime" },
+  { age: "3–6", name: "Little Piner Art", note: "Chạm, nhìn, tạo hình và kể chuyện bằng màu sắc.", key: "homepage_path_little_art", tone: "coral" },
+  { age: "3–6", name: "Little Piner Piano", note: "Làm quen với nhịp điệu, âm thanh và niềm vui chơi nhạc.", key: "homepage_path_little_piano", tone: "blue" },
+  { age: "7+", name: "Art", note: "Phát triển ngôn ngữ thị giác, kỹ thuật và góc nhìn riêng.", key: "homepage_path_art", tone: "sand" },
+  { age: "7+", name: "Piano", note: "Đi từ cảm âm đến biểu đạt và làm chủ tác phẩm.", key: "homepage_path_piano", tone: "lime" },
 ];
 
 const journeyPoints = [
-  ["01", "Lộ trình rõ ràng", "Nội dung được sắp xếp để mỗi trải nghiệm nối tiếp và bồi đắp cho trải nghiệm trước."],
-  ["02", "Mentor đồng hành", "Con được quan sát, khích lệ và hỗ trợ đúng lúc — không bị ép vào một khuôn mẫu."],
-  ["03", "Dấu vết trưởng thành", "Tác phẩm, buổi trình diễn và portfolio giúp gia đình nhìn thấy hành trình của con."],
-  ["04", "Một hệ sinh thái", "Premium mở ra chiều sâu học tập, đặc quyền và những trải nghiệm phong phú hơn tại PINO."],
+  ["01", "Lộ trình rõ ràng", "Nội dung được sắp xếp để mỗi trải nghiệm nối tiếp và bồi đắp cho trải nghiệm trước.", "homepage_journey_progression"],
+  ["02", "Mentor đồng hành", "Con được quan sát, khích lệ và hỗ trợ đúng lúc — không bị ép vào một khuôn mẫu.", "homepage_journey_mentor"],
+  ["03", "Dấu vết trưởng thành", "Tác phẩm, buổi trình diễn và portfolio giúp gia đình nhìn thấy hành trình của con.", "homepage_journey_artifacts"],
+  ["04", "Một hệ sinh thái", "Premium mở ra chiều sâu học tập, đặc quyền và những trải nghiệm phong phú hơn tại PINO.", "homepage_journey_ecosystem"],
 ];
 
 const faqs = [
-  ["Open Studio có phải là buổi học thử không?", "Không. Đây là một trải nghiệm khám phá độc lập, nhẹ nhàng và có giá trị riêng — không phải một buổi bán khóa học."],
-  ["Con cần biết vẽ hoặc chơi piano trước không?", "Không cần. Open Studio được thiết kế để trẻ bắt đầu bằng tò mò, thử nghiệm và lựa chọn của chính mình."],
-  ["Explore và Premium Journey khác nhau thế nào?", "Explore giúp con tự do khám phá PINO qua Open Studio. Premium kết hợp Explore với lộ trình dài hạn, mentor, sự tiến bộ và hệ thống tác phẩm."],
-  ["PINO House phù hợp với độ tuổi nào?", "Hiện PINO có bốn lộ trình cho hai nhóm tuổi: Little Piner Art và Piano cho 3–6 tuổi; Art và Piano cho trẻ từ 7 tuổi."],
+  ["Open Studio có phải là buổi học thử không?", "Không. Đây là một trải nghiệm khám phá độc lập, nhẹ nhàng và có giá trị riêng — không phải một buổi bán khóa học.", "homepage_faq_trial"],
+  ["Con cần biết vẽ hoặc chơi piano trước không?", "Không cần. Open Studio được thiết kế để trẻ bắt đầu bằng tò mò, thử nghiệm và lựa chọn của chính mình.", "homepage_faq_experience"],
+  ["Explore và Premium Journey khác nhau thế nào?", "Explore giúp con tự do khám phá PINO qua Open Studio. Premium kết hợp Explore với lộ trình dài hạn, mentor, sự tiến bộ và hệ thống tác phẩm.", "homepage_faq_model"],
+  ["PINO House phù hợp với độ tuổi nào?", "Hiện PINO có bốn lộ trình cho hai nhóm tuổi: Little Piner Art và Piano cho 3–6 tuổi; Art và Piano cho trẻ từ 7 tuổi.", "homepage_faq_age"],
 ];
 
 export default function Home() {
@@ -28,41 +29,41 @@ export default function Home() {
 
       <section className="hp-hero shell" aria-labelledby="hero-title">
         <div className="hp-hero-copy">
-          <p className="eyebrow">PINO HOUSE · CREATIVE HOME FOR KIDS</p>
-          <h1 id="hero-title">Một nơi để con<br /><em>khám phá mình.</em></h1>
-          <p className="hp-hero-lede">Nghệ thuật và âm nhạc trở thành cách con quan sát, biểu đạt và lớn lên — theo nhịp điệu của riêng mình.</p>
+          <p className="eyebrow"><CmsText contentKey="homepage_hero_eyebrow" fallback="PINO HOUSE · CREATIVE HOME FOR KIDS" /></p>
+          <h1 id="hero-title"><CmsText contentKey="homepage_hero_title_lead" fallback="Một nơi để con" /><br /><em><CmsText contentKey="homepage_hero_title_emphasis" fallback="khám phá mình." /></em></h1>
+          <p className="hp-hero-lede"><CmsText contentKey="homepage_hero_description" fallback="Nghệ thuật và âm nhạc trở thành cách con quan sát, biểu đạt và lớn lên — theo nhịp điệu của riêng mình." /></p>
           <div className="hp-hero-actions">
-            <PrimaryCta />
+            <PrimaryCta contentKey="homepage_hero_cta" />
             <a className="text-link" href="#journey">Tìm hiểu Premium Journey <span aria-hidden="true">↓</span></a>
           </div>
           <div className="hp-hero-proof" aria-label="Các trải nghiệm tại PINO">
             <span>ART</span><i>·</i><span>PIANO</span><i>·</i><span>OPEN STUDIO</span>
           </div>
         </div>
-        <HouseArtwork />
+        <HouseArtwork assetKey="homepage_hero_image" />
       </section>
 
       <section className="hp-belief" id="why-pino">
         <div className="shell hp-belief-grid">
-          <p className="eyebrow">VÌ SAO PINO HOUSE</p>
-          <h2>Không chỉ học một kỹ năng.<br /><em>Con đang xây một tiếng nói riêng.</em></h2>
-          <p>PINO House là nơi trẻ có thời gian để thử, làm lại, theo đuổi một ý tưởng và nhìn thấy mình trưởng thành qua những điều tự tay tạo ra.</p>
+          <p className="eyebrow"><CmsText contentKey="homepage_belief_eyebrow" fallback="VÌ SAO PINO HOUSE" /></p>
+          <h2><CmsText contentKey="homepage_belief_title_lead" fallback="Không chỉ học một kỹ năng." /><br /><em><CmsText contentKey="homepage_belief_title_emphasis" fallback="Con đang xây một tiếng nói riêng." /></em></h2>
+          <p><CmsText contentKey="homepage_belief_description" fallback="PINO House là nơi trẻ có thời gian để thử, làm lại, theo đuổi một ý tưởng và nhìn thấy mình trưởng thành qua những điều tự tay tạo ra." /></p>
         </div>
       </section>
 
       <section className="hp-model shell" aria-labelledby="model-title">
-        <SectionIntro eyebrow="HAI CÁCH ĐỂ ĐỒNG HÀNH" title={<><span id="model-title">Bắt đầu bằng khám phá.</span><br /><em>Đi xa bằng hành trình.</em></>} copy="Không cần quyết định tất cả ngay từ đầu. Gia đình có thể để con khám phá trước, rồi chọn chiều sâu khi con đã tìm thấy điều muốn theo đuổi." />
+        <SectionIntro eyebrow="HAI CÁCH ĐỂ ĐỒNG HÀNH" eyebrowKey="homepage_model_eyebrow" title={<><span id="model-title"><CmsText contentKey="homepage_model_title_lead" fallback="Bắt đầu bằng khám phá." /></span><br /><em><CmsText contentKey="homepage_model_title_emphasis" fallback="Đi xa bằng hành trình." /></em></>} copy="Không cần quyết định tất cả ngay từ đầu. Gia đình có thể để con khám phá trước, rồi chọn chiều sâu khi con đã tìm thấy điều muốn theo đuổi." copyKey="homepage_model_description" />
         <div className="hp-model-grid">
           <article className="hp-model-card hp-model-free">
             <div className="hp-model-label"><span>FREE</span><strong>EXPLORE</strong></div>
-            <h3>Open Studio</h3>
-            <p>Một điểm vào nhẹ nhàng để con thử điều mới, gặp PINO và quay lại khám phá theo cách không áp lực.</p>
+            <h3><CmsText contentKey="homepage_model_explore_title" fallback="Open Studio" /></h3>
+            <p><CmsText contentKey="homepage_model_explore_description" fallback="Một điểm vào nhẹ nhàng để con thử điều mới, gặp PINO và quay lại khám phá theo cách không áp lực." /></p>
             <PrimaryCta children="Bắt đầu khám phá" />
           </article>
           <article className="hp-model-card hp-model-premium">
             <div className="hp-model-label"><span>PREMIUM</span><strong>JOURNEY + EXPLORE</strong></div>
-            <h3>Premium Journey</h3>
-            <p>Một hành trình dài hạn có cấu trúc, mentor đồng hành, chiều sâu thực hành và dấu vết tiến bộ rõ ràng.</p>
+            <h3><CmsText contentKey="homepage_model_premium_title" fallback="Premium Journey" /></h3>
+            <p><CmsText contentKey="homepage_model_premium_description" fallback="Một hành trình dài hạn có cấu trúc, mentor đồng hành, chiều sâu thực hành và dấu vết tiến bộ rõ ràng." /></p>
             <a className="text-link" href="#journey">Xem hành trình Premium <span aria-hidden="true">↓</span></a>
           </article>
         </div>
@@ -70,13 +71,13 @@ export default function Home() {
 
       <section className="hp-paths" id="paths">
         <div className="shell">
-          <SectionIntro eyebrow="BỐN LỘ TRÌNH" title={<>Mỗi độ tuổi một nhịp.<br /><em>Mỗi đứa trẻ một hướng đi.</em></>} copy="Bốn lộ trình được xây quanh cách trẻ cảm nhận và phát triển ở từng giai đoạn — trong Art và Piano." />
+          <SectionIntro eyebrow="BỐN LỘ TRÌNH" eyebrowKey="homepage_paths_eyebrow" title={<><CmsText contentKey="homepage_paths_title_lead" fallback="Mỗi độ tuổi một nhịp." /><br /><em><CmsText contentKey="homepage_paths_title_emphasis" fallback="Mỗi đứa trẻ một hướng đi." /></em></>} copy="Bốn lộ trình được xây quanh cách trẻ cảm nhận và phát triển ở từng giai đoạn — trong Art và Piano." copyKey="homepage_paths_description" />
           <div className="hp-path-grid">
             {paths.map((path, index) => (
               <article className={`hp-path-card hp-path-${path.tone}`} key={path.name}>
                 <span className="hp-path-index">0{index + 1}</span>
                 <span className="hp-path-age">{path.age} TUỔI</span>
-                <div><h3>{path.name}</h3><p>{path.note}</p></div>
+                <div><h3>{path.name}</h3><p><CmsText contentKey={`${path.key}_description`} fallback={path.note} /></p></div>
               </article>
             ))}
           </div>
@@ -86,19 +87,19 @@ export default function Home() {
       <section className="hp-open-studio" id="open-studio">
         <div className="shell hp-open-grid">
           <div>
-            <p className="eyebrow">OPEN STUDIO · EXPLORE</p>
-            <h2>Cho con một buổi chiều<br /><em>thật ý nghĩa.</em></h2>
-            <p>Không cần chọn lộ trình trước. Con đến để làm, chơi, thử một điều mới và mang về một câu chuyện của riêng mình.</p>
-            <PrimaryCta />
+            <p className="eyebrow"><CmsText contentKey="homepage_open_studio_eyebrow" fallback="OPEN STUDIO · EXPLORE" /></p>
+            <h2><CmsText contentKey="homepage_open_studio_title_lead" fallback="Cho con một buổi chiều" /><br /><em><CmsText contentKey="homepage_open_studio_title_emphasis" fallback="thật ý nghĩa." /></em></h2>
+            <p><CmsText contentKey="homepage_open_studio_description" fallback="Không cần chọn lộ trình trước. Con đến để làm, chơi, thử một điều mới và mang về một câu chuyện của riêng mình." /></p>
+            <PrimaryCta contentKey="homepage_open_studio_cta" />
           </div>
-          <HouseArtwork compact />
+          <HouseArtwork compact assetKey="homepage_open_studio_image" />
         </div>
       </section>
 
       <section className="hp-journey shell" id="journey">
-        <SectionIntro eyebrow="PREMIUM JOURNEY" title={<>Khi con muốn đi sâu hơn,<br /><em>PINO mở ra một hành trình.</em></>} copy="Premium không thay thế tự do khám phá. Premium cho sự tò mò ấy thời gian, cấu trúc và sự đồng hành để trở thành năng lực bền vững." />
+        <SectionIntro eyebrow="PREMIUM JOURNEY" eyebrowKey="homepage_journey_eyebrow" title={<><CmsText contentKey="homepage_journey_title_lead" fallback="Khi con muốn đi sâu hơn," /><br /><em><CmsText contentKey="homepage_journey_title_emphasis" fallback="PINO mở ra một hành trình." /></em></>} copy="Premium không thay thế tự do khám phá. Premium cho sự tò mò ấy thời gian, cấu trúc và sự đồng hành để trở thành năng lực bền vững." copyKey="homepage_journey_description" />
         <div className="hp-journey-grid">
-          {journeyPoints.map(([number, title, copy]) => <article key={number}><span>{number}</span><h3>{title}</h3><p>{copy}</p></article>)}
+          {journeyPoints.map(([number, title, copy, key]) => <article key={number}><span>{number}</span><h3><CmsText contentKey={`${key}_title`} fallback={title} /></h3><p><CmsText contentKey={`${key}_description`} fallback={copy} /></p></article>)}
         </div>
       </section>
 
@@ -106,36 +107,36 @@ export default function Home() {
         <div className="shell hp-space-grid">
           <div className="hp-space-visual" aria-hidden="true"><span>PINO<br /><strong>HOUSE</strong></span><i>✳</i></div>
           <div className="hp-space-copy">
-            <p className="eyebrow">KHÔNG GIAN PINO HOUSE</p>
-            <h2>Một ngôi nhà để<br /><em>ý tưởng được lớn lên.</em></h2>
-            <p>Không gian được tạo ra cho việc quan sát, chạm, nghe, thử và cùng nhau làm nên điều mới. Ấm áp như một ngôi nhà, đủ mở để mỗi đứa trẻ tìm thấy góc của riêng mình.</p>
+            <p className="eyebrow"><CmsText contentKey="homepage_space_eyebrow" fallback="KHÔNG GIAN PINO HOUSE" /></p>
+            <h2><CmsText contentKey="homepage_space_title_lead" fallback="Một ngôi nhà để" /><br /><em><CmsText contentKey="homepage_space_title_emphasis" fallback="ý tưởng được lớn lên." /></em></h2>
+            <p><CmsText contentKey="homepage_space_description" fallback="Không gian được tạo ra cho việc quan sát, chạm, nghe, thử và cùng nhau làm nên điều mới. Ấm áp như một ngôi nhà, đủ mở để mỗi đứa trẻ tìm thấy góc của riêng mình." /></p>
             <ul><li>Vật liệu và nhạc cụ trong tầm tay</li><li>Nhóm nhỏ, mentor quan sát gần</li><li>Tác phẩm được trân trọng và lưu giữ</li></ul>
           </div>
         </div>
       </section>
 
       <section className="hp-reassurance shell">
-        <SectionIntro eyebrow="DÀNH CHO PHỤ HUYNH" title={<>Nhẹ nhàng để bắt đầu.<br /><em>Đủ sâu để trưởng thành.</em></>} />
+        <SectionIntro eyebrow="DÀNH CHO PHỤ HUYNH" eyebrowKey="homepage_reassurance_eyebrow" title={<><CmsText contentKey="homepage_reassurance_title_lead" fallback="Nhẹ nhàng để bắt đầu." /><br /><em><CmsText contentKey="homepage_reassurance_title_emphasis" fallback="Đủ sâu để trưởng thành." /></em></>} />
         <div className="hp-reassurance-grid">
-          <article><strong>Không áp lực chọn sớm</strong><p>Con có thể khám phá trước khi gia đình nghĩ đến một hành trình dài hạn.</p></article>
-          <article><strong>Nhìn thấy điều con đang xây</strong><p>Tác phẩm và trải nghiệm tạo nên những dấu mốc cụ thể, không chỉ là một bảng điểm.</p></article>
-          <article><strong>Được biết con đang ở đâu</strong><p>Mentor đồng hành và chia sẻ để gia đình hiểu tiến trình, sở thích và bước tiếp theo của con.</p></article>
+          <article><strong><CmsText contentKey="homepage_reassurance_no_pressure_title" fallback="Không áp lực chọn sớm" /></strong><p><CmsText contentKey="homepage_reassurance_no_pressure_description" fallback="Con có thể khám phá trước khi gia đình nghĩ đến một hành trình dài hạn." /></p></article>
+          <article><strong><CmsText contentKey="homepage_reassurance_visible_title" fallback="Nhìn thấy điều con đang xây" /></strong><p><CmsText contentKey="homepage_reassurance_visible_description" fallback="Tác phẩm và trải nghiệm tạo nên những dấu mốc cụ thể, không chỉ là một bảng điểm." /></p></article>
+          <article><strong><CmsText contentKey="homepage_reassurance_guidance_title" fallback="Được biết con đang ở đâu" /></strong><p><CmsText contentKey="homepage_reassurance_guidance_description" fallback="Mentor đồng hành và chia sẻ để gia đình hiểu tiến trình, sở thích và bước tiếp theo của con." /></p></article>
         </div>
       </section>
 
       <section className="hp-faq shell" id="faq">
-        <SectionIntro eyebrow="CÂU HỎI THƯỜNG GẶP" title={<>Trước khi con<br /><em>bắt đầu khám phá.</em></>} />
+        <SectionIntro eyebrow="CÂU HỎI THƯỜNG GẶP" eyebrowKey="homepage_faq_eyebrow" title={<><CmsText contentKey="homepage_faq_title_lead" fallback="Trước khi con" /><br /><em><CmsText contentKey="homepage_faq_title_emphasis" fallback="bắt đầu khám phá." /></em></>} />
         <div className="hp-faq-list">
-          {faqs.map(([question, answer]) => <details key={question}><summary>{question}<span aria-hidden="true">+</span></summary><p>{answer}</p></details>)}
+          {faqs.map(([question, answer, key]) => <details key={question}><summary><CmsText contentKey={`${key}_question`} fallback={question} /><span aria-hidden="true">+</span></summary><p><CmsText contentKey={`${key}_answer`} fallback={answer} /></p></details>)}
         </div>
       </section>
 
       <section className="hp-final">
         <div className="shell hp-final-inner">
-          <p className="eyebrow">MỘT BUỔI CHIỀU TẠI PINO</p>
-          <h2>Hãy để con bắt đầu<br /><em>bằng sự tò mò.</em></h2>
-          <p>Chọn một Open Studio phù hợp và để PINO chuẩn bị phần còn lại.</p>
-          <PrimaryCta />
+          <p className="eyebrow"><CmsText contentKey="homepage_final_eyebrow" fallback="MỘT BUỔI CHIỀU TẠI PINO" /></p>
+          <h2><CmsText contentKey="homepage_final_title_lead" fallback="Hãy để con bắt đầu" /><br /><em><CmsText contentKey="homepage_final_title_emphasis" fallback="bằng sự tò mò." /></em></h2>
+          <p><CmsText contentKey="homepage_final_description" fallback="Chọn một Open Studio phù hợp và để PINO chuẩn bị phần còn lại." /></p>
+          <PrimaryCta contentKey="homepage_final_cta" />
         </div>
       </section>
 

@@ -15,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi">
-      <body><CmsHydrator />{children}</body>
+      <body><CmsHydrator>{children}</CmsHydrator></body>
     </html>
   );
 }

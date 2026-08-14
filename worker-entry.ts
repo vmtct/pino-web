@@ -16,6 +16,15 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
   },
 });
 
+const cmsJson = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+  status,
+  headers: {
+    "Content-Type": "application/json",
+    "Cache-Control": "public, max-age=60, stale-while-revalidate=240",
+    "Access-Control-Allow-Origin": "*",
+  },
+});
+
 const handler = {
   async fetch(request: Request, env: Env) {
     const url = new URL(request.url);
@@ -25,12 +34,12 @@ const handler = {
     if (request.method === "POST" && url.pathname === "/api/pino-core/open-studio/registrations") return proxyCoreRegistration(request, env);
     if (request.method === "GET" && url.pathname === "/api/os-sessions") return getPublicSessions(env as any, url.searchParams);
     if (request.method === "GET" && url.pathname === "/api/web-content") {
-      try { return json({ content: await getWebContent(env as any) }); }
-      catch { return json({ error: "Could not load web content." }, 502); }
+      try { return cmsJson({ content: await getWebContent(env as any) }); }
+      catch { return cmsJson({ error: "Could not load web content." }, 502); }
     }
     if (request.method === "GET" && url.pathname === "/api/web-images") {
-      try { return json({ images: await getWebImages(env as any) }); }
-      catch { return json({ error: "Could not load web images." }, 502); }
+      try { return cmsJson({ images: await getWebImages(env as any) }); }
+      catch { return cmsJson({ error: "Could not load web images." }, 502); }
     }
     if (request.method === "POST" && url.pathname === "/api/open-studio/book") {
       let body: any;

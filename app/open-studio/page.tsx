@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { HouseArtwork, PrimaryCta, PublicFooter, PublicNav, SectionIntro } from "../components/public-site";
+import { CmsText } from "../cms-hydrator";
 import {
   CoreSession,
   REGISTRATION_SUCCESS_BODY,
@@ -154,29 +155,30 @@ export default function OpenStudioPage() {
 
       <section className="os-hero shell" aria-labelledby="open-studio-title">
         <div className="os-hero-copy">
-          <p className="eyebrow">PINO HOUSE · OPEN STUDIO</p>
-          <h1 id="open-studio-title">Cho con một buổi chiều <em>ý nghĩa.</em></h1>
-          <p className="os-lead">Một khoảng thời gian nhẹ nhàng để con chạm vào nghệ thuật, âm nhạc và tìm điều mình thật sự muốn khám phá.</p>
+          <p className="eyebrow"><CmsText contentKey="os_hero_eyebrow" fallback="PINO HOUSE · OPEN STUDIO" /></p>
+          <h1 id="open-studio-title"><CmsText contentKey="os_hero_title_lead" fallback="Cho con một buổi chiều" /> <em><CmsText contentKey="os_hero_title_emphasis" fallback="ý nghĩa." /></em></h1>
+          <p className="os-lead"><CmsText contentKey="os_hero_description" fallback="Một khoảng thời gian nhẹ nhàng để con chạm vào nghệ thuật, âm nhạc và tìm điều mình thật sự muốn khám phá." /></p>
           <div className="os-hero-actions">
-            <PrimaryCta href="#sessions">Xem lịch Open Studio</PrimaryCta>
+            <PrimaryCta href="#sessions" contentKey="os_hero_cta">Xem lịch Open Studio</PrimaryCta>
             <a className="os-text-link" href="#what-is">Open Studio là gì? <span aria-hidden="true">↓</span></a>
           </div>
           <p className="os-soft-note"><span aria-hidden="true">✳</span> Không áp lực · Không phải buổi học thử bán hàng</p>
         </div>
-        <HouseArtwork />
+        <HouseArtwork assetKey="os_hero_image" />
       </section>
 
       <section className="os-purpose shell" id="what-is" aria-labelledby="purpose-title">
         <SectionIntro
           id="purpose-title"
-          eyebrow="01 · OPEN STUDIO LÀ GÌ?"
-          title={<>Một cánh cửa mở vào <em>thế giới của con.</em></>}
+          eyebrow="01 · OPEN STUDIO LÀ GÌ?" eyebrowKey="os_purpose_eyebrow"
+          title={<><CmsText contentKey="os_purpose_title_lead" fallback="Một cánh cửa mở vào" /> <em><CmsText contentKey="os_purpose_title_emphasis" fallback="thế giới của con." /></em></>}
           copy="Open Studio là buổi trải nghiệm miễn phí, nơi trẻ được tự do quan sát, thử làm và trò chuyện cùng mentor trong không gian PINO House."
+          copyKey="os_purpose_description"
         />
         <div className="os-purpose-grid" id="why-pino">
-          <article><span>01</span><h3>Đến để khám phá</h3><p>Không cần biết trước, không cần làm giống ai. Con bắt đầu bằng sự tò mò của chính mình.</p></article>
-          <article><span>02</span><h3>Được người lớn lắng nghe</h3><p>Mentor quan sát cách con phản ứng, đặt câu hỏi và tạo ra — thay vì chỉ chấm một kết quả.</p></article>
-          <article><span>03</span><h3>Ra về với một dấu ấn</h3><p>Một trải nghiệm, một câu chuyện hoặc một tác phẩm nhỏ để cả nhà cùng tiếp tục trò chuyện.</p></article>
+          <article><span>01</span><h3><CmsText contentKey="os_purpose_explore_title" fallback="Đến để khám phá" /></h3><p><CmsText contentKey="os_purpose_explore_description" fallback="Không cần biết trước, không cần làm giống ai. Con bắt đầu bằng sự tò mò của chính mình." /></p></article>
+          <article><span>02</span><h3><CmsText contentKey="os_purpose_listen_title" fallback="Được người lớn lắng nghe" /></h3><p><CmsText contentKey="os_purpose_listen_description" fallback="Mentor quan sát cách con phản ứng, đặt câu hỏi và tạo ra — thay vì chỉ chấm một kết quả." /></p></article>
+          <article><span>03</span><h3><CmsText contentKey="os_purpose_artifact_title" fallback="Ra về với một dấu ấn" /></h3><p><CmsText contentKey="os_purpose_artifact_description" fallback="Một trải nghiệm, một câu chuyện hoặc một tác phẩm nhỏ để cả nhà cùng tiếp tục trò chuyện." /></p></article>
         </div>
       </section>
 
@@ -184,9 +186,10 @@ export default function OpenStudioPage() {
         <div className="shell">
           <SectionIntro
             id="paths-title"
-            eyebrow="02 · DÀNH CHO AI?"
-            title={<>Bốn lối vào, <em>một ngôi nhà.</em></>}
+            eyebrow="02 · DÀNH CHO AI?" eyebrowKey="os_paths_eyebrow"
+            title={<><CmsText contentKey="os_paths_title_lead" fallback="Bốn lối vào," /> <em><CmsText contentKey="os_paths_title_emphasis" fallback="một ngôi nhà." /></em></>}
             copy="Chọn theo độ tuổi và điều con muốn thử. Không cần quyết định một lộ trình dài ngay hôm nay."
+            copyKey="os_paths_description"
           />
           <div className="os-path-grid">
             {paths.map((path, index) => <article key={path.name}>
@@ -198,16 +201,16 @@ export default function OpenStudioPage() {
       </section>
 
       <section className="os-model shell" id="journey" aria-labelledby="model-title">
-        <SectionIntro id="model-title" eyebrow="03 · EXPLORE & JOURNEY" title={<>Bắt đầu nhẹ nhàng. <em>Đi xa khi sẵn sàng.</em></>} />
+        <SectionIntro id="model-title" eyebrow="03 · EXPLORE & JOURNEY" eyebrowKey="os_model_eyebrow" title={<><CmsText contentKey="os_model_title_lead" fallback="Bắt đầu nhẹ nhàng." /> <em><CmsText contentKey="os_model_title_emphasis" fallback="Đi xa khi sẵn sàng." /></em></>} />
         <div className="os-model-grid">
           <article className="os-model-card os-model-explore">
             <p className="eyebrow">FREE · EXPLORE</p><h3>Open Studio</h3>
-            <p>Những lần ghé PINO để khám phá chủ đề, chất liệu và trải nghiệm mới — không ràng buộc.</p>
+            <p><CmsText contentKey="os_model_explore_description" fallback="Những lần ghé PINO để khám phá chủ đề, chất liệu và trải nghiệm mới — không ràng buộc." /></p>
             <ul><li>Một buổi chiều có chủ đích</li><li>Không gian và mentor PINO</li><li>Tự do thử điều con tò mò</li></ul>
           </article>
           <article className="os-model-card os-model-journey">
             <p className="eyebrow">PREMIUM · JOURNEY + EXPLORE</p><h3>Premium Journey</h3>
-            <p>Một hành trình học tập có cấu trúc cho gia đình muốn con đi sâu và trưởng thành bền vững.</p>
+            <p><CmsText contentKey="os_model_premium_description" fallback="Một hành trình học tập có cấu trúc cho gia đình muốn con đi sâu và trưởng thành bền vững." /></p>
             <ul><li>Lộ trình và tiến trình rõ ràng</li><li>Mentor đồng hành sâu hơn</li><li>Tác phẩm, portfolio và đặc quyền PINO</li></ul>
           </article>
         </div>
@@ -217,9 +220,10 @@ export default function OpenStudioPage() {
         <div className="shell">
           <SectionIntro
             id="sessions-title"
-            eyebrow="04 · LỊCH SẮP TỚI"
-            title={<>Chọn một buổi <em>phù hợp với con.</em></>}
+            eyebrow="04 · LỊCH SẮP TỚI" eyebrowKey="os_schedule_eyebrow"
+            title={<><CmsText contentKey="os_schedule_title_lead" fallback="Chọn một buổi" /> <em><CmsText contentKey="os_schedule_title_emphasis" fallback="phù hợp với con." /></em></>}
             copy="Mỗi buổi là một trải nghiệm thật, với chủ đề, độ tuổi và số chỗ được cập nhật từ lịch PINO."
+            copyKey="os_schedule_description"
           />
 
           <div className="os-schedule-panel" aria-live="polite" aria-busy={status === "loading"}>
@@ -230,12 +234,12 @@ export default function OpenStudioPage() {
             </div> : null}
 
             {status === "error" ? <div className="os-state os-error-state">
-              <span aria-hidden="true">↻</span><div><strong>Lịch đang tạm nghỉ một chút.</strong><p>Phần còn lại của Open Studio vẫn ở đây. Bạn có thể thử lại hoặc liên hệ PINO để hỏi lịch gần nhất.</p>
-              <button type="button" onClick={() => void loadSessions()}>Thử tải lại</button></div>
+              <span aria-hidden="true">↻</span><div><strong><CmsText contentKey="os_load_error" fallback="Lịch đang tạm nghỉ một chút." /></strong><p><CmsText contentKey="os_load_error_description" fallback="Phần còn lại của Open Studio vẫn ở đây. Bạn có thể thử lại hoặc liên hệ PINO để hỏi lịch gần nhất." /></p>
+              <button type="button" onClick={() => void loadSessions()}><CmsText contentKey="os_retry" fallback="Thử tải lại" /></button></div>
             </div> : null}
 
             {status === "success" && groupedSessions.length === 0 ? <div className="os-state os-empty-state">
-              <span aria-hidden="true">✳</span><div><strong>Lịch mới đang được chuẩn bị.</strong><p>Chưa có buổi Open Studio sắp tới. Hãy quay lại sau hoặc nhắn PINO để được báo khi lịch mở.</p></div>
+              <span aria-hidden="true">✳</span><div><strong><CmsText contentKey="os_no_sessions" fallback="Lịch mới đang được chuẩn bị." /></strong><p><CmsText contentKey="os_no_sessions_description" fallback="Chưa có buổi Open Studio sắp tới. Hãy quay lại sau hoặc nhắn PINO để được báo khi lịch mở." /></p></div>
             </div> : null}
 
             {status === "success" && groupedSessions.length > 0 ? <div className="os-day-list">
@@ -265,7 +269,7 @@ export default function OpenStudioPage() {
             </div> : null}
           </div>
 
-          {!registrationEnabled && status === "success" ? <div className="os-registration-disabled os-registration-notice" role="status"><span aria-hidden="true">✳</span><div><strong>Đăng ký trực tuyến sắp mở</strong><p>Ba mẹ có thể xem lịch ngay hôm nay. PINO sẽ mở nhận đăng ký khi hệ thống chính thức sẵn sàng.</p></div></div> : null}
+          {!registrationEnabled && status === "success" ? <div className="os-registration-disabled os-registration-notice" role="status"><span aria-hidden="true">✳</span><div><strong><CmsText contentKey="os_registration_disabled" fallback="Đăng ký trực tuyến sắp mở" /></strong><p><CmsText contentKey="os_registration_disabled_description" fallback="Ba mẹ có thể xem lịch ngay hôm nay. PINO sẽ mở nhận đăng ký khi hệ thống chính thức sẵn sàng." /></p></div></div> : null}
 
           {selectedSession ? <div className="os-detail" ref={detailRef} tabIndex={-1} aria-labelledby="session-detail-title">
             <div className={`os-detail-media${sessionCover(selectedSession) ? " has-image" : " is-fallback"}`}>
@@ -275,19 +279,19 @@ export default function OpenStudioPage() {
               <p className="eyebrow">{selectedSession.path.displayName} · {formatAgeRange(selectedSession.syllabus.ageMin, selectedSession.syllabus.ageMax)}</p>
               <h3 id="session-detail-title">{publicSyllabusTitle(selectedSession.syllabus.title)}</h3>
               <div className="os-detail-when"><strong>{formatLocalDate(selectedSession.startsAt)}</strong><span>{formatLocalTimeRange(selectedSession.startsAt, selectedSession.endsAt)} · Giờ Việt Nam</span><span className="os-seats"><i aria-hidden="true" />Còn {selectedSession.availability.remainingSeats} chỗ</span></div>
-              {selectedSession.syllabus.publicDescription ? <section><h4>Con sẽ làm gì?</h4><p>{selectedSession.syllabus.publicDescription}</p></section> : null}
-              {selectedSession.syllabus.skillSummary ? <section><h4>Con sẽ khám phá</h4><p>{selectedSession.syllabus.skillSummary}</p></section> : null}
+              {selectedSession.syllabus.publicDescription ? <section><h4><CmsText contentKey="os_session_detail_activity_heading" fallback="Con sẽ làm gì?" /></h4><p>{selectedSession.syllabus.publicDescription}</p></section> : null}
+              {selectedSession.syllabus.skillSummary ? <section><h4><CmsText contentKey="os_session_detail_skills_heading" fallback="Con sẽ khám phá" /></h4><p>{selectedSession.syllabus.skillSummary}</p></section> : null}
 
-              {!registrationEnabled ? <div className="os-registration-disabled" role="status"><span aria-hidden="true">✳</span><div><strong>Đăng ký trực tuyến sắp mở</strong><p>Ba mẹ vẫn có thể xem lịch và chọn trải nghiệm phù hợp. PINO sẽ mở nhận đăng ký sau khi hệ thống chính thức sẵn sàng.</p></div></div> : null}
+              {!registrationEnabled ? <div className="os-registration-disabled" role="status"><span aria-hidden="true">✳</span><div><strong><CmsText contentKey="os_registration_disabled" fallback="Đăng ký trực tuyến sắp mở" /></strong><p><CmsText contentKey="os_registration_detail_disabled_description" fallback="Ba mẹ vẫn có thể xem lịch và chọn trải nghiệm phù hợp. PINO sẽ mở nhận đăng ký sau khi hệ thống chính thức sẵn sàng." /></p></div></div> : null}
 
-              {registrationEnabled && !showForm && submission !== "success" ? <button className="os-detail-cta" type="button" onClick={() => setShowForm(true)}>Đăng ký buổi này <span aria-hidden="true">→</span></button> : null}
+              {registrationEnabled && !showForm && submission !== "success" ? <button className="os-detail-cta" type="button" onClick={() => setShowForm(true)}><CmsText contentKey="os_detail_register_cta" fallback="Đăng ký buổi này" /> <span aria-hidden="true">→</span></button> : null}
 
               {registrationEnabled && showForm && submission !== "success" ? <form className="os-registration-form" onSubmit={submitRegistration} noValidate>
-                <div className="os-form-heading"><p className="eyebrow">YÊU CẦU ĐĂNG KÝ</p><h4>Thông tin của gia đình</h4><p>PINO sẽ liên hệ để xác nhận chỗ. Một đăng ký dành cho một bé.</p></div>
-                <label>Họ tên phụ huynh<input name="contactName" autoComplete="name" value={form.contactName} onChange={(event) => updateForm("contactName", event.target.value)} aria-invalid={Boolean(fieldErrors.contactName)} aria-describedby={fieldErrors.contactName ? "contactName-error" : undefined} />{fieldErrors.contactName ? <small id="contactName-error">{fieldErrors.contactName}</small> : null}</label>
-                <label>Số điện thoại<input name="phone" type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={(event) => updateForm("phone", event.target.value)} aria-invalid={Boolean(fieldErrors.phone)} aria-describedby={fieldErrors.phone ? "phone-error" : undefined} />{fieldErrors.phone ? <small id="phone-error">{fieldErrors.phone}</small> : null}</label>
-                <label>Tên của con<input name="childName" autoComplete="off" value={form.childName} onChange={(event) => updateForm("childName", event.target.value)} aria-invalid={Boolean(fieldErrors.childName)} aria-describedby={fieldErrors.childName ? "childName-error" : undefined} />{fieldErrors.childName ? <small id="childName-error">{fieldErrors.childName}</small> : null}</label>
-                <label>Ngày sinh của con<input name="childDateOfBirth" type="date" value={form.childDateOfBirth} onChange={(event) => updateForm("childDateOfBirth", event.target.value)} aria-invalid={Boolean(fieldErrors.childDateOfBirth)} aria-describedby={fieldErrors.childDateOfBirth ? "childDateOfBirth-error" : undefined} />{fieldErrors.childDateOfBirth ? <small id="childDateOfBirth-error">{fieldErrors.childDateOfBirth}</small> : null}</label>
+                <div className="os-form-heading"><p className="eyebrow"><CmsText contentKey="os_registration_eyebrow" fallback="YÊU CẦU ĐĂNG KÝ" /></p><h4><CmsText contentKey="os_registration_title" fallback="Thông tin của gia đình" /></h4><p><CmsText contentKey="os_registration_description" fallback="PINO sẽ liên hệ để xác nhận chỗ. Một đăng ký dành cho một bé." /></p></div>
+                <label><CmsText contentKey="os_registration_contact_label" fallback="Họ tên phụ huynh" /><input name="contactName" autoComplete="name" value={form.contactName} onChange={(event) => updateForm("contactName", event.target.value)} aria-invalid={Boolean(fieldErrors.contactName)} aria-describedby={fieldErrors.contactName ? "contactName-error" : undefined} />{fieldErrors.contactName ? <small id="contactName-error">{fieldErrors.contactName}</small> : null}</label>
+                <label><CmsText contentKey="os_registration_phone_label" fallback="Số điện thoại" /><input name="phone" type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={(event) => updateForm("phone", event.target.value)} aria-invalid={Boolean(fieldErrors.phone)} aria-describedby={fieldErrors.phone ? "phone-error" : undefined} />{fieldErrors.phone ? <small id="phone-error">{fieldErrors.phone}</small> : null}</label>
+                <label><CmsText contentKey="os_registration_child_label" fallback="Tên của con" /><input name="childName" autoComplete="off" value={form.childName} onChange={(event) => updateForm("childName", event.target.value)} aria-invalid={Boolean(fieldErrors.childName)} aria-describedby={fieldErrors.childName ? "childName-error" : undefined} />{fieldErrors.childName ? <small id="childName-error">{fieldErrors.childName}</small> : null}</label>
+                <label><CmsText contentKey="os_registration_birth_label" fallback="Ngày sinh của con" /><input name="childDateOfBirth" type="date" value={form.childDateOfBirth} onChange={(event) => updateForm("childDateOfBirth", event.target.value)} aria-invalid={Boolean(fieldErrors.childDateOfBirth)} aria-describedby={fieldErrors.childDateOfBirth ? "childDateOfBirth-error" : undefined} />{fieldErrors.childDateOfBirth ? <small id="childDateOfBirth-error">{fieldErrors.childDateOfBirth}</small> : null}</label>
                 {submission === "error" ? <p className="os-submit-message is-error" role="alert">{submissionMessage}</p> : null}
                 <button className="os-detail-cta" type="submit" disabled={submission === "pending"}>{submission === "pending" ? "Đang gửi…" : "Gửi đăng ký"}<span aria-hidden="true">→</span></button>
                 <p className="os-form-note">Đây là yêu cầu đăng ký. PINO sẽ liên hệ để xác nhận buổi tham gia.</p>
@@ -300,7 +304,7 @@ export default function OpenStudioPage() {
       </section>
 
       <section className="os-next shell" aria-labelledby="next-title">
-        <SectionIntro id="next-title" eyebrow="05 · SAU KHI CHỌN BUỔI" title={<>Ba bước đơn giản, <em>không áp lực.</em></>} />
+        <SectionIntro id="next-title" eyebrow="05 · SAU KHI CHỌN BUỔI" eyebrowKey="os_next_eyebrow" title={<><CmsText contentKey="os_next_title_lead" fallback="Ba bước đơn giản," /> <em><CmsText contentKey="os_next_title_emphasis" fallback="không áp lực." /></em></>} />
         <ol>
           <li><span>01</span><div><h3>Chọn buổi phù hợp</h3><p>Xem ngày, giờ, lộ trình và số chỗ còn lại ngay trên lịch.</p></div></li>
           <li><span>02</span><div><h3>Để lại thông tin</h3><p>Khi luồng đăng ký mở, phụ huynh chỉ cần cung cấp thông tin cần thiết để giữ chỗ.</p></div></li>
@@ -309,9 +313,9 @@ export default function OpenStudioPage() {
       </section>
 
       <section className="os-final shell" aria-labelledby="final-title">
-        <div><p className="eyebrow">MỘT BUỔI CHIỀU CÓ THỂ MỞ RA MỘT HÀNH TRÌNH</p><h2 id="final-title">Hãy để con bắt đầu bằng <em>sự tò mò.</em></h2>
-        <p>Open Studio là lời mời khám phá. Premium Journey chỉ bắt đầu khi gia đình và con thực sự muốn đi sâu hơn.</p><PrimaryCta href="#sessions">Xem lịch Open Studio</PrimaryCta></div>
-        <HouseArtwork compact />
+        <div><p className="eyebrow"><CmsText contentKey="os_final_eyebrow" fallback="MỘT BUỔI CHIỀU CÓ THỂ MỞ RA MỘT HÀNH TRÌNH" /></p><h2 id="final-title"><CmsText contentKey="os_final_title_lead" fallback="Hãy để con bắt đầu bằng" /> <em><CmsText contentKey="os_final_title_emphasis" fallback="sự tò mò." /></em></h2>
+        <p><CmsText contentKey="os_final_description" fallback="Open Studio là lời mời khám phá. Premium Journey chỉ bắt đầu khi gia đình và con thực sự muốn đi sâu hơn." /></p><PrimaryCta href="#sessions" contentKey="os_final_cta">Xem lịch Open Studio</PrimaryCta></div>
+        <HouseArtwork compact assetKey="os_hero_image" />
       </section>
 
       <PublicFooter />
