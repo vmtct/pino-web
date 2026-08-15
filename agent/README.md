@@ -11,6 +11,8 @@ This agent is invoked by `.github/workflows/autonomous-recovery.yml` when the ma
 - It never pushes to `main`, force-pushes, or mutates production customer data.
 - On success, the workflow opens a draft PR for human review.
 
+The recovery agent must also follow the repository-level `AGENTS.md`. When repairing an integration with a Core-owned domain, it must respect `pino-core` architecture and accepted ADRs rather than inferring domain ownership from failing web code alone.
+
 ## Required secret
 
 Add a repository Actions secret named `OPENAI_API_KEY` before enabling autonomous recovery. The secret is never printed or included in prompts.
@@ -18,3 +20,5 @@ Add a repository Actions secret named `OPENAI_API_KEY` before enabling autonomou
 ## Why this is a separate agent
 
 The ChatGPT conversation remains the human control plane. This workflow is the execution plane that can wake independently from a CI failure. It uses the OpenAI Agents SDK's tool loop and the checked-out repository as its workspace.
+
+This recovery workflow is an execution mechanism, not a separate source of architectural truth.
