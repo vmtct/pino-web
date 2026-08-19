@@ -1,0 +1,135 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import "./page.css";
+
+type Kind = "acrylic" | "piano";
+type Session = {
+  id: string;
+  kind: Kind;
+  title: string;
+  collection: string;
+  day: string;
+  date: string;
+  time: string;
+  duration: string;
+  price: string;
+  seatsLeft: number;
+  capacity: number;
+  mood: string;
+  art: string;
+};
+
+const sessions: Session[] = [
+  { id: "aw-a-01", kind: "acrylic", title: "Sunday Flowers", collection: "Slow Living", day: "Saturday", date: "22 Aug", time: "14:30", duration: "150 min", price: "250k", seatsLeft: 4, capacity: 8, mood: "warm · soft · slow", art: "flowers" },
+  { id: "aw-a-02", kind: "acrylic", title: "Rainy Window", collection: "After Rain", day: "Sunday", date: "23 Aug", time: "14:30", duration: "150 min", price: "250k", seatsLeft: 2, capacity: 8, mood: "quiet · rainy · cinematic", art: "rain" },
+  { id: "aw-p-01", kind: "piano", title: "Always With Me", collection: "Ghibli Collection", day: "Saturday", date: "22 Aug", time: "19:00", duration: "90 min", price: "from 250k", seatsLeft: 3, capacity: 5, mood: "gentle · nostalgic", art: "ghibli" },
+  { id: "aw-p-02", kind: "piano", title: "Kiss The Rain", collection: "Rainy Piano", day: "Sunday", date: "23 Aug", time: "19:00", duration: "90 min", price: "from 250k", seatsLeft: 1, capacity: 5, mood: "calm · introspective", art: "piano-rain" },
+];
+
+const acrylicCollections = [
+  ["Slow Living", "Sunday Flowers · Morning Coffee · Books by the Window", "slow"],
+  ["Botanical Escape", "Wild Garden · Hydrangea Afternoon · Olive Branch", "botanical"],
+  ["Postcards", "Amalfi Window · Paris Café · Kyoto Alley", "postcard"],
+  ["After Rain", "Rainy Window · Blue Hour · City After Rain", "after-rain"],
+];
+
+const pianoCollections = [
+  ["Ghibli Collection", "Always With Me · One Summer’s Day · Merry-Go-Round", "ghibli"],
+  ["Rainy Piano", "Kiss The Rain · River Flows in You · Comptine", "piano-rain"],
+  ["Cinema Piano", "Interstellar · La La Land · Nuvole Bianche", "cinema"],
+];
+
+export default function AfterworkPrototypePage() {
+  const [selected, setSelected] = useState<Session | null>(null);
+  const [party, setParty] = useState("Just me");
+  const [submitted, setSubmitted] = useState(false);
+  const acrylic = useMemo(() => sessions.filter((s) => s.kind === "acrylic"), []);
+  const piano = useMemo(() => sessions.filter((s) => s.kind === "piano"), []);
+
+  function openBooking(session: Session) {
+    setSubmitted(false);
+    setParty("Just me");
+    setSelected(session);
+  }
+
+  return (
+    <main className="afterwork-page">
+      <header className="aw-nav">
+        <a className="aw-brand" href="#top">PINO <span>AFTERWORK</span></a>
+        <nav><a href="#weekend">This weekend</a><a href="#acrylic">Acrylic</a><a href="#piano">Piano Spa</a></nav>
+        <a className="aw-nav-cta" href="#weekend">Book a pause</a>
+      </header>
+
+      <section className="aw-hero" id="top">
+        <div className="hero-copy">
+          <p className="eyebrow">A weekend creative retreat for grown-ups</p>
+          <h1>Your weekend deserves<br /><em>a beautiful pause.</em></h1>
+          <p className="hero-lead">Một buổi chiều để vẽ. Một buổi tối để chơi bản nhạc mình yêu. Không áp lực, không cần kinh nghiệm — chỉ cần đến và chậm lại.</p>
+          <div className="hero-actions"><a className="primary" href="#weekend">Explore this weekend</a><a className="text-link" href="#experience">How it feels ↓</a></div>
+        </div>
+        <div className="hero-scene" aria-label="Acrylic afternoon flowing into piano evening">
+          <div className="sun-orb" />
+          <div className="paint-card"><span>Acrylic Afternoon</span><strong>Paint something beautiful.</strong><i /></div>
+          <div className="piano-card"><span>Piano Spa</span><strong>Play something you love.</strong><div className="keys" /></div>
+        </div>
+      </section>
+
+      <section className="weekend" id="weekend">
+        <div className="section-heading"><div><p className="eyebrow">22–23 August · Cần Thơ</p><h2>This weekend</h2></div><p>Chọn cảm giác bạn muốn mang về cuối tuần này.</p></div>
+        <div className="weekend-grid">
+          <SessionColumn title="Paint the afternoon" subtitle="Acrylic · 14:30" sessions={acrylic} onBook={openBooking} />
+          <SessionColumn title="Play the evening" subtitle="Piano Spa · 19:00" sessions={piano} onBook={openBooking} />
+        </div>
+      </section>
+
+      <section className="split-story" id="experience">
+        <div className="story-card daylight"><p className="eyebrow">Acrylic Afternoon</p><h2>Pick. Paint. Take it home.</h2><p>Không phải lớp mỹ thuật. Bạn chọn một mẫu/chủ đề mình thích, facilitator chia bức tranh thành những bước dễ theo, và cuối buổi bạn mang về một canvas hoàn chỉnh.</p><div className="ritual"><span>Arrive</span><b>→</b><span>Settle</span><b>→</b><span>Paint</span><b>→</b><span>Take home</span></div></div>
+        <div className="story-card night"><p className="eyebrow">Piano Spa</p><h2>Your song, from the first night.</h2><p>Không solfège, không thi cử. Giáo trình được reverse-engineer từ chính nhạc phẩm bạn chọn để ngay session đầu đã tạo được một musical outcome thật.</p><div className="ritual"><span>Listen</span><b>→</b><span>Play</span><b>→</b><span>Feel</span><b>→</b><span>Release</span></div></div>
+      </section>
+
+      <section className="catalog-section" id="acrylic">
+        <div className="section-heading"><div><p className="eyebrow">Acrylic collections</p><h2>Choose a world to paint.</h2></div><p>Mỗi cuối tuần chỉ mở một số painting được curate từ catalog.</p></div>
+        <div className="collection-grid acrylic-grid">{acrylicCollections.map(([title, desc, art]) => <article key={title} className="collection-card"><div className={`collection-art ${art}`} /><p>{title}</p><span>{desc}</span></article>)}</div>
+      </section>
+
+      <section className="catalog-section piano-section" id="piano">
+        <div className="section-heading"><div><p className="eyebrow">Piano collections</p><h2>Choose the song you already love.</h2></div><p>Mỗi nhạc phẩm là một journey; hoàn thành trọn vẹn để release record của chính mình.</p></div>
+        <div className="collection-grid piano-grid">{pianoCollections.map(([title, desc, art]) => <article key={title} className="collection-card record-card"><div className={`collection-art ${art}`}><i className="vinyl" /></div><p>{title}</p><span>{desc}</span></article>)}</div>
+        <div className="reward-strip"><div><small>01</small><strong>Melody</strong></div><b>→</b><div><small>02</small><strong>Two hands</strong></div><b>→</b><div><small>03</small><strong>Expression</strong></div><b>→</b><div><small>04</small><strong>Vinyl + NFC release</strong></div></div>
+      </section>
+
+      <section className="adult-first">
+        <p className="eyebrow">Adult-first, family-welcome</p>
+        <h2>This is your experience too.</h2>
+        <p>Đi một mình, cùng người yêu, bạn bè — hoặc mang bé theo ở những session family-friendly. Người lớn luôn là participant, không phải người đi kèm.</p>
+      </section>
+
+      <footer><span>PINO AFTERWORK · prototype v0</span><span>A beautiful pause, every weekend.</span></footer>
+
+      {selected && (
+        <div className="booking-backdrop" role="presentation" onMouseDown={() => setSelected(null)}>
+          <section className="booking-sheet" role="dialog" aria-modal="true" aria-label={`Book ${selected.title}`} onMouseDown={(e) => e.stopPropagation()}>
+            <button className="close" onClick={() => setSelected(null)} aria-label="Close">×</button>
+            {!submitted ? <>
+              <p className="eyebrow">{selected.kind === "acrylic" ? "Acrylic Afternoon" : "Piano Spa"}</p>
+              <h2>{selected.title}</h2>
+              <div className="booking-meta"><span>{selected.day} · {selected.date}</span><span>{selected.time} · {selected.duration}</span><span>{selected.price} / guest</span></div>
+              <label>Who’s coming?</label>
+              <div className="party-options">{["Just me", "Two adults", "Family"].map((option) => <button key={option} className={party === option ? "active" : ""} onClick={() => setParty(option)}>{option}</button>)}</div>
+              <label>Your name<input placeholder="Tên của bạn" /></label>
+              <label>Phone<input inputMode="tel" placeholder="Số điện thoại / Zalo" /></label>
+              {party === "Family" && <label>Family note<input placeholder="Ví dụ: 1 người lớn + bé 9 tuổi" /></label>}
+              <button className="confirm" onClick={() => setSubmitted(true)}>Reserve my seat</button>
+              <small className="prototype-note">Prototype only — no booking is created.</small>
+            </> : <div className="success"><span>✓</span><h2>Your pause is held.</h2><p>Prototype state only. Runtime booking will be wired to PINO Core after Founder approval.</p><button className="confirm" onClick={() => setSelected(null)}>Done</button></div>}
+          </section>
+        </div>
+      )}
+    </main>
+  );
+}
+
+function SessionColumn({ title, subtitle, sessions, onBook }: { title: string; subtitle: string; sessions: Session[]; onBook: (s: Session) => void }) {
+  return <div className="session-column"><div className="column-title"><div><small>{subtitle}</small><h3>{title}</h3></div><span>{sessions.length} sessions</span></div>{sessions.map((session) => <article className="session-card" key={session.id}><div className={`session-art ${session.art}`}><span>{session.collection}</span></div><div className="session-body"><div><p>{session.day} · {session.date}</p><h4>{session.title}</h4><small>{session.mood}</small></div><div className="session-bottom"><div><strong>{session.time}</strong><span>{session.duration} · {session.price}</span></div><button onClick={() => onBook(session)}>Book · {session.seatsLeft} left</button></div></div></article>)}</div>;
+}
