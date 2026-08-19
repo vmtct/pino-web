@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { acrylicCollections, type AcrylicOffering } from "./catalog";
 import "./page.css";
 
 type Kind = "acrylic" | "piano";
@@ -27,13 +28,6 @@ const sessions: Session[] = [
   { id: "aw-p-02", kind: "piano", title: "Kiss The Rain", collection: "Rainy Piano", day: "Sunday", date: "23 Aug", time: "19:00", duration: "90 min", price: "from 250k", seatsLeft: 1, capacity: 5, mood: "calm · introspective", art: "piano-rain" },
 ];
 
-const acrylicCollections = [
-  ["Slow Living", "Sunday Flowers · Morning Coffee · Books by the Window", "slow"],
-  ["Botanical Escape", "Wild Garden · Hydrangea Afternoon · Olive Branch", "botanical"],
-  ["Postcards", "Amalfi Window · Paris Café · Kyoto Alley", "postcard"],
-  ["After Rain", "Rainy Window · Blue Hour · City After Rain", "after-rain"],
-];
-
 const pianoCollections = [
   ["Ghibli Collection", "Always With Me · One Summer’s Day · Merry-Go-Round", "ghibli"],
   ["Rainy Piano", "Kiss The Rain · River Flows in You · Comptine", "piano-rain"],
@@ -42,15 +36,21 @@ const pianoCollections = [
 
 export default function AfterworkPrototypePage() {
   const [selected, setSelected] = useState<Session | null>(null);
+  const [selectedOffer, setSelectedOffer] = useState<AcrylicOffering | null>(null);
   const [party, setParty] = useState("Just me");
   const [submitted, setSubmitted] = useState(false);
   const acrylic = useMemo(() => sessions.filter((s) => s.kind === "acrylic"), []);
   const piano = useMemo(() => sessions.filter((s) => s.kind === "piano"), []);
 
   function openBooking(session: Session) {
+    setSelectedOffer(null);
     setSubmitted(false);
     setParty("Just me");
     setSelected(session);
+  }
+
+  function activeSessionFor(title: string) {
+    return sessions.find((session) => session.kind === "acrylic" && session.title === title) ?? null;
   }
 
   return (
@@ -89,8 +89,17 @@ export default function AfterworkPrototypePage() {
       </section>
 
       <section className="catalog-section" id="acrylic">
-        <div className="section-heading"><div><p className="eyebrow">Acrylic collections</p><h2>Choose a world to paint.</h2></div><p>Mỗi cuối tuần chỉ mở một số painting được curate từ catalog.</p></div>
-        <div className="collection-grid acrylic-grid">{acrylicCollections.map(([title, desc, art]) => <article key={title} className="collection-card"><div className={`collection-art ${art}`} /><p>{title}</p><span>{desc}</span></article>)}</div>
+        <div className="section-heading"><div><p className="eyebrow">Acrylic collections · 16 paintings</p><h2>Choose a world to paint.</h2></div><p>Catalog là thư viện cảm xúc. Mỗi cuối tuần PINO chỉ curate một số painting thành session thật.</p></div>
+        <div className="acrylic-catalog">{acrylicCollections.map((collection) => <section className="collection-block" key={collection.slug}>
+          <div className="collection-intro"><p className="eyebrow">{collection.title}</p><h3>{collection.promise}</h3><p>{collection.description}</p></div>
+          <div className="offering-grid">{collection.offerings.map((offering) => {
+            const active = activeSessionFor(offering.title);
+            return <button className="offering-card" key={offering.slug} onClick={() => setSelectedOffer(offering)}>
+              <span className="offering-visual" style={{ background: offering.visual }}><i>{active ? `${active.day} · ${active.time}` : "Catalog"}</i></span>
+              <span className="offering-copy"><small>{offering.mood}</small><strong>{offering.title}</strong><em>{active ? `${active.seatsLeft} seats left this weekend` : "Open detail"}</em></span>
+            </button>;
+          })}</div>
+        </section>)}</div>
       </section>
 
       <section className="catalog-section piano-section" id="piano">
@@ -105,7 +114,21 @@ export default function AfterworkPrototypePage() {
         <p>Đi một mình, cùng người yêu, bạn bè — hoặc mang bé theo ở những session family-friendly. Người lớn luôn là participant, không phải người đi kèm.</p>
       </section>
 
-      <footer><span>PINO AFTERWORK · prototype v0</span><span>A beautiful pause, every weekend.</span></footer>
+      <footer><span>PINO AFTERWORK · prototype v0.1</span><span>Destination: afterwork.pinohouse.art</span></footer>
+
+      {selectedOffer && <div className="booking-backdrop" role="presentation" onMouseDown={() => setSelectedOffer(null)}>
+        <section className="booking-sheet offering-sheet" role="dialog" aria-modal="true" aria-label={selectedOffer.title} onMouseDown={(e) => e.stopPropagation()}>
+          <button className="close" onClick={() => setSelectedOffer(null)} aria-label="Close">×</button>
+          <div className="detail-visual" style={{ background: selectedOffer.visual }} />
+          <p className="eyebrow">{selectedOffer.collection} · Acrylic Afternoon</p>
+          <h2>{selectedOffer.title}</h2>
+          <p className="detail-story">{selectedOffer.story}</p>
+          <div className="detail-facts"><span><small>Mood</small>{selectedOffer.mood}</span><span><small>Experience</small>{selectedOffer.difficulty}</span><span><small>Time</small>{selectedOffer.duration}</span><span><small>Family</small>{selectedOffer.familyFriendly ? "Family-friendly" : "Adult-focused"}</span></div>
+          <p className="detail-note">{selectedOffer.canvas}. Materials included in the experience; exact production spec remains prototype-only.</p>
+          {activeSessionFor(selectedOffer.title) ? <button className="confirm" onClick={() => openBooking(activeSessionFor(selectedOffer.title)!)}>Book this weekend</button> : <a className="detail-back" href="#weekend" onClick={() => setSelectedOffer(null)}>Not scheduled this weekend · see what is open ↑</a>}
+          <small className="prototype-note">Offering detail is product evidence only — no canonical catalog state exists yet.</small>
+        </section>
+      </div>}
 
       {selected && (
         <div className="booking-backdrop" role="presentation" onMouseDown={() => setSelected(null)}>
