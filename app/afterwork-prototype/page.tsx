@@ -5,6 +5,7 @@ import { acrylicCollections, type AcrylicOffering } from "./catalog";
 import "./page.css";
 
 type Kind = "acrylic" | "piano";
+type BookingStep = "details" | "holding" | "confirmed";
 type Session = {
   id: string;
   kind: Kind;
@@ -38,15 +39,20 @@ export default function AfterworkPrototypePage() {
   const [selected, setSelected] = useState<Session | null>(null);
   const [selectedOffer, setSelectedOffer] = useState<AcrylicOffering | null>(null);
   const [party, setParty] = useState("Just me");
-  const [submitted, setSubmitted] = useState(false);
+  const [bookingStep, setBookingStep] = useState<BookingStep>("details");
   const acrylic = useMemo(() => sessions.filter((s) => s.kind === "acrylic"), []);
   const piano = useMemo(() => sessions.filter((s) => s.kind === "piano"), []);
 
   function openBooking(session: Session) {
     setSelectedOffer(null);
-    setSubmitted(false);
+    setBookingStep("details");
     setParty("Just me");
     setSelected(session);
+  }
+
+  function closeBooking() {
+    setSelected(null);
+    setBookingStep("details");
   }
 
   function activeSessionFor(title: string) {
@@ -114,7 +120,7 @@ export default function AfterworkPrototypePage() {
         <p>Đi một mình, cùng người yêu, bạn bè — hoặc mang bé theo ở những session family-friendly. Người lớn luôn là participant, không phải người đi kèm.</p>
       </section>
 
-      <footer><span>PINO AFTERWORK · prototype v0.1</span><span>Destination: afterwork.pinohouse.art</span></footer>
+      <footer><span>PINO AFTERWORK · prototype v0.2</span><span>Destination: afterwork.pinohouse.art</span></footer>
 
       {selectedOffer && <div className="booking-backdrop" role="presentation" onMouseDown={() => setSelectedOffer(null)}>
         <section className="booking-sheet offering-sheet" role="dialog" aria-modal="true" aria-label={selectedOffer.title} onMouseDown={(e) => e.stopPropagation()}>
@@ -131,21 +137,42 @@ export default function AfterworkPrototypePage() {
       </div>}
 
       {selected && (
-        <div className="booking-backdrop" role="presentation" onMouseDown={() => setSelected(null)}>
+        <div className="booking-backdrop" role="presentation" onMouseDown={closeBooking}>
           <section className="booking-sheet" role="dialog" aria-modal="true" aria-label={`Book ${selected.title}`} onMouseDown={(e) => e.stopPropagation()}>
-            <button className="close" onClick={() => setSelected(null)} aria-label="Close">×</button>
-            {!submitted ? <>
+            <button className="close" onClick={closeBooking} aria-label="Close">×</button>
+
+            {bookingStep === "details" && <>
               <p className="eyebrow">{selected.kind === "acrylic" ? "Acrylic Afternoon" : "Piano Spa"}</p>
               <h2>{selected.title}</h2>
-              <div className="booking-meta"><span>{selected.day} · {selected.date}</span><span>{selected.time} · {selected.duration}</span><span>{selected.price} / guest</span></div>
+              <div className="booking-meta"><span>{selected.day} · {selected.date}</span><span>{selected.time} · {selected.duration}</span><span>{selected.price} / guest</span><span>Light deposit required to confirm</span></div>
               <label>Who’s coming?</label>
               <div className="party-options">{["Just me", "Two adults", "Family"].map((option) => <button key={option} className={party === option ? "active" : ""} onClick={() => setParty(option)}>{option}</button>)}</div>
               <label>Your name<input placeholder="Tên của bạn" /></label>
               <label>Phone<input inputMode="tel" placeholder="Số điện thoại / Zalo" /></label>
               {party === "Family" && <label>Family note<input placeholder="Ví dụ: 1 người lớn + bé 9 tuổi" /></label>}
-              <button className="confirm" onClick={() => setSubmitted(true)}>Reserve my seat</button>
-              <small className="prototype-note">Prototype only — no booking is created.</small>
-            </> : <div className="success"><span>✓</span><h2>Your pause is held.</h2><p>Prototype state only. Runtime booking will be wired to PINO Core after Founder approval.</p><button className="confirm" onClick={() => setSelected(null)}>Done</button></div>}
+              <button className="confirm" onClick={() => setBookingStep("holding")}>Hold my seat</button>
+              <small className="prototype-note">Prototype only — this does not create a Core booking.</small>
+            </>}
+
+            {bookingStep === "holding" && <div className="success">
+              <span>◷</span>
+              <p className="eyebrow">Booking status · HOLDING</p>
+              <h2>Your seat is held.</h2>
+              <p>Chỗ của bạn đang được giữ tạm thời. Booking chỉ được xác nhận sau khi PINO nhận được khoản deposit yêu cầu.</p>
+              <div className="booking-meta"><span>{selected.title}</span><span>{selected.day} · {selected.date} · {selected.time}</span><span>Deposit amount: resolved by session terms</span><span>Hold expiry: policy still TBD</span></div>
+              <button className="confirm" onClick={() => setBookingStep("confirmed")}>Simulate deposit confirmed</button>
+              <small className="prototype-note">No payment provider is connected. This button only demonstrates lifecycle.</small>
+            </div>}
+
+            {bookingStep === "confirmed" && <div className="success">
+              <span>✓</span>
+              <p className="eyebrow">Booking status · CONFIRMED</p>
+              <h2>Your pause is confirmed.</h2>
+              <p>Deposit verified. Chỗ của bạn đã được xác nhận cho session này.</p>
+              <div className="booking-meta"><span>{selected.title}</span><span>{selected.day} · {selected.date} · {selected.time}</span><span>Prototype booking ref · AW-DEMO-001</span></div>
+              <button className="confirm" onClick={closeBooking}>Done</button>
+              <small className="prototype-note">Prototype state only — no booking or payment is persisted.</small>
+            </div>}
           </section>
         </div>
       )}
