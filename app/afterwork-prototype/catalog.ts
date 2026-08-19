@@ -1,3 +1,5 @@
+import "./catalog.css";
+
 export type AcrylicOffering = {
   slug: string;
   title: string;
