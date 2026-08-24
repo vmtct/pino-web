@@ -8,7 +8,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "node --test --experimental-strip-types test/*.test.ts",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "deploy:toppi": "npm run build && wrangler deploy --config wrangler.toppi.toml"
   },
   "dependencies": {
     "next": "15.5.6",

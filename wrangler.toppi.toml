@@ -1,0 +1,18 @@
+name = "toppi-web"
+compatibility_date = "2026-08-24"
+main = "toppi-worker-entry.ts"
+
+routes = [
+  { pattern = "toppi.pinohouse.art", custom_domain = true }
+]
+
+[assets]
+directory = "./out"
+binding = "ASSETS"
+run_worker_first = true
+html_handling = "auto-trailing-slash"
+
+[[r2_buckets]]
+binding = "TOPPI_ASSETS"
+bucket_name = "toppi"
+remote = true
