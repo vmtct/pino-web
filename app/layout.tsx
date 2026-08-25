@@ -3,9 +3,9 @@ import "./globals.css";
 import CmsHydrator from "./cms-hydrator";
 
 export const metadata: Metadata = {
-  title: "PINO House — Ngôi nhà sáng tạo cho trẻ em",
+  title: "PINO House — Art, Music & Creative Growth",
   description:
-    "PINO House là nơi trẻ khám phá Art và Piano qua Open Studio, rồi phát triển sâu hơn cùng Premium Journey.",
+    "A house for growing curious minds. Children explore art, music, Open Studio, and creative growth together at PINO House.",
 };
 
 export default function RootLayout({
@@ -14,7 +14,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi">
+    <html lang="en">
       <body><CmsHydrator>{children}</CmsHydrator></body>
     </html>
   );
