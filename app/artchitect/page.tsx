@@ -7,6 +7,7 @@ export const metadata: Metadata = {
 };
 
 const ASSET = "https://assets.pinohouse.art/site/Artchitect";
+const SIGIL = "https://assets.pinohouse.art/core/Pino%20Sigil.png";
 
 const journey = [
   ["Line", "We begin by observing closely and drawing with intention.", "artchitect-journey-01-line.png"],
@@ -43,11 +44,20 @@ const gallery = [
   "oil-paint-sticks-and-palette.png",
 ];
 
+function Brand() {
+  return (
+    <a className={styles.brand} href="/" aria-label="PINO House home">
+      <img src={SIGIL} alt="" />
+      <span>PINO House</span>
+    </a>
+  );
+}
+
 export default function ArtchitectPage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <a className={styles.brand} href="/" aria-label="PINO House home"><span>♩</span>PINO House</a>
+        <Brand />
         <nav className={styles.nav} aria-label="Artchitect navigation">
           <a href="/">House</a><a href="/#paths">Paths</a><a href="/open-studio">Open Studio</a><a href="/#stories">Stories</a><a href="/#about">About</a>
         </nav>
@@ -90,7 +100,7 @@ export default function ArtchitectPage() {
       </section>
 
       <footer className={styles.footer}>
-        <div><a className={styles.brand} href="/"><span>♩</span>PINO House</a><p>Art. Music. Creative Growth.</p><strong>pinohouse.art</strong></div>
+        <div><Brand /><p>Art. Music. Creative Growth.</p><strong>pinohouse.art</strong></div>
         <div><h4>Explore</h4><a href="/">House</a><a href="/#paths">Paths</a><a href="/open-studio">Open Studio</a><a href="/#stories">Stories</a></div>
         <div><h4>About</h4><a href="/#about">Our Story</a><a href="/#about">The House</a><a href="/#about">Team</a><a href="/#about">Careers</a></div>
         <div><h4>Information</h4><a href="/open-studio">Visit</a><a href="/#about">FAQs</a><a href="/#about">Policies</a><a href="/#about">Contact</a></div>
