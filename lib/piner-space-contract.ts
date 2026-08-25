@@ -50,7 +50,7 @@ export interface PinerPrototypeHousehold {
 
 /**
  * Presentation-only fixture for the Piner v1 shell while canonical DB/auth contracts are migrating.
- * Never use these objects as eligibility, Booking, Membership, authorization, or progress truth.
+ * Never use these objects as eligibility, Booking, Membership, authorization, Open Studio Pass, or progress truth.
  */
 export const PINER_PROTOTYPE_HOUSEHOLD: PinerPrototypeHousehold = {
   parentLabel: "Gia đình PINO",
@@ -107,7 +107,7 @@ export const PINER_PROTOTYPE_HOUSEHOLD: PinerPrototypeHousehold = {
           detail: "Artchitect · tiếp tục từ tác phẩm của Minh",
           cta: "Xem hành trình",
         },
-        membership: { label: "Khám Phá", detail: "Không có gói Premium đang hoạt động" },
+        membership: { label: "Khám Phá", detail: "House Member · trạng thái Premium minh hoạ" },
         upcoming: [{ id: "minh-up-1", when: "Thứ bảy · 18:00", title: "Artchitect", place: "PINO Cần Thơ" }],
       },
       journey: {
@@ -131,7 +131,7 @@ export const PINER_PROTOTYPE_HOUSEHOLD: PinerPrototypeHousehold = {
         intro: "Khám phá thêm mà không làm lẫn với hành trình hiện tại.",
         items: [
           { id: "minh-e-1", label: "Khám Phá", title: "Open Studio · Make", meta: "Cuối tuần", note: "Core sẽ quyết định age-fit, capacity và access khi runtime contract sẵn sàng." },
-          { id: "minh-e-2", label: "Trải nghiệm", title: "Piano thử một buổi", meta: "Theo lịch mở", note: "Copy minh hoạ; không phải entitlement thật." },
+          { id: "minh-e-2", label: "Khám Phá", title: "Open Studio · Piano", meta: "Theo lịch mở", note: "Open Studio PLG minh hoạ; Pass và eligibility do Core quyết định." },
         ],
       },
     },
