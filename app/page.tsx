@@ -1,6 +1,6 @@
 import styles from "./homepage.module.css";
 
-const ASSET = "https://assets.pinohouse.art/pino-media/site/homepage";
+const ASSET = "https://assets.pinohouse.art/site/homepage";
 const SIGIL = "https://assets.pinohouse.art/core/Pino%20Sigil.png";
 
 const paths = [
