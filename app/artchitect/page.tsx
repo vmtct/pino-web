@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: "Observe. Make. Design. Build. Discover Artchitect at PINO House.",
 };
 
-const ASSET = "https://assets.pinohouse.art/pino-media/site/Artchitect";
+const ASSET = "https://assets.pinohouse.art/site/Artchitect";
 
 const journey = [
   ["Line", "We begin by observing closely and drawing with intention.", "artchitect-journey-01-line.png"],
