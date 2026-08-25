@@ -20,6 +20,7 @@ import {
   sessionThumbnail,
   validateRegistration,
 } from "../../lib/open-studio-funnel";
+import { buildOpenStudioFallbackSessions, isFallbackSession } from "./fallback-sessions";
 import "./page.css";
 
 const SCHEDULE_ENDPOINT = "/api/pino-core/open-studio/sessions";
@@ -121,11 +122,12 @@ export default function OpenStudioPage() {
       if (!response.ok) throw new Error(`Schedule request failed (${response.status})`);
       const data = await response.json() as ScheduleResponse;
       if (!data || !Array.isArray(data.sessions)) throw new Error("Invalid schedule response");
-      setSessions(data.sessions.filter(isCoreSession).sort((a, b) => a.startsAt.localeCompare(b.startsAt)));
+      const realSessions = data.sessions.filter(isCoreSession).sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+      setSessions(realSessions.length > 0 ? realSessions : buildOpenStudioFallbackSessions());
       setStatus("success");
     } catch {
-      setSessions([]);
-      setStatus("error");
+      setSessions(buildOpenStudioFallbackSessions());
+      setStatus("success");
     }
   }, []);
 
@@ -140,6 +142,8 @@ export default function OpenStudioPage() {
     return () => { cancelled = true; };
   }, []);
 
+  const usingFallback = sessions.length > 0 && sessions.every(isFallbackSession);
+  const canRegister = registrationEnabled && !usingFallback;
   const selectedSession = sessions.find((session) => session.id === selectedId) || null;
   const featuredSession = useMemo(() => sessions.find((session) => !isSessionFull(session)) || sessions[0] || null, [sessions]);
   const dateOptions = useMemo(() => Array.from(new Set(sessions.map((session) => localDateKey(session.startsAt)))), [sessions]);
@@ -152,7 +156,7 @@ export default function OpenStudioPage() {
   const selectSession = (session: CoreSession, openForm = false) => {
     if (isSessionFull(session)) return;
     setSelectedId(session.id);
-    setShowForm(openForm && registrationEnabled);
+    setShowForm(openForm && canRegister);
     setSubmission("idle");
     setSubmissionMessage("");
     setForm(emptyForm);
@@ -170,7 +174,7 @@ export default function OpenStudioPage() {
 
   const submitRegistration = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!selectedSession || !registrationEnabled || submission === "pending" || submissionInFlight.current) return;
+    if (!selectedSession || !canRegister || submission === "pending" || submissionInFlight.current) return;
     const errors = validateRegistration(form);
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) {
@@ -229,7 +233,7 @@ export default function OpenStudioPage() {
 
       <section className="os-main os-shell" id="sessions" aria-labelledby="sessions-title">
         <div className="os-featured-panel">
-          <p className="os-kicker">✦ SẮP TỚI TẠI PINO</p>
+          <p className="os-kicker">✦ SẮP TỚI TẠI PINO{usingFallback ? " · LỊCH MINH HOẠ" : ""}</p>
           {status === "loading" ? <div className="os-featured-loading">Đang mở lịch Open Studio…</div> : null}
           {status === "error" ? <div className="os-featured-error"><strong>Lịch đang tạm nghỉ một chút.</strong><button type="button" onClick={() => void loadSessions()}>Thử tải lại</button></div> : null}
           {status === "success" && !featuredSession ? <div className="os-featured-error"><strong>Lịch mới đang được chuẩn bị.</strong><span>Hãy quay lại sau để xem buổi Open Studio gần nhất.</span></div> : null}
@@ -257,7 +261,7 @@ export default function OpenStudioPage() {
 
         <div className="os-week-head">
           <div>
-            <p className="os-kicker">LỊCH OPEN STUDIO</p>
+            <p className="os-kicker">LỊCH OPEN STUDIO{usingFallback ? " · DỮ LIỆU MẪU" : ""}</p>
             <div className="os-date-row" aria-label="Lọc theo ngày">
               <button className={activeDate === "all" ? "is-active" : ""} onClick={() => setActiveDate("all")} type="button">Tất cả</button>
               {dateOptions.slice(0, 7).map((date) => {
@@ -305,10 +309,11 @@ export default function OpenStudioPage() {
               {selectedSession.syllabus.publicDescription ? <p>{selectedSession.syllabus.publicDescription}</p> : null}
               {selectedSession.syllabus.skillSummary ? <div className="os-detail-note"><strong>Con sẽ khám phá</strong><p>{selectedSession.syllabus.skillSummary}</p></div> : null}
 
-              {!registrationEnabled ? <div className="os-registration-notice"><strong>Đăng ký trực tuyến sắp mở</strong><p>Ba mẹ vẫn có thể xem lịch. PINO sẽ mở nhận đăng ký khi hệ thống sẵn sàng.</p></div> : null}
-              {registrationEnabled && !showForm && submission !== "success" ? <button className="os-book-button" type="button" onClick={() => setShowForm(true)}>Đăng ký buổi này <span>→</span></button> : null}
+              {usingFallback ? <div className="os-registration-notice"><strong>Đây là lịch minh hoạ</strong><p>Các buổi mẫu đang dùng asset thật để kiểm thử UI/UX. Khi API trả về ít nhất một session thật, toàn bộ lịch minh hoạ sẽ tự động được thay thế.</p></div> : null}
+              {!usingFallback && !registrationEnabled ? <div className="os-registration-notice"><strong>Đăng ký trực tuyến sắp mở</strong><p>Ba mẹ vẫn có thể xem lịch. PINO sẽ mở nhận đăng ký khi hệ thống sẵn sàng.</p></div> : null}
+              {canRegister && !showForm && submission !== "success" ? <button className="os-book-button" type="button" onClick={() => setShowForm(true)}>Đăng ký buổi này <span>→</span></button> : null}
 
-              {registrationEnabled && showForm && submission !== "success" ? (
+              {canRegister && showForm && submission !== "success" ? (
                 <form className="os-registration-form" onSubmit={submitRegistration} noValidate>
                   <h3>Thông tin gia đình</h3>
                   <p>PINO sẽ liên hệ để xác nhận chỗ. Một đăng ký dành cho một bé.</p>
@@ -320,7 +325,7 @@ export default function OpenStudioPage() {
                   <button className="os-book-button" type="submit" disabled={submission === "pending"}>{submission === "pending" ? "Đang gửi…" : "Gửi đăng ký"}<span>→</span></button>
                 </form>
               ) : null}
-              {registrationEnabled && submission === "success" ? <div className="os-registration-success" role="status"><span>✓</span><div><strong>{REGISTRATION_SUCCESS_TITLE}</strong><p>{REGISTRATION_SUCCESS_BODY}</p></div></div> : null}
+              {canRegister && submission === "success" ? <div className="os-registration-success" role="status"><span>✓</span><div><strong>{REGISTRATION_SUCCESS_TITLE}</strong><p>{REGISTRATION_SUCCESS_BODY}</p></div></div> : null}
             </div>
           </div>
         ) : null}
