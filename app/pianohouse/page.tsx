@@ -8,8 +8,8 @@ export const metadata: Metadata = {
 
 const ASSET = "https://assets.pinohouse.art/site/pianohouse";
 const SIGIL = "https://assets.pinohouse.art/core/Pino%20Sigil.png";
-const FOLIAGE_LEFT = "https://assets.pinohouse.art/site/Artchitect/botanical-leaves-illustration.png";
-const FOLIAGE_RIGHT = "https://assets.pinohouse.art/site/Artchitect/neutral-botanical-abstract-art.png";
+const FOLIAGE_LEFT = "https://assets.pinohouse.art/site/Artchitect/botanical-leaf-illustration.png";
+const FOLIAGE_RIGHT = "https://assets.pinohouse.art/site/Artchitect/neutral-botanical-abstract.png";
 
 const collections = [
   ["Whimsical Worlds", "Playful pieces that spark curiosity and wonder.", "dreamlike-piano-under-starry-sky.png"],
