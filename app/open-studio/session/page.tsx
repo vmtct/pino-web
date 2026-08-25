@@ -1,43 +1,406 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  CoreSession,
+  RegistrationForm,
+  createSubmissionAttempt,
+  formatAgeRange,
+  formatLocalDate,
+  formatLocalTimeRange,
+  isCoreSession,
+  isSessionFull,
+  mapRegistrationError,
+  publicSyllabusTitle,
+  serializeRegistration,
+  sessionImageAlt,
+  sessionThumbnail,
+  validateRegistration,
+} from "../../../lib/open-studio-funnel";
+import { buildOpenStudioFallbackSessions, isFallbackSession } from "../fallback-sessions";
+import "./detail.css";
 
-type Syllabus={keyword:string;shortDescription:string;skillSummary:string;skillset:string|null};
-type Session={id:string|number;topic:string;type:string;path:string|null;date:string|null;availableSeats:number|null;capacity:number|null;confirmedCount:number;cover:string|null;avatar:string|null;syllabus:Syllabus|null};
+const SCHEDULE_ENDPOINT = "/api/pino-core/open-studio/sessions";
+const CAPABILITY_ENDPOINT = "/api/pino-core/open-studio/capabilities";
+const REGISTRATION_ENDPOINT = "/api/pino-core/open-studio/registrations";
+const ASSET_BASE = "https://assets.pinohouse.art/site/OpenStudio";
+const LOGO_URL = "https://assets.pinohouse.art/core/Pino%20Sigil.png";
+const DEMO_PREFIX = "demo-open-studio-";
 
-function parseDate(value:string|null){if(!value)return null;const normalized=value.length===10?`${value}T23:59:59+07:00`:value;const d=new Date(normalized);return Number.isNaN(d.getTime())?null:d;}
-function dateLabel(value:string|null){const d=parseDate(value);if(!d)return"Ngày đang cập nhật";return new Intl.DateTimeFormat("vi-VN",{weekday:"long",day:"numeric",month:"long",year:"numeric",timeZone:"Asia/Ho_Chi_Minh"}).format(d);}
-function timeLabel(value:string|null){const d=parseDate(value);if(!d||!value||value.length<=10)return"";return new Intl.DateTimeFormat("vi-VN",{hour:"2-digit",minute:"2-digit",timeZone:"Asia/Ho_Chi_Minh"}).format(d);}
-function normalizeId(value:string|number|null|undefined){return String(value??"").trim();}
+const ASSETS = {
+  courtyard: `${ASSET_BASE}/open-studio-courtyard-exterior.png`,
+  blocks: `${ASSET_BASE}/children-building-wooden-blocks.png`,
+  piano: `${ASSET_BASE}/child-playing-piano.png`,
+  watercolor: `${ASSET_BASE}/watercolor-palette-and-botanical-painting.png`,
+  clay: `${ASSET_BASE}/child-making-clay-cup.png`,
+  dance: `${ASSET_BASE}/children-dance-class.png`,
+  architecture: `${ASSET_BASE}/architectural-model-and-sketchbook.png`,
+  gate: `${ASSET_BASE}/garden-archway-entrance.png`,
+  leavesOne: `${ASSET_BASE}/glowing-autumn-leaves-v1.png`,
+  leavesTwo: `${ASSET_BASE}/glowing-autumn-leaves-v2.png`,
+};
 
-export default function SessionDetailPage(){
- const router=useRouter();
- const [session,setSession]=useState<Session|null>(null); const [loading,setLoading]=useState(true); const [error,setError]=useState("");
- const [showForm,setShowForm]=useState(false); const [phone,setPhone]=useState(""); const [submitting,setSubmitting]=useState(false); const [submitted,setSubmitted]=useState(false); const [submitError,setSubmitError]=useState("");
- useEffect(()=>{const id=normalizeId(new URLSearchParams(window.location.search).get("id"));if(!id){setError("Không tìm thấy session.");setLoading(false);return;}let active=true;fetch(`/api/os-sessions?id=${encodeURIComponent(id)}&_=${Date.now()}`,{cache:"no-store",headers:{"Cache-Control":"no-cache"}}).then(async r=>{const data=await r.json();if(!r.ok)throw new Error(data.error||`Không thể tải session (${r.status}).`);const found=(Array.isArray(data.sessions)?data.sessions:[]).find((s:Session)=>normalizeId(s.id)===id&&String(s.type).toLowerCase()==="open studio");if(!found)throw new Error("Session không tồn tại hoặc đã đóng.");if(active)setSession(found);}).catch(e=>active&&setError(e instanceof Error?e.message:"Không thể tải session.")).finally(()=>active&&setLoading(false));return()=>{active=false;}},[]);
- const submit=async(e:React.FormEvent)=>{e.preventDefault();if(!session||submitting)return;setSubmitting(true);setSubmitError("");try{const r=await fetch("/api/open-studio/book",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({phone,sessionId:String(session.id)})});const data=await r.json();if(!r.ok)throw new Error(data.error||"Không thể đăng ký session.");setSubmitted(true);}catch(e){setSubmitError(e instanceof Error?e.message:"Không thể đăng ký session.");}finally{setSubmitting(false);}};
- if(loading)return <main className="session-page"><div className="loading">Đang mở session…</div></main>;
- if(error||!session)return <main className="session-page"><nav className="nav"><a href="/open-studio">PINO<span>•</span></a></nav><section className="error-state"><p className="eyebrow">OPEN STUDIO</p><h1>Buổi này không còn mở.</h1><p>{error||"Hãy xem các session khác đang có."}</p><a href="/open-studio#sessions">Xem các buổi đang có →</a></section></main>;
- const parsed=parseDate(session.date); const expired=!parsed||parsed.getTime()<Date.now(); const soldOut=session.availableSeats!==null&&session.availableSeats<=0; const unavailable=expired||soldOut; const time=timeLabel(session.date); const syllabus=session.syllabus;
- return <main className="session-page">
-  <nav className="nav"><a href="/open-studio">PINO<span>•</span></a><a href="/open-studio#sessions">← Các buổi đang có</a></nav>
-  <section className="detail-hero">
-   <div className="visual" style={session.cover?{backgroundImage:`url(${session.cover})`}:undefined}><span>{session.path||"OPEN STUDIO"}</span></div>
-   <div className="copy"><p className="eyebrow">OPEN STUDIO · {session.path||"DISCOVERY"}</p><h1>{session.topic}</h1>
-    {syllabus?.keyword&&<div className="keywords">{syllabus.keyword.split(",").map(k=><span key={k}>{k.trim()}</span>)}</div>}
-    <p className="lede">{syllabus?.shortDescription||"Một buổi sáng tạo có cấu trúc vừa đủ để con thử, khám phá và tự tạo ra một điều gì đó."}</p>
-    <div className="meta"><div><small>KHI NÀO</small><strong>{dateLabel(session.date)}{time?` · ${time}`:""}</strong></div><div><small>CHỖ TRỐNG</small><strong>{expired?"Session đã kết thúc":soldOut?"Session đã đầy":session.availableSeats===null?"Chỗ đang cập nhật":`${session.availableSeats} chỗ còn lại`}</strong></div></div>
-    {!submitted&&!showForm?<><button className="join" disabled={unavailable} onClick={()=>setShowForm(true)}>{unavailable?expired?"Session đã kết thúc":"Session đã đầy":"Đăng ký tham gia →"}</button><p className="note">Chỉ cần số điện thoại Zalo. PINO sẽ liên hệ bạn để xác nhận lịch và hỗ trợ phần còn lại.</p></>:submitted?<div className="success"><span>✓</span><div><strong>Đăng ký đã được ghi nhận.</strong><p>PINO sẽ liên hệ bạn qua Zalo để xác nhận ngày giờ và chỗ trống.</p></div></div>:<form className="booking-form" onSubmit={submit}><label htmlFor="phone">Số điện thoại Zalo</label><input id="phone" inputMode="tel" autoComplete="tel" placeholder="09xx xxx xxx" value={phone} onChange={e=>setPhone(e.target.value)} required/><button className="join" disabled={submitting}>{submitting?"Đang ghi nhận…":"Đăng ký session →"}</button>{submitError&&<p className="form-error">{submitError}</p>}<p className="note">Bạn chưa cần đăng nhập hay tạo tài khoản. PINO sẽ kết nối qua Zalo sau khi đăng ký.</p></form>}
-    <a className="member-link" href="/open-studio/member">Đã là thành viên PINO? Xem Member Space →</a>
-   </div>
-  </section>
-  {syllabus&&<section className="syllabus"><div className="syllabus-intro"><p className="eyebrow">WHAT YOUR CHILD WILL EXPLORE</p><h2>Một buổi học nhỏ,<br/><em>một skill mới.</em></h2></div><div className="syllabus-content">{syllabus.skillset&&<div className="skill-badge"><span>SKILL</span><strong>{syllabus.skillset}</strong></div>}<div className="skill-summary"><p className="eyebrow">SKILL SUMMARY</p><p>{syllabus.skillSummary||"Một trải nghiệm được thiết kế để con vừa thử kỹ thuật, vừa tự tạo ra sản phẩm của mình."}</p></div></div></section>}
-  <section className="experience"><div><p className="eyebrow">OPEN STUDIO</p><h2>Không phải thêm một lớp học.</h2></div><div className="experience-grid"><article><span>01</span><h3>Explore</h3><p>Con làm quen với chủ đề và được thử theo cách của mình.</p></article><article><span>02</span><h3>Create</h3><p>Con tạo ra một sản phẩm, một giai điệu hoặc một ý tưởng riêng.</p></article><article><span>03</span><h3>Take it home</h3><p>Một trải nghiệm cụ thể để con nhớ và có lý do quay lại.</p></article></div></section>
-  <section className="bottom-cta"><p className="eyebrow">READY WHEN YOU ARE</p><h2>Một buổi chiều.<br/><em>Một điều mới.</em></h2>{!submitted&&!unavailable&&<button className="join" onClick={()=>setShowForm(true)}>Đăng ký tham gia →</button>}<a href="/open-studio#sessions">Xem các buổi Open Studio khác →</a></section>
-  {!unavailable&&!submitted&&<div className="mobile-book-bar"><div><span>OPEN STUDIO</span><strong>{session.availableSeats===1?"Còn 1 chỗ":session.availableSeats===null?"Chỗ đang cập nhật":`${session.availableSeats} chỗ còn lại`}</strong></div><button className="join" onClick={()=>setShowForm(true)}>Đăng ký →</button></div>}
-  <style jsx>{`
-.session-page{min-height:100vh;background:#f4f0e7;color:#171713}.loading{max-width:1120px;margin:auto;padding:120px 24px;color:#777269}.nav{height:84px;max-width:1120px;margin:auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(23,23,19,.15)}.nav a{font-size:12px;color:#777269;text-decoration:none}.nav a:first-child{font-weight:700;font-size:24px;letter-spacing:-.08em;color:#171713}.nav a:first-child span{color:#d65b42}.detail-hero{max-width:1120px;margin:auto;padding:70px 24px 105px;display:grid;grid-template-columns:.88fr 1.12fr;gap:72px;align-items:center}.visual{min-height:560px;background:linear-gradient(145deg,#d7cfbe,#c7d6b8);background-size:cover;background-position:center;display:flex;align-items:flex-end;padding:26px}.visual span{background:#f4f0e7;padding:8px 10px;font-size:10px;font-weight:700;letter-spacing:.14em}.copy{max-width:650px}.eyebrow{font-size:10px;letter-spacing:.14em;font-weight:700;color:#777269;margin:0 0 14px}.copy h1{font-size:clamp(54px,6vw,84px);line-height:.9;letter-spacing:-.065em;margin:0}.keywords{display:flex;flex-wrap:wrap;gap:7px;margin:24px 0 0}.keywords span{border:1px solid rgba(23,23,19,.16);padding:7px 9px;font-size:10px;color:#625f57;background:#ebe5d9}.lede{max-width:560px;color:#777269;font-size:17px;line-height:1.65;margin:24px 0 34px}.meta{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(23,23,19,.15);border-bottom:1px solid rgba(23,23,19,.15);margin-bottom:22px}.meta div{padding:17px 0}.meta div+div{padding-left:20px;border-left:1px solid rgba(23,23,19,.15)}.meta small{display:block;color:#777269;font-size:9px;letter-spacing:.13em;font-weight:700;margin-bottom:6px}.meta strong{font-size:14px;line-height:1.4}.join{border:0;background:#171713;color:#fff;padding:16px 20px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}.join:disabled{opacity:.42;cursor:not-allowed}.note{font-size:10px;color:#777269;line-height:1.55;max-width:470px;margin-top:14px}.member-link{display:inline-block;margin-top:18px;color:#777269;font-size:11px;text-decoration:none;border-bottom:1px solid rgba(23,23,19,.2);padding-bottom:3px}.booking-form{display:flex;flex-direction:column;align-items:flex-start}.booking-form label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#777269;margin-bottom:8px}.booking-form input{width:min(100%,360px);box-sizing:border-box;border:1px solid rgba(23,23,19,.2);background:#ebe5d9;padding:15px 14px;font:inherit;font-size:16px;outline:none;margin-bottom:10px}.booking-form input:focus{border-color:#171713}.form-error{color:#9c3d2f;font-size:11px;margin:12px 0 0}.success{display:flex;gap:14px;align-items:flex-start;border:1px solid rgba(23,23,19,.16);background:#ebe5d9;padding:18px;max-width:500px}.success>span{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#5e6b2b;color:#fff;font-weight:700}.success strong{font-size:14px}.success p{font-size:11px;line-height:1.5;color:#777269;margin:5px 0 0}.syllabus{background:#e8e0d1;padding:90px max(24px,calc((100vw - 1120px)/2));display:grid;grid-template-columns:1fr 1fr;gap:80px}.syllabus-intro h2{font-size:clamp(46px,5vw,72px);line-height:.92;letter-spacing:-.06em;margin:0}.syllabus-intro em,.bottom-cta em{font-family:"DM Serif Display",serif;font-weight:400}.syllabus-content{display:flex;flex-direction:column;gap:28px;justify-content:center}.skill-badge{display:flex;align-items:center;gap:14px}.skill-badge span{font-size:9px;letter-spacing:.13em;color:#777269;font-weight:700}.skill-badge strong{font-size:22px;letter-spacing:-.03em}.skill-summary{border-top:1px solid rgba(23,23,19,.15);padding-top:20px}.skill-summary .eyebrow{margin-bottom:10px}.skill-summary>p:last-child{font-size:18px;line-height:1.55;max-width:580px;margin:0}.experience{padding:90px max(24px,calc((100vw - 1120px)/2));background:#f4f0e7}.experience h2{font-size:clamp(42px,5vw,68px);line-height:.95;letter-spacing:-.06em;margin:0;max-width:600px}.experience-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-top:55px;background:rgba(23,23,19,.15)}.experience-grid article{background:#f4f0e7;padding:28px}.experience-grid span{font-size:10px;color:#777269}.experience-grid h3{font-size:26px;letter-spacing:-.04em;margin:35px 0 10px}.experience-grid p{font-size:13px;line-height:1.6;color:#777269;margin:0}.bottom-cta{max-width:1120px;margin:auto;padding:100px 24px 120px}.bottom-cta h2{font-size:clamp(52px,7vw,92px);line-height:.9;letter-spacing:-.065em;margin:0 0 30px}.bottom-cta>a{display:block;margin-top:22px;color:#777269;font-size:11px;text-decoration:none}.mobile-book-bar{display:none}@media(max-width:800px){.detail-hero{grid-template-columns:1fr;gap:38px;padding-top:42px;padding-bottom:90px}.visual{min-height:360px}.copy h1{font-size:clamp(52px,14vw,74px)}.meta{grid-template-columns:1fr}.meta div+div{border-left:0;border-top:1px solid rgba(23,23,19,.15);padding-left:0}.syllabus{grid-template-columns:1fr;gap:42px;padding-top:70px;padding-bottom:70px}.skill-summary>p:last-child{font-size:16px}.experience-grid{grid-template-columns:1fr;margin-top:35px}.bottom-cta{padding-top:70px;padding-bottom:100px}.mobile-book-bar{position:fixed;display:flex;left:12px;right:12px;bottom:12px;z-index:50;align-items:center;justify-content:space-between;gap:12px;padding:10px 10px 10px 14px;background:#171713;color:#fff;box-shadow:0 8px 30px rgba(23,23,19,.2)}.mobile-book-bar div{display:flex;flex-direction:column}.mobile-book-bar span{font-size:8px;letter-spacing:.12em;opacity:.6}.mobile-book-bar strong{font-size:11px}.mobile-book-bar .join{padding:13px 14px;font-size:11px;white-space:nowrap}}
-`}</style>
- </main>;
+type ScheduleResponse = { sessions: CoreSession[] };
+type LoadState = "loading" | "success" | "error";
+type SubmissionState = "idle" | "pending" | "success" | "error";
+
+type Outcome = { icon: string; title: string; body: string };
+type PlanItem = { time: string; title: string; body: string };
+
+const emptyForm: RegistrationForm = { contactName: "", phone: "", childName: "", childDateOfBirth: "" };
+
+function slugify(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function queryTarget() {
+  if (typeof window === "undefined") return "";
+  const params = new URLSearchParams(window.location.search);
+  return (params.get("id") || params.get("activity") || "little-piner-play").trim();
+}
+
+function titleFor(session: CoreSession) {
+  return publicSyllabusTitle(session.syllabus.title);
+}
+
+function pathLabel(session: CoreSession) {
+  const value = `${session.path.code} ${session.path.displayName} ${session.syllabus.title}`.toLowerCase();
+  if (value.includes("little")) return "Little Piner";
+  if (value.includes("piano") || value.includes("music")) return "PianoHouse";
+  return "Artchitect";
+}
+
+function fallbackImage(session: CoreSession) {
+  const direct = sessionThumbnail(session);
+  if (direct) return direct;
+  const value = `${session.path.code} ${session.path.displayName} ${session.syllabus.title}`.toLowerCase();
+  if (value.includes("little")) return ASSETS.blocks;
+  if (value.includes("piano") || value.includes("music")) return ASSETS.piano;
+  if (value.includes("clay")) return ASSETS.clay;
+  if (value.includes("architect")) return ASSETS.architecture;
+  return ASSETS.watercolor;
+}
+
+function matchesTarget(session: CoreSession, target: string) {
+  const normalized = target.replace(DEMO_PREFIX, "");
+  return session.id === target || slugify(titleFor(session)) === slugify(normalized);
+}
+
+function outcomes(session: CoreSession): Outcome[] {
+  const value = `${pathLabel(session)} ${titleFor(session)}`.toLowerCase();
+  if (value.includes("little") || value.includes("play")) {
+    return [
+      { icon: "▱", title: "Xếp & xây", body: "Dùng khối gỗ để xếp, xây và tạo ý tưởng của riêng mình." },
+      { icon: "✦", title: "Thử sai", body: "Thoải mái thử – sai – sửa để hiểu điều gì hiệu quả hơn." },
+      { icon: "♧", title: "Chơi cùng bạn", body: "Học cách quan sát, chờ lượt và hợp tác khi cùng chơi." },
+      { icon: "◌", title: "Kể lại điều con làm", body: "Kể lại quá trình và niềm vui trong cách của con." },
+    ];
+  }
+  if (value.includes("piano") || value.includes("music")) {
+    return [
+      { icon: "♪", title: "Nghe & bắt nhịp", body: "Nghe một mẫu ngắn và phản hồi bằng cơ thể hoặc phím đàn." },
+      { icon: "✦", title: "Thử giai điệu", body: "Chạm, thử và ghép những âm thanh nhỏ thành câu nhạc." },
+      { icon: "♧", title: "Chơi cùng bạn", body: "Chờ lượt, nghe nhau và cùng hoàn thành một thử thách nhỏ." },
+      { icon: "◌", title: "Kể lại điều con nghe", body: "Gọi tên cảm giác, nhịp và điều con thích nhất." },
+    ];
+  }
+  return [
+    { icon: "◉", title: "Quan sát", body: "Nhìn kỹ chất liệu, màu sắc, hình khối và những chi tiết nhỏ." },
+    { icon: "✦", title: "Thử vật liệu", body: "Thử nhiều cách làm trước khi chọn hướng con thích nhất." },
+    { icon: "♧", title: "Tạo sản phẩm", body: "Biến ý tưởng thành một sản phẩm nhỏ mang dấu ấn cá nhân." },
+    { icon: "◌", title: "Kể câu chuyện", body: "Chia sẻ điều con làm, cách con chọn và điều con khám phá." },
+  ];
+}
+
+function plan(session: CoreSession): PlanItem[] {
+  const start = new Date(session.startsAt);
+  const end = new Date(session.endsAt);
+  const mins = Math.max(30, Math.round((end.getTime() - start.getTime()) / 60000));
+  const steps = [10, Math.max(15, Math.floor((mins - 15) * 0.55)), Math.max(10, mins - 25)];
+  const fmt = (d: Date) => new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" }).format(d);
+  const at = (offset: number) => new Date(start.getTime() + offset * 60000);
+  const value = `${pathLabel(session)} ${titleFor(session)}`.toLowerCase();
+  if (value.includes("little") || value.includes("play")) {
+    return [
+      { time: `${fmt(start)} – ${fmt(at(steps[0]))}`, title: "Chào nhau & khởi động", body: "Trò chơi ngắn để con làm quen, khởi động cơ thể và tập trung." },
+      { time: `${fmt(at(steps[0]))} – ${fmt(at(steps[0] + steps[1]))}`, title: "Xếp & xây thử thách", body: "Con dùng khối gỗ để xây tháp hoặc cấu trúc đơn giản theo ý tưởng của mình." },
+      { time: `${fmt(at(steps[0] + steps[1]))} – ${fmt(at(mins - 5))}`, title: "Thử lại khi tháp đổ", body: "Con quan sát, điều chỉnh và tìm cách mới để công trình vững hơn." },
+      { time: `${fmt(at(mins - 5))} – ${fmt(end)}`, title: "Chia sẻ & kết thúc", body: "Con kể lại điều mình làm và điều mình thích trong giờ chơi." },
+    ];
+  }
+  return [
+    { time: `${fmt(start)} – ${fmt(at(10))}`, title: "Chào nhau & làm quen", body: "Một khởi động nhẹ để con vào nhịp và hiểu thử thách hôm nay." },
+    { time: `${fmt(at(10))} – ${fmt(at(Math.max(25, mins - 20)))}`, title: "Khám phá & trải nghiệm", body: session.syllabus.publicDescription || session.syllabus.shortDescription || "Con thử vật liệu, kỹ thuật và cách làm theo nhịp riêng." },
+    { time: `${fmt(at(Math.max(25, mins - 20)))} – ${fmt(at(mins - 5))}`, title: "Hoàn thiện theo cách của con", body: "Con chọn, điều chỉnh và hoàn thiện phần mình muốn giữ lại." },
+    { time: `${fmt(at(mins - 5))} – ${fmt(end)}`, title: "Chia sẻ & kết thúc", body: "Cùng nhìn lại điều vừa thử và điều con muốn khám phá lần sau." },
+  ];
+}
+
+export default function SessionDetailPage() {
+  const [status, setStatus] = useState<LoadState>("loading");
+  const [session, setSession] = useState<CoreSession | null>(null);
+  const [usingFallback, setUsingFallback] = useState(false);
+  const [registrationEnabled, setRegistrationEnabled] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [demoNotice, setDemoNotice] = useState(false);
+  const [form, setForm] = useState<RegistrationForm>(emptyForm);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof RegistrationForm, string>>>({});
+  const [submission, setSubmission] = useState<SubmissionState>("idle");
+  const [submissionMessage, setSubmissionMessage] = useState("");
+  const attemptKey = useRef<string | null>(null);
+  const noticeRef = useRef<HTMLDivElement>(null);
+
+  const load = useCallback(async () => {
+    setStatus("loading");
+    const target = queryTarget();
+    try {
+      const response = await fetch(SCHEDULE_ENDPOINT, { cache: "no-store", headers: { Accept: "application/json" } });
+      if (!response.ok) throw new Error("schedule unavailable");
+      const data = await response.json() as ScheduleResponse;
+      const realSessions = Array.isArray(data.sessions) ? data.sessions.filter(isCoreSession) : [];
+      if (realSessions.length > 0) {
+        const found = realSessions.find((item) => matchesTarget(item, target));
+        setSession(found || null);
+        setUsingFallback(false);
+        setStatus(found ? "success" : "error");
+        return;
+      }
+      const fallback = buildOpenStudioFallbackSessions();
+      const found = fallback.find((item) => matchesTarget(item, target)) || fallback[0] || null;
+      setSession(found);
+      setUsingFallback(Boolean(found));
+      setStatus(found ? "success" : "error");
+    } catch {
+      const fallback = buildOpenStudioFallbackSessions();
+      const found = fallback.find((item) => matchesTarget(item, target)) || fallback[0] || null;
+      setSession(found);
+      setUsingFallback(Boolean(found));
+      setStatus(found ? "success" : "error");
+    }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(CAPABILITY_ENDPOINT, { cache: "no-store", headers: { Accept: "application/json" } })
+      .then(async (response) => response.ok ? response.json() as Promise<{ registrationEnabled?: boolean }> : { registrationEnabled: false })
+      .then((data) => { if (!cancelled) setRegistrationEnabled(data.registrationEnabled === true); })
+      .catch(() => { if (!cancelled) setRegistrationEnabled(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const canRegister = Boolean(session && registrationEnabled && !usingFallback && !isSessionFull(session));
+  const remaining = session?.availability.remainingSeats ?? null;
+  const activityOutcomes = useMemo(() => session ? outcomes(session) : [], [session]);
+  const activityPlan = useMemo(() => session ? plan(session) : [], [session]);
+
+  const startBooking = () => {
+    if (!session) return;
+    if (usingFallback) {
+      setDemoNotice(true);
+      window.setTimeout(() => noticeRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
+      return;
+    }
+    if (!registrationEnabled) {
+      setDemoNotice(true);
+      window.setTimeout(() => noticeRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
+      return;
+    }
+    setShowForm(true);
+    window.setTimeout(() => document.getElementById("booking-form")?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
+  };
+
+  const updateForm = (field: keyof RegistrationForm, value: string) => {
+    setForm((current) => ({ ...current, [field]: value }));
+    setFieldErrors((current) => ({ ...current, [field]: undefined }));
+    if (submission === "error") setSubmission("idle");
+    attemptKey.current = null;
+  };
+
+  const submitRegistration = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!session || !canRegister || submission === "pending") return;
+    const errors = validateRegistration(form);
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      setSubmission("error");
+      setSubmissionMessage("Ba mẹ vui lòng kiểm tra các thông tin còn thiếu.");
+      return;
+    }
+    const key = createSubmissionAttempt(attemptKey.current, () => crypto.randomUUID());
+    attemptKey.current = key;
+    setSubmission("pending");
+    setSubmissionMessage("");
+    try {
+      const response = await fetch(REGISTRATION_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Idempotency-Key": key },
+        body: JSON.stringify(serializeRegistration(session.id, form)),
+      });
+      const data = await response.json().catch(() => ({})) as { error?: { code?: string } };
+      if (!response.ok) {
+        const issue = mapRegistrationError(data.error?.code);
+        setSubmission("error");
+        setSubmissionMessage(issue.message);
+        attemptKey.current = null;
+        return;
+      }
+      setSubmission("success");
+      attemptKey.current = null;
+    } catch {
+      setSubmission("error");
+      setSubmissionMessage(mapRegistrationError().message);
+    }
+  };
+
+  if (status === "loading") return <main className="osd-page"><div className="osd-loading">Đang mở hoạt động…</div></main>;
+  if (status === "error" || !session) return <main className="osd-page"><Header /><section className="osd-error"><p>OPEN STUDIO</p><h1>Hoạt động này chưa mở.</h1><span>Lịch thật đã được cập nhật nhưng chưa có session tương ứng với đường dẫn này.</span><a href="/open-studio">Xem lịch Open Studio →</a></section></main>;
+
+  const soldOut = isSessionFull(session);
+  const hero = fallbackImage(session);
+  const title = titleFor(session);
+  const path = pathLabel(session);
+  const summary = session.syllabus.shortDescription || "Một trải nghiệm nhỏ để con thử, làm và khám phá điều mình tò mò.";
+
+  return (
+    <main className="osd-page">
+      <Header />
+
+      <div className="osd-shell osd-breadcrumb"><a href="/open-studio">Open Studio</a><span>›</span><span>{title}</span></div>
+
+      <section className="osd-shell osd-hero">
+        <div className="osd-hero-copy">
+          <span className="osd-path-pill">{path.toUpperCase()}</span>
+          <h1>{title}</h1>
+          <p className="osd-lede">{summary}</p>
+          <div className="osd-meta-pills">
+            <span>♙ {formatAgeRange(session.syllabus.ageMin, session.syllabus.ageMax)}</span>
+            <span>◷ {formatLocalTimeRange(session.startsAt, session.endsAt)}</span>
+            <span>▣ {formatLocalDate(session.startsAt)}</span>
+            <span className="is-seats">♧ {soldOut ? "Đã đủ chỗ" : remaining === null ? "Chỗ đang cập nhật" : `Còn ${remaining} chỗ`}</span>
+          </div>
+          <div className="osd-hero-action">
+            <button type="button" onClick={startBooking} disabled={soldOut}>{soldOut ? "Đã đủ chỗ" : "Giữ 1 chỗ miễn phí"}<span>→</span></button>
+            <small>✓ Không cần thanh toán</small>
+          </div>
+        </div>
+        <div className="osd-hero-image"><img src={hero} alt={sessionImageAlt(session)} /></div>
+      </section>
+
+      <section className="osd-shell osd-main-grid">
+        <div className="osd-content-column">
+          <article className="osd-panel osd-about">
+            <p className="osd-kicker">✦ VỀ HOẠT ĐỘNG</p>
+            <h2>Chơi – khám phá – trưởng thành</h2>
+            <p>{session.syllabus.publicDescription || summary}</p>
+            <div className="osd-outcomes">
+              {activityOutcomes.map((item) => <div key={item.title}><i>{item.icon}</i><strong>{item.title}</strong><span>{item.body}</span></div>)}
+            </div>
+          </article>
+
+          <article className="osd-panel osd-plan">
+            <p className="osd-kicker">TRẺ SẼ LÀM GÌ?</p>
+            <h2>Một giờ chơi thật ý nghĩa</h2>
+            <div className="osd-plan-list">
+              {activityPlan.map((item) => <div className="osd-plan-row" key={`${item.time}-${item.title}`}><time>{item.time}</time><i>✦</i><div><strong>{item.title}</strong><span>{item.body}</span></div></div>)}
+            </div>
+          </article>
+        </div>
+
+        <aside className="osd-panel osd-quick">
+          <p className="osd-kicker">THÔNG TIN NHANH</p>
+          <dl>
+            <div><dt>⌖</dt><dd><strong>Địa điểm</strong><span>PINO House · Cần Thơ</span></dd></div>
+            <div><dt>♧</dt><dd><strong>Số chỗ còn lại</strong><span>{soldOut ? "Đã đủ chỗ" : remaining === null ? "Đang cập nhật" : `${remaining} chỗ`}</span></dd></div>
+            <div><dt>◇</dt><dd><strong>Phí tham gia</strong><span>Miễn phí</span></dd></div>
+            <div><dt>♙</dt><dd><strong>Phụ huynh có thể ở cùng</strong><span>Có – quan sát nhẹ, không hỗ trợ trực tiếp</span></dd></div>
+            <div><dt>▢</dt><dd><strong>Con cần mang theo</strong><span>Bình nước cá nhân nếu cần</span></dd></div>
+            <div><dt>☆</dt><dd><strong>Path</strong><span>{path}</span></dd></div>
+            <div><dt>✦</dt><dd><strong>Trải nghiệm phù hợp</strong><span>Cho trẻ tò mò, thích thử và khám phá hoạt động mới</span></dd></div>
+          </dl>
+          <div className="osd-free-note"><strong>Hoàn toàn miễn phí</strong><span>Open Studio là món quà PINO dành tặng các bé và gia đình.</span></div>
+        </aside>
+      </section>
+
+      <section className="osd-shell osd-trust-grid">
+        <article className="osd-panel osd-mentor">
+          <p className="osd-kicker">NGƯỜI ĐỒNG HÀNH</p>
+          <div className="osd-mentor-body">
+            <div className="osd-mentor-mark"><img src={LOGO_URL} alt="" /></div>
+            <div><h3>Mentor tại Open Studio</h3><p>Người đồng hành nhẹ nhàng quan sát, lắng nghe và hỗ trợ khi cần, giúp con cảm thấy an toàn để khám phá theo cách riêng.</p><span>Đồng hành · Tôn trọng · Khuyến khích</span></div>
+          </div>
+        </article>
+
+        <article className="osd-panel osd-gallery">
+          <p className="osd-kicker">KHÔNG KHÍ OPEN STUDIO</p>
+          <div className="osd-gallery-grid">
+            <img src={ASSETS.courtyard} alt="Không gian PINO House" />
+            <img src={ASSETS.architecture} alt="Bàn trải nghiệm Open Studio" />
+            <img src={path === "PianoHouse" ? ASSETS.piano : path === "Little Piner" ? ASSETS.blocks : ASSETS.watercolor} alt="Hoạt động tại Open Studio" />
+          </div>
+          <a href="/open-studio">Xem thêm Open Studio</a>
+        </article>
+      </section>
+
+      {(demoNotice || showForm || submission === "success") && (
+        <section className="osd-shell osd-booking-section" ref={noticeRef} id="booking-form">
+          {usingFallback ? (
+            <div className="osd-panel osd-demo-notice"><p className="osd-kicker">LỊCH MINH HOẠ</p><h2>UI đã sẵn sàng để test.</h2><p>Đây là dữ liệu mẫu nên hệ thống không gửi đăng ký thật. Khi API có session thật cùng hoạt động, trang sẽ tự dùng dữ liệu thật và form giữ chỗ sẽ được bật theo capability production.</p></div>
+          ) : !registrationEnabled ? (
+            <div className="osd-panel osd-demo-notice"><p className="osd-kicker">ĐĂNG KÝ TRỰC TUYẾN</p><h2>Sắp mở nhận giữ chỗ.</h2><p>Trang đã có dữ liệu thật nhưng capability đăng ký hiện đang tắt. Ba mẹ có thể quay lại sau hoặc xem các hoạt động khác.</p></div>
+          ) : submission === "success" ? (
+            <div className="osd-panel osd-demo-notice is-success"><p className="osd-kicker">ĐÃ GHI NHẬN</p><h2>Chỗ của bé đang được xác nhận.</h2><p>PINO sẽ liên hệ qua Zalo để xác nhận ngày giờ và hướng dẫn phần còn lại.</p></div>
+          ) : (
+            <form className="osd-panel osd-booking-form" onSubmit={submitRegistration}>
+              <p className="osd-kicker">GIỮ CHỖ MIỄN PHÍ</p><h2>Chỉ mất khoảng một phút.</h2>
+              <div className="osd-fields">
+                <label>Ba/mẹ tên gì?<input value={form.contactName} onChange={(e) => updateForm("contactName", e.target.value)} />{fieldErrors.contactName && <small>{fieldErrors.contactName}</small>}</label>
+                <label>Số điện thoại Zalo<input inputMode="tel" autoComplete="tel" value={form.phone} onChange={(e) => updateForm("phone", e.target.value)} />{fieldErrors.phone && <small>{fieldErrors.phone}</small>}</label>
+                <label>Tên của bé<input value={form.childName} onChange={(e) => updateForm("childName", e.target.value)} />{fieldErrors.childName && <small>{fieldErrors.childName}</small>}</label>
+                <label>Ngày sinh của bé<input type="date" value={form.childDateOfBirth} onChange={(e) => updateForm("childDateOfBirth", e.target.value)} />{fieldErrors.childDateOfBirth && <small>{fieldErrors.childDateOfBirth}</small>}</label>
+              </div>
+              {submissionMessage && <p className="osd-form-message">{submissionMessage}</p>}
+              <button type="submit" disabled={submission === "pending"}>{submission === "pending" ? "Đang ghi nhận…" : "Giữ chỗ cho bé →"}</button>
+            </form>
+          )}
+        </section>
+      )}
+
+      <section className="osd-shell osd-faq osd-panel">
+        <p className="osd-kicker">CÂU HỎI THƯỜNG GẶP</p>
+        <div className="osd-faq-grid">
+          <details><summary>Bé cần chuẩn bị gì?</summary><p>Chỉ cần trang phục thoải mái và bình nước cá nhân nếu bé cần.</p></details>
+          <details><summary>Nếu bé chưa quen môi trường mới thì sao?</summary><p>Mentor sẽ cho bé thời gian quan sát và làm quen trước khi tham gia; không ép bé nhập cuộc ngay.</p></details>
+          <details><summary>Phụ huynh có thể ở lại không?</summary><p>Có. Phụ huynh có thể quan sát nhẹ nhàng để bé vẫn có không gian tự khám phá.</p></details>
+          <details><summary>Open Studio có diễn ra hằng tuần không?</summary><p>Lịch hoạt động được cập nhật theo tuần tại trang Open Studio.</p></details>
+        </div>
+      </section>
+
+      <section className="osd-shell osd-final-cta" style={{ backgroundImage: `linear-gradient(90deg,rgba(156,53,24,.95),rgba(169,57,25,.86)),url(${ASSETS.gate})` }}>
+        <img src={ASSETS.leavesOne} alt="" aria-hidden="true" />
+        <img src={ASSETS.leavesTwo} alt="" aria-hidden="true" />
+        <h2>Giữ chỗ cho {title}</h2>
+        <p>{soldOut ? "Buổi này đã đủ chỗ — xem thêm hoạt động khác tại Open Studio." : remaining === null ? "Một trải nghiệm nhỏ để con có thêm điều mới để kể." : `Còn ${remaining} chỗ — giữ một chỗ miễn phí cho bé.`}</p>
+        {soldOut ? <a href="/open-studio">Xem hoạt động khác →</a> : <button type="button" onClick={startBooking}>Giữ 1 chỗ miễn phí <span>→</span></button>}
+      </section>
+
+      <Footer />
+
+      {!soldOut && submission !== "success" && <div className="osd-mobile-bar"><div><small>MIỄN PHÍ</small><strong>{remaining === null ? "Chỗ đang cập nhật" : `Còn ${remaining} chỗ`}</strong></div><button type="button" onClick={startBooking}>Giữ chỗ</button></div>}
+    </main>
+  );
+}
+
+function Header() {
+  return <header className="osd-header"><nav className="osd-shell"><a className="osd-brand" href="/"><img src={LOGO_URL} alt="" /><span>PINO House</span></a><div><a href="/open-studio">Open Studio</a><a href="/">Về PINO House</a></div></nav></header>;
+}
+
+function Footer() {
+  return <footer className="osd-footer"><div className="osd-shell"><div className="osd-footer-brand"><a className="osd-brand" href="/"><img src={LOGO_URL} alt="" /><span>PINO House</span></a><p>Art. Music. Creative Growth.</p><small>pinohouse.art</small></div><div><strong>Explore</strong><a href="/">House</a><a href="/#paths">Paths</a><a href="/open-studio">Open Studio</a></div><div><strong>About</strong><a href="/">Our Story</a><a href="/#journey">Journey</a></div><div><strong>Information</strong><a href="/">Visit</a><a href="#faq">FAQs</a></div><div><strong>Stay connected</strong><p>Nhận tin về Open Studio và các trải nghiệm đặc biệt tại PINO House.</p></div></div><small className="osd-copy">© {new Date().getFullYear()} PINO House. All rights reserved.</small></footer>;
 }
