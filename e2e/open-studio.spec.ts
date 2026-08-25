@@ -1,148 +1,83 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Open Studio public journey', () => {
-  async function waitForSessionState(page: import('@playwright/test').Page) {
-    const upcoming = page.locator('a.session-card');
-    const recentPast = page.locator('.session-card-past');
-    const emptyState = page.getByText(/Chưa có session để hiển thị/i);
-    const loading = page.getByText(/Đang xem lịch Open Studio/i);
+  const scheduleEndpoint = '/api/pino-core/open-studio/sessions';
+  const capabilityEndpoint = '/api/pino-core/open-studio/capabilities';
+
+  async function waitForRenderedSessions(page: import('@playwright/test').Page) {
+    const cards = page.locator('.os-session-card');
+    const empty = page.locator('.os-empty');
+    const loadError = page.getByText(/Lịch đang tạm nghỉ một chút/i);
 
     await expect.poll(async () => {
-      const [upcomingCount, pastCount, emptyCount, loadingCount] = await Promise.all([
-        upcoming.count(),
-        recentPast.count(),
-        emptyState.count(),
-        loading.count(),
-      ]);
-      return upcomingCount > 0 || pastCount > 0 ? 'sessions' : emptyCount > 0 ? 'empty' : loadingCount > 0 ? 'loading' : 'pending';
+      if (await cards.count()) return 'sessions';
+      if (await empty.count()) return 'empty';
+      if (await loadError.count()) return 'error';
+      return 'pending';
     }, { timeout: 15_000 }).toMatch(/sessions|empty/);
 
-    return { upcoming, recentPast, emptyState };
+    return cards;
   }
 
-  async function attachBrowserDiagnostics(page: import('@playwright/test').Page) {
-    const diagnostics: {
-      consoleErrors: string[];
-      pageErrors: string[];
-      sessionApi?: { status: number; ok: boolean; body: unknown };
-    } = { consoleErrors: [], pageErrors: [] };
-
-    page.on('console', message => {
-      if (message.type() === 'error') diagnostics.consoleErrors.push(message.text());
-    });
-    page.on('pageerror', error => diagnostics.pageErrors.push(error.message));
-
-    page.on('response', async response => {
-      if (!response.url().includes('/api/os-sessions')) return;
-      try {
-        diagnostics.sessionApi = { status: response.status(), ok: response.ok(), body: await response.json() };
-      } catch (error) {
-        diagnostics.sessionApi = { status: response.status(), ok: response.ok(), body: { parseError: String(error) } };
-      }
-    });
-
-    return diagnostics;
-  }
-
-  async function dumpBrowserDiagnostics(
-    page: import('@playwright/test').Page,
-    diagnostics: Awaited<ReturnType<typeof attachBrowserDiagnostics>>,
-  ) {
-    const renderedUpcoming = await page.locator('a.session-card').count();
-    const renderedPast = await page.locator('.session-card-past').count();
-    const loadingCount = await page.getByText(/Đang xem lịch Open Studio/i).count();
-    const emptyCount = await page.getByText(/Chưa có session để hiển thị/i).count();
-    const errorCount = await page.getByText(/Lịch Open Studio đang tạm thời chưa tải được/i).count();
-
-    console.log('[OS E2E DIAGNOSTICS]', JSON.stringify({
-      renderedUpcoming,
-      renderedPast,
-      loadingCount,
-      emptyCount,
-      errorCount,
-      sessionApi: diagnostics.sessionApi,
-      consoleErrors: diagnostics.consoleErrors,
-      pageErrors: diagnostics.pageErrors,
-    }, null, 2));
-  }
-
-  test('live session API exposes current Open Studio data', async ({ request }) => {
-    const response = await request.get('/api/os-sessions');
+  test('Core public schedule exposes current Open Studio data', async ({ request }) => {
+    const response = await request.get(scheduleEndpoint);
     expect(response.ok()).toBeTruthy();
-
     const data = await response.json();
     expect(Array.isArray(data.sessions)).toBeTruthy();
-
-    const openStudioSessions = data.sessions.filter((session: { type?: string }) => session.type === 'Open Studio');
-    expect(openStudioSessions.length).toBeGreaterThan(0);
+    expect(data.sessions.length).toBeGreaterThan(0);
   });
 
-  test('landing exposes live Open Studio sessions and a member entry point', async ({ page }) => {
-    const diagnostics = await attachBrowserDiagnostics(page);
-    const sessionResponse = page.waitForResponse(response => response.url().includes('/api/os-sessions'));
+  test('landing renders the approved Open Studio visual system and live sessions', async ({ page }) => {
+    const scheduleResponse = page.waitForResponse(response => response.url().includes(scheduleEndpoint));
     await page.goto('/open-studio');
 
-    const response = await sessionResponse;
+    const response = await scheduleResponse;
     expect(response.ok()).toBeTruthy();
 
-    await expect(page.getByRole('heading', { name: /Nếu hôm nay con được tự chọn/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /Chọn (một )?buổi cho con/i }).first()).toBeVisible();
-    await expect(page.getByRole('link', { name: /Vào Member Space/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Open Studio', exact: true })).toBeVisible();
+    await expect(page.locator('.os-hero-visual img')).toHaveAttribute('src', /assets\.pinohouse\.art\/site\/OpenStudio\/open-studio-courtyard-exterior\.png/);
+    await expect(page.getByRole('link', { name: /Khám phá Open Studio/i }).first()).toBeVisible();
 
-    const { upcoming, recentPast } = await waitForSessionState(page);
-    await dumpBrowserDiagnostics(page, diagnostics);
-
-    expect((await upcoming.count()) + (await recentPast.count())).toBeGreaterThan(0);
-    if (await recentPast.count()) {
-      await expect(recentPast.first()).toContainText(/ĐÃ DIỄN RA/);
-      await expect(recentPast.first()).toContainText(/Chỉ để tham khảo/);
-      await expect(recentPast.first()).not.toHaveAttribute('href', /./);
-    }
+    const cards = await waitForRenderedSessions(page);
+    expect(await cards.count()).toBeGreaterThan(0);
+    await expect(cards.first().locator('img')).toBeVisible();
   });
 
-  test('session detail route resolves when a live upcoming session is available', async ({ page }) => {
-    const diagnostics = await attachBrowserDiagnostics(page);
+  test('session cards open the inline detail experience', async ({ page }) => {
     await page.goto('/open-studio');
-    const { upcoming, recentPast } = await waitForSessionState(page);
+    const cards = await waitForRenderedSessions(page);
+    expect(await cards.count()).toBeGreaterThan(0);
 
-    await dumpBrowserDiagnostics(page, diagnostics);
-    if (await upcoming.count() === 0) {
-      expect(await recentPast.count()).toBeGreaterThan(0);
-      return;
-    }
+    const availableCard = cards.filter({ has: page.getByRole('button', { name: /Xem chi tiết/i }) }).first();
+    await expect(availableCard).toBeVisible();
+    await availableCard.getByRole('button', { name: /Xem chi tiết/i }).click();
 
-    const session = upcoming.first();
-    await expect(session).toBeVisible();
-    const href = await session.getAttribute('href');
-    expect(href).toMatch(/^\/open-studio\/session\?id=.+/);
-
-    await session.click();
-    await expect(page).toHaveURL(/\/open-studio\/session\?id=/);
-    await expect(page.locator('main')).toBeVisible();
+    await expect(page.locator('.os-session-detail')).toBeVisible();
+    await expect(page.locator('.os-session-detail h2')).toBeVisible();
+    await expect(page.locator('.os-session-detail img')).toBeVisible();
   });
 
-  test('past session remains read-only even when opened directly', async ({ page, request }) => {
-    const response = await request.get('/api/os-sessions');
-    expect(response.ok()).toBeTruthy();
-    const data = await response.json();
-    const now = Date.now();
-    const cutoff = now - 7 * 24 * 60 * 60 * 1000;
-    const parseDate = (value: string | null) => {
-      if (!value) return null;
-      const normalized = value.length === 10 ? `${value}T23:59:59+07:00` : value;
-      const parsed = new Date(normalized);
-      return Number.isNaN(parsed.getTime()) ? null : parsed.getTime();
-    };
-    const past = (data.sessions || []).find((session: { type?: string; date?: string | null }) => {
-      const time = parseDate(session.date ?? null);
-      return session.type === 'Open Studio' && time !== null && time < now && time >= cutoff;
-    });
+  test('registration UI follows the production capability contract', async ({ page, request }) => {
+    const capabilityResponse = await request.get(capabilityEndpoint);
+    expect(capabilityResponse.ok()).toBeTruthy();
+    const capability = await capabilityResponse.json() as { registrationEnabled?: boolean };
 
-    test.skip(!past, 'No recent past Open Studio session is currently available.');
+    await page.goto('/open-studio');
+    const cards = await waitForRenderedSessions(page);
+    expect(await cards.count()).toBeGreaterThan(0);
 
-    await page.goto(`/open-studio/session?id=${encodeURIComponent(past.id)}`);
-    await expect(page.getByRole('heading', { name: past.topic })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Session đã kết thúc/i })).toBeDisabled();
-    await expect(page.locator('.mobile-book-bar')).toHaveCount(0);
+    const availableCard = cards.filter({ has: page.getByRole('button', { name: /Xem chi tiết/i }) }).first();
+    await availableCard.getByRole('button', { name: /Xem chi tiết/i }).click();
+    const detail = page.locator('.os-session-detail');
+
+    if (capability.registrationEnabled === true) {
+      await expect(detail.getByRole('button', { name: /Đăng ký buổi này/i })).toBeVisible();
+      await detail.getByRole('button', { name: /Đăng ký buổi này/i }).click();
+      await expect(detail.getByRole('heading', { name: /Thông tin gia đình/i })).toBeVisible();
+      await expect(detail.getByLabel(/Họ tên phụ huynh/i)).toBeVisible();
+      await expect(detail.getByLabel(/Số điện thoại/i)).toBeVisible();
+    } else {
+      await expect(detail.getByText(/Đăng ký trực tuyến sắp mở/i)).toBeVisible();
+    }
   });
 });
