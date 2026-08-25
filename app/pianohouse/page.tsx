@@ -42,6 +42,101 @@ const moments = [
   ["Khoảnh khắc PianoHouse", "girl-playing-grand-piano-at-home.png"],
 ] as const;
 
+const mobilePolishStyles = `
+@media (max-width:760px){
+  .${styles.page}{overflow-x:hidden;}
+  .${styles.header}{position:sticky;top:0;height:58px;padding:0 14px;background:rgba(252,248,243,.96);box-shadow:0 8px 22px rgba(64,42,30,.045);}
+  .${styles.brand}{gap:7px;font-size:18px;}
+  .${styles.brand} img{width:22px;height:27px;}
+  .${styles.navCta}{width:38px;min-width:38px;height:38px;min-height:38px;padding:0;font-size:0;box-shadow:0 7px 18px rgba(94,13,25,.16);}
+  .${styles.navCta} span{font-size:14px;}
+
+  .${styles.hero}{display:flex;flex-direction:column;min-height:0;background:#fbf7f1;}
+  .${styles.heroCopy}{padding:28px 16px 22px;}
+  .${styles.eyebrow}{margin-bottom:9px;font-size:8.8px;letter-spacing:.13em;}
+  .${styles.hero} h1{margin-bottom:10px;font-size:50px;line-height:.92;letter-spacing:-.045em;}
+  .${styles.heroLead}{max-width:330px;margin-bottom:9px;font-size:17.5px;line-height:1.3;}
+  .${styles.heroText}{max-width:none;margin-bottom:18px;font-size:13.2px;line-height:1.6;}
+  .${styles.actions}{display:grid;grid-template-columns:1.06fr .94fr;gap:8px;width:100%;}
+  .${styles.primary},.${styles.secondary}{min-height:42px;padding:0 11px;font-size:10.3px;white-space:nowrap;}
+  .${styles.heroImage}{height:236px;min-height:0;}
+  .${styles.heroImage}::before{display:none;}
+  .${styles.heroImage} img{object-position:center 54%;}
+  .${styles.heroFoliage}{width:70px;left:-26px;bottom:212px;opacity:.36;}
+
+  .${styles.contentSection},.${styles.journeySection}{display:block;padding:28px 16px 30px;}
+  .${styles.sectionLead}{max-width:none;margin-bottom:18px;padding:0;}
+  .${styles.sectionKicker}{margin-bottom:7px;font-size:8.7px;letter-spacing:.12em;}
+  .${styles.sectionLead} h2{max-width:330px;margin-bottom:9px;font-size:29px;line-height:1.03;}
+  .${styles.sectionLead} p{max-width:none;margin-bottom:14px;font-size:12.4px;line-height:1.6;}
+  .${styles.sectionLead} a{font-size:11.2px;}
+
+  .${styles.collectionGrid}{display:grid;grid-auto-flow:column;grid-auto-columns:82%;grid-template-columns:none;gap:12px;overflow-x:auto;overflow-y:hidden;padding:1px 0 5px;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+  .${styles.collectionGrid}::-webkit-scrollbar{display:none;}
+  .${styles.collectionCard}{scroll-snap-align:start;border-radius:13px;}
+  .${styles.collectionCard}>img{aspect-ratio:1.58/1;}
+  .${styles.collectionCard}>div{padding:12px 13px 13px;}
+  .${styles.collectionCard} h3{font-size:16px;}
+  .${styles.collectionCard} p{min-height:0;font-size:10.8px;line-height:1.5;}
+  .${styles.collectionCard} a{font-size:10.5px;}
+
+  .${styles.journeyGrid}{display:grid;grid-template-columns:1fr;gap:10px;padding-top:0;}
+  .${styles.journeyGrid}::before{display:none;}
+  .${styles.journeyStep}{display:grid;grid-template-columns:48px 1fr;grid-template-areas:"icon number" "icon title" "icon copy";column-gap:12px;row-gap:1px;align-items:start;padding:12px 13px;text-align:left;border:1px solid rgba(115,78,55,.12);border-radius:12px;background:rgba(255,255,255,.55);box-shadow:0 8px 20px rgba(80,55,40,.03);}
+  .${styles.journeyStep}:last-child{grid-column:auto;max-width:none;margin:0;}
+  .${styles.iconWrap}{grid-area:icon;width:46px;height:46px;margin:0;}
+  .${styles.iconWrap} img{width:24px;height:24px;}
+  .${styles.journeyStep} strong{grid-area:number;margin:0 0 1px;font-size:9px;}
+  .${styles.journeyStep} h3{grid-area:title;margin:0 0 2px;font-size:14.5px;line-height:1.18;}
+  .${styles.journeyStep} p{grid-area:copy;max-width:none;margin:0;font-size:10.6px;line-height:1.45;}
+
+  .${styles.lessonGrid}{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+  .${styles.lessonCard}{border-radius:11px;}
+  .${styles.lessonCard}>img{aspect-ratio:1.34/1;}
+  .${styles.lessonCard}>div{min-height:96px;padding:9px 9px 10px;}
+  .${styles.lessonCard} h3{font-size:12.2px;line-height:1.2;}
+  .${styles.lessonCard} p{font-size:10.2px;line-height:1.43;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+
+  .${styles.momentsGrid}{display:grid;grid-auto-flow:column;grid-auto-columns:82%;grid-template-columns:none;gap:12px;overflow-x:auto;overflow-y:hidden;padding:1px 0 5px;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+  .${styles.momentsGrid}::-webkit-scrollbar{display:none;}
+  .${styles.momentCard}{scroll-snap-align:start;border-radius:12px;}
+  .${styles.momentCard}>img{aspect-ratio:1.58/1;}
+  .${styles.momentCard} h3{padding:10px 9px 11px;font-size:12px;}
+
+  .${styles.cta}{min-height:274px;margin:18px 12px 0;border-radius:13px;}
+  .${styles.ctaBg}{left:0;right:auto;width:100%;height:100%;object-position:76% 50%;opacity:.34;}
+  .${styles.ctaShade}{background:linear-gradient(90deg,rgba(73,10,22,.99),rgba(78,12,23,.95) 58%,rgba(70,10,19,.72));}
+  .${styles.ctaCopy}{min-height:274px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:16px;padding:23px 18px;}
+  .${styles.ctaEyebrow}{margin-bottom:6px;font-size:8px;}
+  .${styles.ctaCopy} h2{margin-bottom:6px;font-size:29px;line-height:1.04;}
+  .${styles.ctaCopy} p{max-width:315px;font-size:10.8px;line-height:1.52;}
+  .${styles.ctaActions}{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:none;}
+  .${styles.ctaActions} a{min-height:40px;padding:0 10px;font-size:9.5px;text-align:center;}
+  .${styles.ctaActions} a:first-child{grid-column:1/-1;}
+  .${styles.ctaActions} .${styles.ctaPrimary}{min-width:0;}
+  .${styles.ctaFoliage}{display:none;}
+
+  .${styles.footer}{grid-template-columns:1fr 1fr;gap:18px 16px;padding:26px 16px 54px;}
+  .${styles.footer}>div:first-child{grid-column:1/-1;}
+  .${styles.footer}>div:nth-child(3),.${styles.footer}>div:nth-child(4){display:flex;}
+  .${styles.stay}{display:none!important;}
+  .${styles.footer} h4{font-size:11px;}
+  .${styles.footer} p,.${styles.footer} a,.${styles.footer} span,.${styles.footer} strong{font-size:9.8px;line-height:1.55;}
+  .${styles.footer} small{margin-top:8px;padding-top:12px;font-size:8.8px;}
+  .${styles.footerFoliage}{width:96px;right:-26px;bottom:-12px;opacity:.28;}
+
+  .${styles.collectionCard}:hover,.${styles.lessonCard}:hover,.${styles.momentCard}:hover,.${styles.primary}:hover,.${styles.secondary}:hover,.${styles.navCta}:hover{transform:none;}
+}
+
+@media (max-width:430px){
+  .${styles.hero} h1{font-size:47px;}
+  .${styles.heroLead}{font-size:17px;}
+  .${styles.collectionGrid},.${styles.momentsGrid}{grid-auto-columns:86%;}
+  .${styles.sectionLead} h2{font-size:28px;}
+  .${styles.footer}{grid-template-columns:1fr 1fr;}
+}
+`;
+
 function Brand() {
   return (
     <a className={styles.brand} href="/" aria-label="Trang chủ PINO House">
@@ -54,6 +149,7 @@ function Brand() {
 export default function PianoHousePage() {
   return (
     <main className={styles.page}>
+      <style>{mobilePolishStyles}</style>
       <header className={styles.header}>
         <Brand />
         <nav className={styles.nav} aria-label="Điều hướng PianoHouse">
