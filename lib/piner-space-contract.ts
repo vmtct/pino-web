@@ -107,7 +107,7 @@ export const PINER_PROTOTYPE_HOUSEHOLD: PinerPrototypeHousehold = {
           detail: "Artchitect · tiếp tục từ tác phẩm của Minh",
           cta: "Xem hành trình",
         },
-        membership: { label: "Khám Phá", detail: "Không phải nhãn Free/Miễn phí" },
+        membership: { label: "Khám Phá", detail: "Không có gói Premium đang hoạt động" },
         upcoming: [{ id: "minh-up-1", when: "Thứ bảy · 18:00", title: "Artchitect", place: "PINO Cần Thơ" }],
       },
       journey: {
