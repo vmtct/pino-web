@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "app/piner/**/*.ts",
+    "app/piner/**/*.tsx",
+    "lib/piner-space-contract.ts"
+  ],
+  "exclude": ["node_modules"]
+}
