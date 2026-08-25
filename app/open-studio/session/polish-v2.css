@@ -1,0 +1,863 @@
+/* Open Studio activity detail — conversion polish v2 */
+
+.osd-page .osd-shell {
+  width: min(1260px, calc(100% - 64px));
+}
+
+.osd-page .osd-header {
+  border-bottom-color: rgba(198,83,47,.10);
+  box-shadow: 0 1px 0 rgba(255,255,255,.55);
+}
+
+.osd-page .osd-header nav {
+  height: 68px;
+}
+
+.osd-page .osd-header nav>div {
+  gap: 26px;
+}
+
+.osd-page .osd-header nav>div a {
+  font-size: 12px;
+  letter-spacing: -.01em;
+}
+
+.osd-page .osd-breadcrumb {
+  padding-top: 18px;
+  font-size: 10px;
+  opacity: .86;
+}
+
+.osd-page .osd-hero {
+  grid-template-columns: minmax(0,.9fr) minmax(0,1.1fr);
+  gap: 64px;
+  padding-block: 18px 44px;
+}
+
+.osd-page .osd-hero-copy {
+  padding: 30px 0 16px;
+}
+
+.osd-page .osd-path-pill {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(255,250,244,.64);
+}
+
+.osd-page .osd-hero h1 {
+  max-width: 540px;
+  font-size: clamp(60px,5.5vw,82px);
+  line-height: .92;
+  letter-spacing: -.05em;
+  margin: 16px 0 14px;
+}
+
+.osd-page .osd-lede {
+  max-width: 560px;
+  font-size: 16px;
+  line-height: 1.62;
+}
+
+.osd-page .osd-meta-pills {
+  gap: 8px;
+  margin: 22px 0 18px;
+}
+
+.osd-page .osd-meta-pills span {
+  min-height: 35px;
+  padding: 8px 11px;
+  background: rgba(255,250,244,.84);
+  border-color: rgba(214,190,167,.78);
+  font-size: 10.5px;
+}
+
+.osd-page .osd-meta-pills .is-seats {
+  background: #fbede3;
+  color: #ad4426;
+  border-color: #e9b8a3;
+}
+
+.osd-page .osd-hero-action {
+  gap: 13px;
+}
+
+.osd-page .osd-hero-action button,
+.osd-page .osd-booking-form>button {
+  min-height: 50px;
+  padding: 15px 24px;
+  border-radius: 13px;
+  box-shadow: 0 12px 24px rgba(198,83,47,.15);
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+
+.osd-page .osd-hero-action button:hover:not(:disabled),
+.osd-page .osd-booking-form>button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: saturate(1.03);
+  box-shadow: 0 15px 28px rgba(198,83,47,.19);
+}
+
+.osd-page .osd-hero-action small {
+  font-size: 10.5px;
+}
+
+.osd-page .osd-hero-image {
+  height: 448px;
+  border-radius: 22px;
+  box-shadow: 0 22px 52px rgba(94,61,35,.10);
+}
+
+.osd-page .osd-main-grid {
+  grid-template-columns: minmax(0,1.84fr) minmax(300px,.76fr);
+  gap: 20px;
+}
+
+.osd-page .osd-content-column {
+  gap: 20px;
+}
+
+.osd-page .osd-panel {
+  border-color: rgba(224,207,190,.88);
+  border-radius: 18px;
+  background: rgba(255,250,244,.86);
+  box-shadow: 0 14px 38px rgba(82,54,33,.052);
+}
+
+.osd-page .osd-about,
+.osd-page .osd-plan,
+.osd-page .osd-mentor,
+.osd-page .osd-gallery,
+.osd-page .osd-faq,
+.osd-page .osd-demo-notice,
+.osd-page .osd-booking-form {
+  padding: 32px;
+}
+
+.osd-page .osd-quick {
+  padding: 25px;
+  top: 86px;
+}
+
+.osd-page .osd-kicker {
+  margin-bottom: 11px;
+  font-size: 9.5px;
+  letter-spacing: .13em;
+}
+
+.osd-page .osd-about h2,
+.osd-page .osd-plan h2 {
+  font-size: 36px;
+  line-height: 1.02;
+  margin-bottom: 12px;
+}
+
+.osd-page .osd-about>p:not(.osd-kicker) {
+  max-width: 800px;
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+
+.osd-page .osd-outcomes {
+  margin-top: 28px;
+}
+
+.osd-page .osd-outcomes>div {
+  min-height: 164px;
+  padding: 24px 18px 12px;
+  gap: 9px;
+  transition: background .18s ease;
+}
+
+.osd-page .osd-outcomes>div:hover {
+  background: rgba(248,238,227,.42);
+}
+
+.osd-page .osd-outcomes i {
+  width: 38px;
+  height: 38px;
+  font-size: 16px;
+}
+
+.osd-page .osd-outcomes strong {
+  font-size: 19px;
+  line-height: 1.08;
+}
+
+.osd-page .osd-outcomes span {
+  max-width: 170px;
+  font-size: 10.8px;
+  line-height: 1.5;
+}
+
+.osd-page .osd-plan-list {
+  margin-top: 16px;
+}
+
+.osd-page .osd-plan-row {
+  grid-template-columns: 108px 30px 1fr;
+  gap: 15px;
+  padding: 15px 0;
+}
+
+.osd-page .osd-plan-row time {
+  font-size: 10.8px;
+}
+
+.osd-page .osd-plan-row strong {
+  font-size: 13.5px;
+  line-height: 1.35;
+}
+
+.osd-page .osd-plan-row span {
+  max-width: 650px;
+  font-size: 11.2px;
+  line-height: 1.55;
+}
+
+.osd-page .osd-quick dl {
+  gap: 0;
+  margin-top: 14px;
+}
+
+.osd-page .osd-quick dl>div {
+  grid-template-columns: 29px 1fr;
+  gap: 10px;
+  padding: 9px 0;
+}
+
+.osd-page .osd-quick dl>div+div {
+  border-top: 1px solid rgba(232,216,200,.62);
+}
+
+.osd-page .osd-quick dt {
+  width: 29px;
+  height: 29px;
+  font-size: 12px;
+}
+
+.osd-page .osd-quick dd {
+  gap: 2px;
+}
+
+.osd-page .osd-quick dd strong {
+  font-size: 10.8px;
+}
+
+.osd-page .osd-quick dd span {
+  font-size: 10.6px;
+  line-height: 1.4;
+}
+
+.osd-page .osd-free-note {
+  margin-top: 16px;
+  padding: 15px 16px;
+  border-radius: 11px;
+  background: rgba(247,235,222,.78);
+}
+
+.osd-page .osd-free-note strong {
+  font-size: 11.5px;
+}
+
+.osd-page .osd-free-note span {
+  font-size: 10.5px;
+}
+
+.osd-page .osd-trust-grid {
+  grid-template-columns: .9fr 1.7fr;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.osd-page .osd-mentor-body {
+  grid-template-columns: 82px 1fr;
+  gap: 18px;
+}
+
+.osd-page .osd-mentor-mark {
+  width: 82px;
+  height: 82px;
+}
+
+.osd-page .osd-mentor-mark img {
+  width: 32px;
+  height: 50px;
+}
+
+.osd-page .osd-mentor h3 {
+  font-size: 24px;
+  line-height: 1.05;
+}
+
+.osd-page .osd-mentor p {
+  font-size: 11.2px;
+  line-height: 1.58;
+}
+
+.osd-page .osd-gallery-grid {
+  gap: 11px;
+}
+
+.osd-page .osd-gallery-grid img {
+  border-radius: 11px;
+  transition: transform .22s ease, filter .22s ease;
+}
+
+.osd-page .osd-gallery-grid img:hover {
+  transform: translateY(-2px);
+  filter: saturate(1.025);
+}
+
+.osd-page .osd-gallery>a {
+  margin-top: 16px;
+  padding: 9px 17px;
+  background: rgba(255,250,244,.64);
+}
+
+.osd-page .osd-faq {
+  margin-top: 20px;
+}
+
+.osd-page .osd-faq-grid {
+  border-radius: 13px;
+}
+
+.osd-page .osd-faq details {
+  min-height: 52px;
+  padding: 17px 19px;
+}
+
+.osd-page .osd-faq summary {
+  font-size: 11.2px;
+  line-height: 1.4;
+}
+
+.osd-page .osd-faq details[open] {
+  background: #fff8f0;
+}
+
+.osd-page .osd-faq details p {
+  font-size: 11.2px;
+}
+
+.osd-page .osd-final-cta {
+  min-height: 178px;
+  margin-top: 20px;
+  border-radius: 20px;
+  padding: 34px 24px;
+}
+
+.osd-page .osd-final-cta h2 {
+  font-size: 42px;
+  letter-spacing: -.025em;
+}
+
+.osd-page .osd-final-cta p {
+  font-size: 11px;
+  margin: 8px 0 16px;
+}
+
+.osd-page .osd-final-cta button,
+.osd-page .osd-final-cta>a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 19px;
+  border-radius: 999px;
+}
+
+.osd-page .osd-footer {
+  padding: 34px 0 24px;
+}
+
+.osd-page .osd-footer>.osd-shell {
+  width: min(1180px, calc(100% - 64px));
+  gap: 34px;
+}
+
+.osd-page .osd-footer strong {
+  font-size: 13.5px;
+}
+
+.osd-page .osd-footer a,
+.osd-page .osd-footer-brand p,
+.osd-page .osd-footer-brand small,
+.osd-page .osd-footer div>p {
+  font-size: 10.5px;
+  line-height: 1.55;
+}
+
+.osd-page .osd-copy {
+  margin-top: 30px;
+}
+
+@media (max-width: 1100px) and (min-width: 961px) {
+  .osd-page .osd-shell {
+    width: min(100% - 44px, 1180px);
+  }
+  .osd-page .osd-hero {
+    gap: 40px;
+  }
+  .osd-page .osd-hero h1 {
+    font-size: clamp(58px,6vw,76px);
+  }
+  .osd-page .osd-main-grid {
+    grid-template-columns: minmax(0,1.65fr) minmax(280px,.78fr);
+  }
+}
+
+@media (max-width: 960px) {
+  .osd-page .osd-shell {
+    width: min(100% - 36px, 920px);
+  }
+  .osd-page .osd-main-grid {
+    grid-template-columns: 1fr;
+  }
+  .osd-page .osd-quick {
+    position: static;
+  }
+  .osd-page .osd-trust-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .osd-page {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .osd-page .osd-shell {
+    width: calc(100% - 24px);
+  }
+
+  .osd-page .osd-header nav {
+    height: 56px;
+  }
+
+  .osd-page .osd-brand {
+    gap: 8px;
+  }
+
+  .osd-page .osd-brand span {
+    font-size: 19px;
+  }
+
+  .osd-page .osd-brand img {
+    width: 14px;
+    height: 22px;
+  }
+
+  .osd-page .osd-header nav>div {
+    gap: 12px;
+  }
+
+  .osd-page .osd-header nav>div a {
+    font-size: 9.5px;
+  }
+
+  .osd-page .osd-breadcrumb {
+    padding-top: 12px;
+    gap: 7px;
+    font-size: 9px;
+  }
+
+  .osd-page .osd-hero {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding-top: 6px;
+    padding-bottom: 24px;
+  }
+
+  .osd-page .osd-hero-copy {
+    padding: 14px 0 0;
+  }
+
+  .osd-page .osd-path-pill {
+    padding: 6px 9px;
+    font-size: 8.5px;
+  }
+
+  .osd-page .osd-hero h1 {
+    max-width: none;
+    font-size: clamp(44px,12.8vw,56px);
+    line-height: .93;
+    letter-spacing: -.045em;
+    margin: 12px 0 11px;
+  }
+
+  .osd-page .osd-lede {
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .osd-page .osd-meta-pills {
+    display: grid;
+    grid-template-columns: repeat(2,minmax(0,1fr));
+    gap: 7px;
+    margin: 16px 0 14px;
+  }
+
+  .osd-page .osd-meta-pills span {
+    width: 100%;
+    min-width: 0;
+    min-height: 34px;
+    justify-content: center;
+    padding: 7px 8px;
+    font-size: 9px;
+    white-space: nowrap;
+  }
+
+  .osd-page .osd-hero-action {
+    gap: 7px;
+  }
+
+  .osd-page .osd-hero-action button {
+    min-height: 48px;
+    width: 100%;
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-size: 12px;
+  }
+
+  .osd-page .osd-hero-action small {
+    width: 100%;
+    text-align: center;
+    font-size: 9.5px;
+  }
+
+  .osd-page .osd-hero-image {
+    height: auto;
+    aspect-ratio: 4 / 3;
+    border-radius: 15px;
+  }
+
+  .osd-page .osd-main-grid,
+  .osd-page .osd-content-column {
+    gap: 11px;
+  }
+
+  .osd-page .osd-panel {
+    border-radius: 15px;
+    box-shadow: 0 10px 28px rgba(82,54,33,.045);
+  }
+
+  .osd-page .osd-about,
+  .osd-page .osd-plan,
+  .osd-page .osd-quick,
+  .osd-page .osd-mentor,
+  .osd-page .osd-gallery,
+  .osd-page .osd-faq,
+  .osd-page .osd-demo-notice,
+  .osd-page .osd-booking-form {
+    padding: 19px;
+  }
+
+  .osd-page .osd-kicker {
+    margin-bottom: 9px;
+    font-size: 8.5px;
+  }
+
+  .osd-page .osd-about h2,
+  .osd-page .osd-plan h2 {
+    font-size: 27px;
+    line-height: 1.03;
+    margin-bottom: 10px;
+  }
+
+  .osd-page .osd-about>p:not(.osd-kicker) {
+    font-size: 11.5px;
+    line-height: 1.62;
+    margin-bottom: 0;
+  }
+
+  .osd-page .osd-outcomes {
+    margin-top: 18px;
+  }
+
+  .osd-page .osd-outcomes>div {
+    min-height: 150px;
+    padding: 17px 10px 12px;
+    gap: 7px;
+  }
+
+  .osd-page .osd-outcomes i {
+    width: 33px;
+    height: 33px;
+    font-size: 14px;
+  }
+
+  .osd-page .osd-outcomes strong {
+    max-width: 130px;
+    font-size: 16px;
+    line-height: 1.08;
+  }
+
+  .osd-page .osd-outcomes span {
+    max-width: 145px;
+    font-size: 9.6px;
+    line-height: 1.46;
+  }
+
+  .osd-page .osd-plan-list {
+    margin-top: 12px;
+  }
+
+  .osd-page .osd-plan-row {
+    grid-template-columns: 70px 1fr;
+    grid-template-rows: auto auto;
+    gap: 5px 12px;
+    padding: 13px 0;
+  }
+
+  .osd-page .osd-plan-row time {
+    grid-column: 1;
+    grid-row: 1;
+    font-size: 9px;
+    padding-top: 2px;
+  }
+
+  .osd-page .osd-plan-row i {
+    grid-column: 1;
+    grid-row: 2;
+    width: 23px;
+    height: 23px;
+    font-size: 9px;
+  }
+
+  .osd-page .osd-plan-row div {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    gap: 4px;
+  }
+
+  .osd-page .osd-plan-row strong {
+    font-size: 11.2px;
+    line-height: 1.35;
+  }
+
+  .osd-page .osd-plan-row span {
+    font-size: 9.8px;
+    line-height: 1.48;
+  }
+
+  .osd-page .osd-quick dl {
+    margin-top: 10px;
+  }
+
+  .osd-page .osd-quick dl>div {
+    grid-template-columns: 27px 1fr;
+    gap: 9px;
+    padding: 8px 0;
+  }
+
+  .osd-page .osd-quick dt {
+    width: 27px;
+    height: 27px;
+    font-size: 11px;
+  }
+
+  .osd-page .osd-quick dd strong {
+    font-size: 10.3px;
+  }
+
+  .osd-page .osd-quick dd span {
+    font-size: 9.8px;
+    line-height: 1.38;
+  }
+
+  .osd-page .osd-free-note {
+    margin-top: 12px;
+    padding: 13px 14px;
+  }
+
+  .osd-page .osd-free-note strong {
+    font-size: 10.8px;
+  }
+
+  .osd-page .osd-free-note span {
+    font-size: 9.7px;
+  }
+
+  .osd-page .osd-trust-grid {
+    gap: 11px;
+    margin-top: 11px;
+  }
+
+  .osd-page .osd-mentor-body {
+    grid-template-columns: 58px 1fr;
+    gap: 13px;
+  }
+
+  .osd-page .osd-mentor-mark {
+    width: 58px;
+    height: 58px;
+  }
+
+  .osd-page .osd-mentor-mark img {
+    width: 22px;
+    height: 36px;
+  }
+
+  .osd-page .osd-mentor h3 {
+    font-size: 20px;
+    margin-bottom: 6px;
+  }
+
+  .osd-page .osd-mentor p {
+    font-size: 9.8px;
+    line-height: 1.5;
+    margin-bottom: 9px;
+  }
+
+  .osd-page .osd-mentor span {
+    font-size: 8.8px;
+  }
+
+  .osd-page .osd-gallery-grid {
+    gap: 7px;
+  }
+
+  .osd-page .osd-gallery-grid img {
+    border-radius: 9px;
+  }
+
+  .osd-page .osd-gallery-grid img:first-child {
+    aspect-ratio: 16 / 8.5;
+  }
+
+  .osd-page .osd-gallery>a {
+    margin-top: 12px;
+    padding: 8px 14px;
+    font-size: 9px;
+  }
+
+  .osd-page .osd-faq {
+    margin-top: 11px;
+  }
+
+  .osd-page .osd-faq-grid {
+    border-radius: 10px;
+  }
+
+  .osd-page .osd-faq details {
+    min-height: 50px;
+    padding: 15px 14px;
+  }
+
+  .osd-page .osd-faq summary {
+    font-size: 10px;
+    line-height: 1.4;
+  }
+
+  .osd-page .osd-faq details p {
+    font-size: 9.8px;
+    line-height: 1.5;
+  }
+
+  .osd-page .osd-final-cta {
+    min-height: 202px;
+    margin-top: 11px;
+    border-radius: 16px;
+    padding: 30px 18px;
+  }
+
+  .osd-page .osd-final-cta h2 {
+    max-width: 310px;
+    font-size: 31px;
+    line-height: 1.02;
+  }
+
+  .osd-page .osd-final-cta p {
+    max-width: 260px;
+    font-size: 9.5px;
+    line-height: 1.45;
+    margin: 8px 0 14px;
+  }
+
+  .osd-page .osd-final-cta button,
+  .osd-page .osd-final-cta>a {
+    min-height: 42px;
+    padding: 11px 16px;
+    font-size: 10px;
+  }
+
+  .osd-page .osd-footer {
+    padding-top: 28px;
+    padding-bottom: 94px;
+  }
+
+  .osd-page .osd-footer>.osd-shell {
+    width: calc(100% - 28px);
+    grid-template-columns: 1fr 1fr;
+    gap: 22px 28px;
+  }
+
+  .osd-page .osd-footer strong {
+    font-size: 12.5px;
+  }
+
+  .osd-page .osd-footer a,
+  .osd-page .osd-footer-brand p,
+  .osd-page .osd-footer-brand small,
+  .osd-page .osd-footer div>p {
+    font-size: 9.8px;
+    line-height: 1.55;
+  }
+
+  .osd-page .osd-copy {
+    margin-top: 24px;
+    font-size: 8.5px;
+  }
+
+  .osd-page .osd-mobile-bar {
+    left: 8px;
+    right: 8px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    gap: 12px;
+    padding: 9px 9px 9px 13px;
+    border-radius: 15px;
+    border-color: rgba(224,207,190,.9);
+    background: rgba(255,250,244,.965);
+    box-shadow: 0 18px 42px rgba(70,44,25,.20);
+  }
+
+  .osd-page .osd-mobile-bar small {
+    font-size: 7.5px;
+  }
+
+  .osd-page .osd-mobile-bar strong {
+    font-size: 11.5px;
+  }
+
+  .osd-page .osd-mobile-bar button {
+    min-width: 112px;
+    min-height: 42px;
+    border-radius: 11px;
+    font-size: 10.5px;
+  }
+}
+
+@media (max-width: 420px) {
+  .osd-page .osd-header nav>div a:last-child {
+    display: none;
+  }
+  .osd-page .osd-hero h1 {
+    font-size: clamp(42px,12vw,50px);
+  }
+  .osd-page .osd-meta-pills span {
+    font-size: 8.6px;
+  }
+  .osd-page .osd-outcomes>div {
+    min-height: 146px;
+  }
+  .osd-page .osd-mobile-bar button {
+    min-width: 104px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .osd-page * {
+    transition: none !important;
+  }
+}
