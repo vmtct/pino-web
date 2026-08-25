@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { PINER_DESTINATIONS, PINER_PROTOTYPE_HOUSEHOLD, type PinerDestination } from "@/lib/piner-space-contract";
+import { PINER_DESTINATIONS, PINER_PROTOTYPE_HOUSEHOLD, type PinerDestination } from "../../lib/piner-space-contract";
 import styles from "./piner-space.module.css";
 
 export default function PinerSpace() {
