@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { FormEvent, ReactNode } from "react";
 import styles from "./piner.module.css";
 
 type ParentSession = {
@@ -258,7 +259,7 @@ function ChangePinCard({ onSubmit, error }: { onSubmit: (pin: string) => Promise
   );
 }
 
-function AuthFrame({ eyebrow, title, note, children }: { eyebrow: string; title: string; note: string; children: React.ReactNode }) {
+function AuthFrame({ eyebrow, title, note, children }: { eyebrow: string; title: string; note: string; children: ReactNode }) {
   return <main className={styles.authPage}><section className={styles.authCard}><a className={styles.brand} href="/">PINO<span>•</span></a><div><p className={styles.eyebrow}>{eyebrow}</p><h1>{title}</h1><p>{note}</p></div>{children}<small className={styles.securityNote}>Phiên đăng nhập được giữ trong cookie bảo mật; PIN và session token không được lưu trong localStorage.</small></section></main>;
 }
 
