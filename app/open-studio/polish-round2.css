@@ -1,0 +1,291 @@
+/* Open Studio polish round 2 — mobile-first refinement and graceful empty schedule. */
+
+/* When the public schedule is genuinely empty, collapse the duplicated empty UI
+   into one editorial status card. :has() is supported by current iOS/Safari. */
+.open-studio-page .os-main:has(.os-empty):has(.os-date-row button:only-child) .os-featured-panel {
+  display: none;
+}
+
+.open-studio-page .os-main:has(.os-empty):has(.os-date-row button:only-child) .os-week-head {
+  padding-top: 14px;
+  padding-bottom: 8px;
+}
+
+.open-studio-page .os-main:has(.os-empty):has(.os-date-row button:only-child) .os-date-row,
+.open-studio-page .os-main:has(.os-empty):has(.os-date-row button:only-child) .os-filter-row {
+  display: none;
+}
+
+.open-studio-page .os-main:has(.os-empty):has(.os-date-row button:only-child) .os-empty {
+  min-height: 0;
+  padding: 22px 20px 23px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 7px;
+  border-style: solid;
+  background: linear-gradient(145deg, rgba(255, 253, 249, .98), rgba(248, 238, 228, .72));
+  box-shadow: 0 10px 28px rgba(80, 54, 36, .055);
+  text-align: left;
+}
+
+.open-studio-page .os-main:has(.os-empty):has(.os-date-row button:only-child) .os-empty::before {
+  content: "Lịch tuần này đang được chuẩn bị";
+  font-family: "DM Serif Display", serif;
+  color: var(--os-navy);
+  font-size: 20px;
+  line-height: 1.12;
+  letter-spacing: -.015em;
+}
+
+@media (max-width: 620px) {
+  .open-studio-page .os-shell {
+    width: min(calc(100% - 24px), 520px);
+  }
+
+  .open-studio-page .os-nav {
+    min-height: 62px;
+  }
+
+  .open-studio-page .os-brand {
+    font-size: 18.5px;
+  }
+
+  .open-studio-page .os-top-cta {
+    min-height: 38px;
+    padding: 0 14px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .open-studio-page .os-hero-copy {
+    padding-top: 25px;
+    padding-bottom: 16px;
+  }
+
+  .open-studio-page .os-hero-copy h1 {
+    font-size: clamp(52px, 14.7vw, 64px);
+    line-height: .96;
+  }
+
+  .open-studio-page .os-hero-copy p {
+    margin-top: 11px;
+    max-width: 330px;
+    font-size: 14px;
+    line-height: 1.48;
+  }
+
+  .open-studio-page .os-inline-link {
+    margin-top: 12px;
+    font-size: 12px;
+  }
+
+  .open-studio-page .os-hero-visual {
+    height: 210px;
+    border-radius: 20px;
+  }
+
+  .open-studio-page .os-main {
+    padding-top: 11px;
+    padding-bottom: 22px;
+  }
+
+  .open-studio-page .os-kicker {
+    font-size: 12px;
+    line-height: 1.2;
+  }
+
+  .open-studio-page .os-main:has(.os-empty):has(.os-date-row button:only-child) {
+    padding-top: 4px;
+    padding-bottom: 18px;
+  }
+
+  .open-studio-page .os-main:has(.os-empty):has(.os-date-row button:only-child) .os-week-head {
+    padding-top: 10px;
+    padding-bottom: 7px;
+  }
+
+  .open-studio-page .os-main:has(.os-empty):has(.os-date-row button:only-child) .os-week-head .os-kicker {
+    margin-bottom: 0;
+  }
+
+  .open-studio-page .os-main:has(.os-empty):has(.os-date-row button:only-child) .os-empty {
+    padding: 20px 18px 21px;
+    border-radius: 16px;
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+
+  .open-studio-page .os-main:has(.os-empty):has(.os-date-row button:only-child) .os-empty::before {
+    font-size: 22px;
+  }
+
+  .open-studio-page .os-info {
+    gap: 12px;
+  }
+
+  .open-studio-page .os-info > article {
+    border-radius: 18px;
+  }
+
+  .open-studio-page .os-architecture-card > div {
+    padding: 21px 19px 18px;
+  }
+
+  .open-studio-page .os-architecture-card h2 {
+    font-size: 30px;
+  }
+
+  .open-studio-page .os-architecture-card p:not(.os-kicker) {
+    font-size: 13.5px;
+    line-height: 1.56;
+  }
+
+  .open-studio-page .os-architecture-card a {
+    min-height: 34px;
+    align-items: center;
+    font-size: 12.5px;
+  }
+
+  .open-studio-page .os-architecture-card img {
+    height: 194px;
+  }
+
+  .open-studio-page .os-how-card,
+  .open-studio-page .os-for-card {
+    padding: 21px 18px 22px;
+  }
+
+  .open-studio-page .os-how-steps {
+    gap: 9px;
+  }
+
+  .open-studio-page .os-how-steps span {
+    min-height: 104px;
+    padding: 13px 9px;
+    border-radius: 14px;
+    font-size: 12.5px;
+    line-height: 1.35;
+  }
+
+  .open-studio-page .os-how-steps span b {
+    width: 42px;
+    height: 42px;
+    margin-bottom: 9px;
+    font-size: 13px;
+  }
+
+  .open-studio-page .os-for-card ul {
+    gap: 15px;
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
+
+  .open-studio-page .os-for-card li {
+    padding-left: 1px;
+  }
+
+  .open-studio-page .os-faq {
+    margin-top: 1px;
+    margin-bottom: 14px;
+    border-radius: 18px;
+  }
+
+  .open-studio-page .os-faq h2 {
+    padding: 18px 18px 13px;
+    font-size: 26px;
+  }
+
+  .open-studio-page .os-faq summary {
+    min-height: 60px;
+    padding: 0 17px;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .open-studio-page .os-faq details p {
+    padding: 15px 17px 17px;
+    font-size: 12.5px;
+    line-height: 1.6;
+  }
+
+  .open-studio-page .os-final-cta {
+    min-height: 228px;
+    border-radius: 19px;
+  }
+
+  .open-studio-page .os-final-cta > div {
+    padding: 30px 20px;
+  }
+
+  .open-studio-page .os-final-cta h2 {
+    font-size: 32px;
+    line-height: 1.02;
+  }
+
+  .open-studio-page .os-final-cta p {
+    margin-top: 8px;
+    margin-bottom: 15px;
+    font-size: 12px;
+  }
+
+  .open-studio-page .os-final-button {
+    min-height: 45px;
+    padding: 0 20px;
+    font-size: 12px;
+  }
+
+  .open-studio-page .os-footer {
+    gap: 22px 18px;
+    padding-top: 28px;
+    padding-bottom: 54px;
+  }
+
+  .open-studio-page .os-footer-brand p {
+    margin: 8px 0 5px;
+    font-size: 12.5px;
+  }
+
+  .open-studio-page .os-footer-brand small {
+    font-size: 10.5px;
+  }
+
+  .open-studio-page .os-footer > div:not(.os-footer-brand) {
+    gap: 7px;
+    font-size: 11.5px;
+    line-height: 1.45;
+  }
+
+  .open-studio-page .os-footer strong {
+    font-size: 13.5px;
+  }
+
+  .open-studio-page .os-copyright {
+    bottom: 16px;
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 390px) {
+  .open-studio-page .os-shell {
+    width: min(calc(100% - 20px), 520px);
+  }
+
+  .open-studio-page .os-brand {
+    font-size: 17.5px;
+  }
+
+  .open-studio-page .os-top-cta {
+    padding-inline: 12px;
+    font-size: 10.5px;
+  }
+
+  .open-studio-page .os-hero-copy h1 {
+    font-size: 50px;
+  }
+
+  .open-studio-page .os-how-steps span {
+    font-size: 12px;
+  }
+}
