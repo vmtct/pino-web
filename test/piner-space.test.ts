@@ -4,7 +4,9 @@ import test from "node:test";
 import { PINER_DESTINATIONS, PINER_PROTOTYPE_HOUSEHOLD } from "../lib/piner-space-contract.ts";
 
 const pinerUi = readFileSync(new URL("../app/piner/piner-space.tsx", import.meta.url), "utf8");
+const pinerPage = readFileSync(new URL("../app/piner/page.tsx", import.meta.url), "utf8");
 const pinerSource = readFileSync(new URL("../lib/piner-space-source.ts", import.meta.url), "utf8");
+const pinerRuntimeSurface = `${pinerPage}\n${pinerUi}\n${pinerSource}`;
 
 test("Piner v1 exposes exactly the four approved learner destinations", () => {
   assert.deepEqual(PINER_DESTINATIONS.map((item) => item.label), ["Trang chủ", "Hành trình", "Thành quả", "Khám phá"]);
@@ -33,7 +35,13 @@ test("Piner consumer stays presentation-only before Core Slice F wiring", () => 
   assert.equal(/\bfetch\s*\(/.test(pinerUi), false);
   assert.equal(/localStorage|sessionStorage/.test(pinerUi), false);
   assert.equal(/method\s*:\s*["'](?:POST|PUT|PATCH|DELETE)/i.test(pinerUi), false);
-  assert.equal(/\/api\/pinoria-prototype|controller-command|shop-relay|tv-relay/i.test(`${pinerUi}\n${pinerSource}`), false);
+  assert.equal(/\/api\/pinoria-prototype|controller-command|shop-relay|tv-relay/i.test(pinerRuntimeSurface), false);
+});
+
+test("Piner cannot wire protected member truth through the legacy web member stack", () => {
+  assert.equal(/worker-member(?:-v2)?|lib\/member(?:["'\/]|$)|member-booking-validation/i.test(pinerRuntimeSurface), false);
+  assert.equal(/NOTION_(?:PARENT|STUDENT|OS_PASS|OS_BOOKING|OS_SESSION|RUNNING_CLASS|PATH_PROGRAM)/i.test(pinerRuntimeSurface), false);
+  assert.equal(/PINO_CORE_BASE_URL|pino-core-public-adapter|pino-core-dev[^\s"']*workers\.dev/i.test(pinerRuntimeSurface), false);
 });
 
 test("fixtures do not revive superseded Trial or weekly Explore-claim semantics", () => {
