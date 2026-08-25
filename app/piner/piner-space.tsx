@@ -1,15 +1,26 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { PINER_DESTINATIONS, PINER_PROTOTYPE_HOUSEHOLD, type PinerDestination } from "../../lib/piner-space-contract";
+import { PINER_DESTINATIONS, type PinerDestination, type PinerPrototypeHousehold, type PinerStudentScene } from "../../lib/piner-space-contract";
+import type { PinerSpaceLoadResult } from "../../lib/piner-space-source";
 import styles from "./piner-space.module.css";
 
-export default function PinerSpace() {
-  const [studentId, setStudentId] = useState(PINER_PROTOTYPE_HOUSEHOLD.students[0]?.student.id ?? "");
+export default function PinerSpace({ result }: { result: PinerSpaceLoadResult }) {
+  if (result.state !== "ready") return <Unavailable result={result} />;
+  return <ReadySpace household={result.household} source={result.source} />;
+}
+
+function Unavailable({ result }: { result: Exclude<PinerSpaceLoadResult, { state: "ready" }> }) {
+  const title = result.state === "auth-required" ? "Cần đăng nhập lại" : "Piner tạm thời chưa sẵn sàng";
+  return <main className={styles.page}><section className={styles.main}><div className={styles.emptySafe}><strong>{title}</strong><br />{result.reason}<br /><br />Piner không dùng dữ liệu cache của learner khác để lấp chỗ trống.</div></section></main>;
+}
+
+function ReadySpace({ household, source }: { household: PinerPrototypeHousehold; source: "prototype" | "core" }) {
+  const [studentId, setStudentId] = useState(household.students[0]?.student.id ?? "");
   const [destination, setDestination] = useState<PinerDestination>("home");
   const scene = useMemo(
-    () => PINER_PROTOTYPE_HOUSEHOLD.students.find((item) => item.student.id === studentId) ?? PINER_PROTOTYPE_HOUSEHOLD.students[0],
-    [studentId],
+    () => household.students.find((item) => item.student.id === studentId) ?? household.students[0],
+    [household, studentId],
   );
 
   if (!scene) return <main className={styles.page}><div className={styles.emptySafe}>Không có Student context để hiển thị. Piner fail closed thay vì ghép dữ liệu từ context khác.</div></main>;
@@ -20,9 +31,9 @@ export default function PinerSpace() {
         <div className={styles.brand}>PINO<span className={styles.brandDot}>•</span></div>
         <section className={styles.household} aria-label="Household student context">
           <div className={styles.eyebrow}>Piner Space</div>
-          <div className={styles.householdTitle}>{PINER_PROTOTYPE_HOUSEHOLD.parentLabel}</div>
+          <div className={styles.householdTitle}>{household.parentLabel}</div>
           <div className={styles.studentSwitch}>
-            {PINER_PROTOTYPE_HOUSEHOLD.students.map((item) => {
+            {household.students.map((item) => {
               const active = item.student.id === scene.student.id;
               return (
                 <button
@@ -53,7 +64,7 @@ export default function PinerSpace() {
           ))}
         </nav>
         <div className={styles.railFooter}>
-          <strong>Prototype contract</strong><br />Student switching is presentation-only here. Protected reads/writes will re-authorize Parent → Student on the server.
+          <strong>{source === "prototype" ? "Prototype contract" : "Canonical source"}</strong><br />Student switching is presentation-only here. Protected reads/writes must re-authorize Parent → Student on the server.
         </div>
       </aside>
 
@@ -64,9 +75,9 @@ export default function PinerSpace() {
             <strong>{scene.student.displayName}</strong>
           </div>
           <div className={styles.topbarMeta}>Parent context · one Student at a time</div>
-          <div className={styles.prototypePill}>Fixture · not canonical truth</div>
+          {source === "prototype" ? <div className={styles.prototypePill}>Fixture · not canonical truth</div> : null}
         </header>
-        {destination === "home" && <Home scene={scene} go={setDestination} />}
+        {destination === "home" && <Home scene={scene} go={setDestination} source={source} />}
         {destination === "journey" && <Journey scene={scene} />}
         {destination === "collection" && <Collection scene={scene} />}
         {destination === "explore" && <Explore scene={scene} />}
@@ -75,9 +86,7 @@ export default function PinerSpace() {
   );
 }
 
-type Scene = (typeof PINER_PROTOTYPE_HOUSEHOLD.students)[number];
-
-function Home({ scene, go }: { scene: Scene; go: (destination: PinerDestination) => void }) {
+function Home({ scene, go, source }: { scene: PinerStudentScene; go: (destination: PinerDestination) => void; source: "prototype" | "core" }) {
   return <>
     <div className={styles.hero}>
       <section className={styles.heroLead}>
@@ -106,13 +115,13 @@ function Home({ scene, go }: { scene: Scene; go: (destination: PinerDestination)
     </section>
 
     <section className={styles.section}>
-      <div className={styles.sectionHeader}><h2>Lịch gần nhất</h2><p>Fixture để kiểm layout; production sẽ đọc canonical occurrence/session state.</p></div>
+      <div className={styles.sectionHeader}><h2>Lịch gần nhất</h2><p>{source === "prototype" ? "Fixture để kiểm layout; production sẽ đọc canonical occurrence/session state." : "Dữ liệu từ canonical member source."}</p></div>
       <div className={styles.grid3}>{scene.home.upcoming.map((item) => <article className={styles.card} key={item.id}><div className={styles.eyebrow}>{item.when}</div><h3>{item.title}</h3><p>{item.place}</p></article>)}</div>
     </section>
   </>;
 }
 
-function Journey({ scene }: { scene: Scene }) {
+function Journey({ scene }: { scene: PinerStudentScene }) {
   return <>
     <div className={styles.focusBand}><div className={styles.eyebrow}>HÀNH TRÌNH</div><h2>{scene.journey.pathTitle}</h2><p>{scene.journey.pathNote}</p></div>
     <section className={styles.section}>
@@ -122,14 +131,14 @@ function Journey({ scene }: { scene: Scene }) {
   </>;
 }
 
-function Collection({ scene }: { scene: Scene }) {
+function Collection({ scene }: { scene: PinerStudentScene }) {
   return <>
     <div className={styles.focusBand}><div className={styles.eyebrow}>THÀNH QUẢ</div><h2>{scene.collection.headline}</h2><p>Durable learner-facing outcomes — không phải raw Evidence feed hay staff review state.</p></div>
     <div className={styles.grid3}>{scene.collection.items.map((item) => <article className={`${styles.card} ${styles.collectionCard}`} key={item.id}><div className={styles.collectionKind}>{item.kind}</div><div><h3>{item.title}</h3><p>{item.note}</p></div></article>)}</div>
   </>;
 }
 
-function Explore({ scene }: { scene: Scene }) {
+function Explore({ scene }: { scene: PinerStudentScene }) {
   return <>
     <div className={styles.focusBand}><div className={styles.eyebrow}>KHÁM PHÁ</div><h2>{scene.explore.intro}</h2><p>UI không quyết định eligibility, age-fit, capacity, Booking hay entitlement. Những quyết định đó sẽ đến từ Core.</p></div>
     <div className={styles.grid2}>{scene.explore.items.map((item) => <article className={`${styles.card} ${styles.exploreCard}`} key={item.id}><span className={styles.label}>{item.label}</span><h3>{item.title}</h3><p className={styles.exploreMeta}>{item.meta}</p><p>{item.note}</p><div className={styles.disabledCta}>Booking action chưa bật · chờ canonical runtime contract</div></article>)}</div>
