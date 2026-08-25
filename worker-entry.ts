@@ -4,6 +4,7 @@ import { getWebContent } from "./lib/web-content";
 import { getWebImages } from "./lib/web-images";
 import { WORKER_BUILD_INFO } from "./worker-build-info";
 import { proxyCoreRegistration, proxyCoreSessions, registrationCapability } from "./lib/pino-core-public-adapter";
+import { proxyPinerMemberRequest } from "./lib/piner-member-core-adapter";
 
 type Env = Record<string, any>;
 
@@ -29,6 +30,7 @@ const handler = {
   async fetch(request: Request, env: Env) {
     const url = new URL(request.url);
     if (request.method === "GET" && url.pathname === "/build-info.json") return json(WORKER_BUILD_INFO);
+    if (url.pathname.startsWith("/api/piner/")) return proxyPinerMemberRequest(request, env);
     if (request.method === "GET" && url.pathname === "/api/pino-core/open-studio/sessions") return proxyCoreSessions(request, env);
     if (request.method === "GET" && url.pathname === "/api/pino-core/open-studio/capabilities") return registrationCapability(request, env);
     if (request.method === "POST" && url.pathname === "/api/pino-core/open-studio/registrations") return proxyCoreRegistration(request, env);
