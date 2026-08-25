@@ -97,6 +97,90 @@
     margin: 0;
   }
 
+  /* Keep the browsing surface compact and editorial on desktop. Six sessions stay as a balanced 3×2 grid,
+     while each card reads square-to-portrait instead of wide landscape. */
+  .open-studio-page .os-week-head,
+  .open-studio-page .os-card-grid {
+    width: min(100%, 1200px);
+    margin-inline: auto;
+  }
+
+  .open-studio-page .os-week-head {
+    padding-top: 28px;
+    padding-bottom: 18px;
+  }
+
+  .open-studio-page .os-card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .open-studio-page .os-session-card {
+    min-width: 0;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(92, 61, 39, .035);
+  }
+
+  .open-studio-page .os-session-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 34px rgba(92, 61, 39, .07);
+  }
+
+  .open-studio-page .os-session-card > img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+  }
+
+  .open-studio-page .os-session-body {
+    min-height: 138px;
+    padding: 14px 16px 16px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .open-studio-page .os-session-body .os-time-label {
+    margin-bottom: 6px;
+    font-size: 9.5px;
+  }
+
+  .open-studio-page .os-session-body h3 {
+    font-size: 22px;
+    line-height: 1.03;
+  }
+
+  .open-studio-page .os-session-body .os-pills {
+    margin-top: 7px;
+    gap: 5px;
+  }
+
+  .open-studio-page .os-session-body .os-pills span {
+    min-height: 21px;
+    padding: 1px 9px;
+    font-size: 9px;
+  }
+
+  .open-studio-page .os-session-bottom {
+    margin-top: auto;
+    padding-top: 14px;
+  }
+
+  .open-studio-page .os-session-bottom strong,
+  .open-studio-page .os-session-bottom button {
+    font-size: 9.5px;
+  }
+
+  .open-studio-page .os-skeleton-card {
+    height: auto;
+    min-height: 430px;
+  }
+
+  .open-studio-page .os-skeleton-card span {
+    height: auto;
+    aspect-ratio: 4 / 3;
+  }
+
   .open-studio-page .os-info {
     grid-template-columns: 1.55fr 1.05fr .82fr;
     gap: 18px;
