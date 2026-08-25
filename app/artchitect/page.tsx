@@ -107,8 +107,8 @@ export default function ArtchitectPage() {
         <div className={styles.stay}><h4>Stay connected</h4><p>Get news about Open Studio and special events.</p><span>Instagram · Facebook · YouTube</span></div>
         <small>© {new Date().getFullYear()} PINO House. All rights reserved.</small>
       </footer>
-      <img className={styles.botanicalLeft} src={`${ASSET}/botanical-leaves-illustration.png`} alt=""/>
-      <img className={styles.botanicalRight} src={`${ASSET}/neutral-botanical-abstract-art.png`} alt=""/>
+      <img className={styles.botanicalLeft} src={`${ASSET}/botanical-leaf-illustration.png`} alt=""/>
+      <img className={styles.botanicalRight} src={`${ASSET}/neutral-botanical-abstract.png`} alt=""/>
     </main>
   );
 }
