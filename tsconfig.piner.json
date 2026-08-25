@@ -4,6 +4,7 @@
     "noEmit": true
   },
   "include": [
+    "next-env.d.ts",
     "app/piner/**/*.ts",
     "app/piner/**/*.tsx",
     "lib/piner-space-contract.ts"
