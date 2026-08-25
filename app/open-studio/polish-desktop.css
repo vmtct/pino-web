@@ -1,0 +1,234 @@
+/* Open Studio desktop polish — editorial width, stronger rhythm, less stretched whitespace. */
+@media (min-width: 1100px) {
+  .open-studio-page .os-shell {
+    width: min(calc(100% - 96px), 1600px);
+  }
+
+  .open-studio-page .os-nav {
+    min-height: 76px;
+  }
+
+  .open-studio-page .os-brand {
+    font-size: 23px;
+  }
+
+  .open-studio-page .os-top-cta {
+    min-height: 46px;
+    padding-inline: 22px;
+  }
+
+  .open-studio-page .os-hero {
+    grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr);
+    min-height: 500px;
+    align-items: stretch;
+    border-bottom: 0;
+  }
+
+  .open-studio-page .os-hero-copy {
+    padding: 72px 64px 56px 56px;
+    align-self: center;
+  }
+
+  .open-studio-page .os-hero-copy h1 {
+    font-size: clamp(74px, 6vw, 104px);
+    line-height: .94;
+    letter-spacing: -.045em;
+    max-width: 620px;
+  }
+
+  .open-studio-page .os-hero-copy p {
+    margin-top: 20px;
+    max-width: 520px;
+    font-size: 18px;
+    line-height: 1.55;
+  }
+
+  .open-studio-page .os-inline-link {
+    margin-top: 22px;
+    font-size: 13px;
+  }
+
+  .open-studio-page .os-hero-leaves {
+    width: 150px;
+    left: -42px;
+    bottom: -10px;
+    opacity: .95;
+    pointer-events: none;
+  }
+
+  .open-studio-page .os-hero-visual {
+    height: 500px;
+    border-radius: 0 0 24px 0;
+    overflow: hidden;
+    box-shadow: 0 18px 48px rgba(74,50,34,.07);
+  }
+
+  .open-studio-page .os-hero-visual img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 52%;
+  }
+
+  .open-studio-page .os-main {
+    padding-top: 28px;
+    padding-bottom: 34px;
+  }
+
+  .open-studio-page .os-main:has(.os-empty):has(.os-date-row button:only-child) .os-week-head {
+    padding-top: 0;
+    padding-bottom: 12px;
+  }
+
+  .open-studio-page .os-main:has(.os-empty):has(.os-date-row button:only-child) .os-empty {
+    min-height: 92px;
+    padding: 22px 28px;
+    border-radius: 16px;
+    display: grid;
+    grid-template-columns: minmax(240px, .8fr) minmax(0, 1.2fr);
+    align-items: center;
+    column-gap: 28px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .open-studio-page .os-main:has(.os-empty):has(.os-date-row button:only-child) .os-empty::before {
+    font-size: 24px;
+    margin: 0;
+  }
+
+  .open-studio-page .os-info {
+    grid-template-columns: 1.55fr 1.05fr .82fr;
+    gap: 18px;
+    align-items: stretch;
+    padding-top: 0;
+    padding-bottom: 20px;
+  }
+
+  .open-studio-page .os-info > article {
+    min-height: 250px;
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
+  .open-studio-page .os-architecture-card {
+    display: grid;
+    grid-template-columns: .92fr 1.08fr;
+  }
+
+  .open-studio-page .os-architecture-card > div {
+    padding: 28px 26px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .open-studio-page .os-architecture-card h2 {
+    font-size: 34px;
+    line-height: 1.02;
+  }
+
+  .open-studio-page .os-architecture-card p:not(.os-kicker) {
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .open-studio-page .os-architecture-card img {
+    width: 100%;
+    height: 100%;
+    min-height: 250px;
+    object-fit: cover;
+  }
+
+  .open-studio-page .os-how-card,
+  .open-studio-page .os-for-card {
+    padding: 28px 26px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .open-studio-page .os-how-steps {
+    flex: 1;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .open-studio-page .os-how-steps span {
+    min-width: 0;
+    flex: 1;
+    font-size: 10.5px;
+    line-height: 1.35;
+  }
+
+  .open-studio-page .os-how-steps span b {
+    width: 40px;
+    height: 40px;
+  }
+
+  .open-studio-page .os-for-card ul {
+    margin-top: 16px;
+    gap: 15px;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .open-studio-page .os-faq {
+    margin-bottom: 18px;
+    border-radius: 16px;
+  }
+
+  .open-studio-page .os-faq h2 {
+    min-width: 112px;
+    padding-left: 24px;
+    font-size: 28px;
+  }
+
+  .open-studio-page .os-faq summary {
+    min-height: 58px;
+    padding-inline: 20px;
+    font-size: 11.5px;
+  }
+
+  .open-studio-page .os-final-cta {
+    min-height: 220px;
+    border-radius: 18px;
+  }
+
+  .open-studio-page .os-final-cta > div {
+    padding: 38px 42px;
+  }
+
+  .open-studio-page .os-final-cta h2 {
+    font-size: 42px;
+    line-height: 1;
+  }
+
+  .open-studio-page .os-final-cta p {
+    max-width: 620px;
+    font-size: 13px;
+  }
+
+  .open-studio-page .os-footer {
+    grid-template-columns: 1.45fr repeat(3, .72fr) 1.1fr;
+    gap: 42px;
+    padding-top: 34px;
+    padding-bottom: 52px;
+  }
+
+  .open-studio-page .os-footer-brand p {
+    margin-top: 12px;
+    font-size: 13px;
+  }
+
+  .open-studio-page .os-footer > div:not(.os-footer-brand) {
+    font-size: 11px;
+    line-height: 1.6;
+  }
+}
+
+@media (min-width: 1500px) {
+  .open-studio-page .os-shell {
+    width: min(calc(100% - 120px), 1640px);
+  }
+}
