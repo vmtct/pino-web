@@ -6,6 +6,7 @@ on:
     paths:
       - "app/piner/**"
       - "lib/piner-space-contract.ts"
+      - "lib/piner-space-source.ts"
       - "test/piner-space.test.ts"
       - "tsconfig.piner.json"
       - ".github/workflows/piner-contract.yml"
