@@ -1,8 +1,6 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { HouseArtwork, PrimaryCta, PublicFooter, PublicNav, SectionIntro } from "../components/public-site";
-import { CmsText } from "../cms-hydrator";
 import {
   CoreSession,
   REGISTRATION_SUCCESS_BODY,
@@ -12,13 +10,12 @@ import {
   formatAgeRange,
   formatLocalDate,
   formatLocalTimeRange,
-  groupSessionsByLocalDate,
   isCoreSession,
   isSessionFull,
+  localDateKey,
   mapRegistrationError,
   publicSyllabusTitle,
   serializeRegistration,
-  sessionCover,
   sessionImageAlt,
   sessionThumbnail,
   validateRegistration,
@@ -28,24 +25,85 @@ import "./page.css";
 const SCHEDULE_ENDPOINT = "/api/pino-core/open-studio/sessions";
 const CAPABILITY_ENDPOINT = "/api/pino-core/open-studio/capabilities";
 const REGISTRATION_ENDPOINT = "/api/pino-core/open-studio/registrations";
+const ASSET_BASE = "https://assets.pinohouse.art/site/OpenStudio";
+
+const ASSETS = {
+  hero: `${ASSET_BASE}/open-studio-courtyard-exterior.png`,
+  piano: `${ASSET_BASE}/child-playing-piano.png`,
+  blocks: `${ASSET_BASE}/children-building-wooden-blocks.png`,
+  watercolor: `${ASSET_BASE}/watercolor-palette-and-botanical-painting.png`,
+  clay: `${ASSET_BASE}/child-making-clay-cup.png`,
+  dance: `${ASSET_BASE}/children-dance-class.png`,
+  architecture: `${ASSET_BASE}/architectural-model-and-sketchbook.png`,
+  gate: `${ASSET_BASE}/garden-archway-entrance.png`,
+  leavesOne: `${ASSET_BASE}/glowing-autumn-leaves-v1.png`,
+  leavesTwo: `${ASSET_BASE}/glowing-autumn-leaves-v2.png`,
+};
+
+const LOGO_URL = "https://assets.pinohouse.art/core/Pino%20Sigil.png";
+const FALLBACK_ACTIVITY_IMAGES = [ASSETS.blocks, ASSETS.piano, ASSETS.watercolor, ASSETS.clay, ASSETS.dance];
 
 type ScheduleResponse = { sessions: CoreSession[] };
 type ScheduleStatus = "loading" | "success" | "error";
 type SubmissionState = "idle" | "pending" | "success" | "error";
+type PathFilter = "all" | "PianoHouse" | "Artchitect" | "Little Piner";
 
 const emptyForm: RegistrationForm = { contactName: "", phone: "", childName: "", childDateOfBirth: "" };
 
-const paths = [
-  { age: "3–6 tuổi", name: "Little Piner Art", note: "Màu sắc, vật liệu và đôi tay tò mò." },
-  { age: "3–6 tuổi", name: "Little Piner Piano", note: "Âm thanh, nhịp điệu và niềm vui đầu tiên." },
-  { age: "7+ tuổi", name: "Art", note: "Quan sát, ý tưởng và ngôn ngữ tạo hình riêng." },
-  { age: "7+ tuổi", name: "Piano", note: "Cảm thụ, kỹ thuật và cách kể chuyện bằng âm nhạc." },
-];
+function pathLabel(session: CoreSession): Exclude<PathFilter, "all"> {
+  const value = `${session.path.code} ${session.path.displayName} ${session.syllabus.title}`.toLowerCase();
+  if (value.includes("little")) return "Little Piner";
+  if (value.includes("piano") || value.includes("music")) return "PianoHouse";
+  return "Artchitect";
+}
+
+function activityImage(session: CoreSession, index = 0) {
+  const supplied = sessionThumbnail(session);
+  if (supplied) return supplied;
+  const value = `${session.path.code} ${session.path.displayName} ${session.syllabus.title}`.toLowerCase();
+  if (value.includes("piano") || value.includes("music")) return ASSETS.piano;
+  if (value.includes("little")) return ASSETS.blocks;
+  if (value.includes("water") || value.includes("paint") || value.includes("art")) return ASSETS.watercolor;
+  if (value.includes("clay")) return ASSETS.clay;
+  return FALLBACK_ACTIVITY_IMAGES[index % FALLBACK_ACTIVITY_IMAGES.length];
+}
+
+function compactDate(iso: string) {
+  return new Intl.DateTimeFormat("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+  }).format(new Date(iso));
+}
+
+function OpenStudioNav() {
+  return (
+    <header className="os-site-header" id="top">
+      <nav className="os-nav os-shell" aria-label="Điều hướng chính">
+        <a className="os-brand" href="/" aria-label="PINO House — trang chủ">
+          <img src={LOGO_URL} alt="" aria-hidden="true" />
+          <span>PINO House</span>
+        </a>
+        <div className="os-nav-links">
+          <a href="/">House</a>
+          <a href="/#paths">Paths</a>
+          <a className="is-active" href="/open-studio">Open Studio</a>
+          <a href="/#journey">Journey</a>
+          <a href="/#why-pino">About</a>
+        </div>
+        <a className="os-top-cta" href="#sessions">Khám phá Open Studio <span>→</span></a>
+      </nav>
+    </header>
+  );
+}
 
 export default function OpenStudioPage() {
   const [status, setStatus] = useState<ScheduleStatus>("loading");
   const [sessions, setSessions] = useState<CoreSession[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [activeDate, setActiveDate] = useState("all");
+  const [pathFilter, setPathFilter] = useState<PathFilter>("all");
   const [registrationEnabled, setRegistrationEnabled] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<RegistrationForm>(emptyForm);
@@ -82,14 +140,19 @@ export default function OpenStudioPage() {
     return () => { cancelled = true; };
   }, []);
 
-  const groupedSessions = useMemo(() => groupSessionsByLocalDate(sessions), [sessions]);
-
   const selectedSession = sessions.find((session) => session.id === selectedId) || null;
+  const featuredSession = useMemo(() => sessions.find((session) => !isSessionFull(session)) || sessions[0] || null, [sessions]);
+  const dateOptions = useMemo(() => Array.from(new Set(sessions.map((session) => localDateKey(session.startsAt)))), [sessions]);
+  const visibleSessions = useMemo(() => sessions.filter((session) => {
+    const matchesDate = activeDate === "all" || localDateKey(session.startsAt) === activeDate;
+    const matchesPath = pathFilter === "all" || pathLabel(session) === pathFilter;
+    return matchesDate && matchesPath;
+  }), [activeDate, pathFilter, sessions]);
 
-  const selectSession = (session: CoreSession) => {
+  const selectSession = (session: CoreSession, openForm = false) => {
     if (isSessionFull(session)) return;
     setSelectedId(session.id);
-    setShowForm(false);
+    setShowForm(openForm && registrationEnabled);
     setSubmission("idle");
     setSubmissionMessage("");
     setForm(emptyForm);
@@ -145,180 +208,158 @@ export default function OpenStudioPage() {
       setSubmission("error");
       setSubmissionMessage(issue.message);
       submissionInFlight.current = false;
-      // Keep the key so a network retry remains the same logical submission.
     }
   };
 
   return (
     <main className="open-studio-page">
-      <PublicNav />
+      <OpenStudioNav />
 
-      <section className="os-hero shell" aria-labelledby="open-studio-title">
+      <section className="os-hero os-shell" aria-labelledby="open-studio-title">
+        <img className="os-hero-leaves" src={ASSETS.leavesOne} alt="" aria-hidden="true" />
         <div className="os-hero-copy">
-          <p className="eyebrow"><CmsText contentKey="os_hero_eyebrow" fallback="PINO HOUSE · OPEN STUDIO" /></p>
-          <h1 id="open-studio-title"><CmsText contentKey="os_hero_title_lead" fallback="Cho con một buổi chiều" /> <em><CmsText contentKey="os_hero_title_emphasis" fallback="ý nghĩa." /></em></h1>
-          <p className="os-lead"><CmsText contentKey="os_hero_description" fallback="Một khoảng thời gian nhẹ nhàng để con chạm vào nghệ thuật, âm nhạc và tìm điều mình thật sự muốn khám phá." /></p>
-          <div className="os-hero-actions">
-            <PrimaryCta href="#sessions" contentKey="os_hero_cta">Xem lịch Open Studio</PrimaryCta>
-            <a className="os-text-link" href="#what-is">Open Studio là gì? <span aria-hidden="true">↓</span></a>
-          </div>
-          <p className="os-soft-note"><span aria-hidden="true">✳</span> Không áp lực · Không phải buổi học thử bán hàng</p>
+          <h1 id="open-studio-title">Open Studio</h1>
+          <p>Khám phá, sáng tạo và lớn lên — mỗi tuần tại PINO House.</p>
+          <a href="#sessions" className="os-inline-link">Xem lịch tuần này <span>↓</span></a>
         </div>
-        <HouseArtwork assetKey="os_hero_image" />
-      </section>
-
-      <section className="os-purpose shell" id="what-is" aria-labelledby="purpose-title">
-        <SectionIntro
-          id="purpose-title"
-          eyebrow="01 · OPEN STUDIO LÀ GÌ?" eyebrowKey="os_purpose_eyebrow"
-          title={<><CmsText contentKey="os_purpose_title_lead" fallback="Một cánh cửa mở vào" /> <em><CmsText contentKey="os_purpose_title_emphasis" fallback="thế giới của con." /></em></>}
-          copy="Open Studio là buổi trải nghiệm miễn phí, nơi trẻ được tự do quan sát, thử làm và trò chuyện cùng mentor trong không gian PINO House."
-          copyKey="os_purpose_description"
-        />
-        <div className="os-purpose-grid" id="why-pino">
-          <article><span>01</span><h3><CmsText contentKey="os_purpose_explore_title" fallback="Đến để khám phá" /></h3><p><CmsText contentKey="os_purpose_explore_description" fallback="Không cần biết trước, không cần làm giống ai. Con bắt đầu bằng sự tò mò của chính mình." /></p></article>
-          <article><span>02</span><h3><CmsText contentKey="os_purpose_listen_title" fallback="Được người lớn lắng nghe" /></h3><p><CmsText contentKey="os_purpose_listen_description" fallback="Mentor quan sát cách con phản ứng, đặt câu hỏi và tạo ra — thay vì chỉ chấm một kết quả." /></p></article>
-          <article><span>03</span><h3><CmsText contentKey="os_purpose_artifact_title" fallback="Ra về với một dấu ấn" /></h3><p><CmsText contentKey="os_purpose_artifact_description" fallback="Một trải nghiệm, một câu chuyện hoặc một tác phẩm nhỏ để cả nhà cùng tiếp tục trò chuyện." /></p></article>
+        <div className="os-hero-visual">
+          <img src={ASSETS.hero} alt="Khoảng sân và ngôi nhà sáng tạo của PINO House" />
         </div>
       </section>
 
-      <section className="os-paths" id="paths" aria-labelledby="paths-title">
-        <div className="shell">
-          <SectionIntro
-            id="paths-title"
-            eyebrow="02 · DÀNH CHO AI?" eyebrowKey="os_paths_eyebrow"
-            title={<><CmsText contentKey="os_paths_title_lead" fallback="Bốn lối vào," /> <em><CmsText contentKey="os_paths_title_emphasis" fallback="một ngôi nhà." /></em></>}
-            copy="Chọn theo độ tuổi và điều con muốn thử. Không cần quyết định một lộ trình dài ngay hôm nay."
-            copyKey="os_paths_description"
-          />
-          <div className="os-path-grid">
-            {paths.map((path, index) => <article key={path.name}>
-              <div><span>{String(index + 1).padStart(2, "0")}</span><small>{path.age}</small></div>
-              <h3>{path.name}</h3><p>{path.note}</p>
-            </article>)}
-          </div>
-        </div>
-      </section>
-
-      <section className="os-model shell" id="journey" aria-labelledby="model-title">
-        <SectionIntro id="model-title" eyebrow="03 · EXPLORE & JOURNEY" eyebrowKey="os_model_eyebrow" title={<><CmsText contentKey="os_model_title_lead" fallback="Bắt đầu nhẹ nhàng." /> <em><CmsText contentKey="os_model_title_emphasis" fallback="Đi xa khi sẵn sàng." /></em></>} />
-        <div className="os-model-grid">
-          <article className="os-model-card os-model-explore">
-            <p className="eyebrow">FREE · EXPLORE</p><h3>Open Studio</h3>
-            <p><CmsText contentKey="os_model_explore_description" fallback="Những lần ghé PINO để khám phá chủ đề, chất liệu và trải nghiệm mới — không ràng buộc." /></p>
-            <ul><li>Một buổi chiều có chủ đích</li><li>Không gian và mentor PINO</li><li>Tự do thử điều con tò mò</li></ul>
-          </article>
-          <article className="os-model-card os-model-journey">
-            <p className="eyebrow">PREMIUM · JOURNEY + EXPLORE</p><h3>Premium Journey</h3>
-            <p><CmsText contentKey="os_model_premium_description" fallback="Một hành trình học tập có cấu trúc cho gia đình muốn con đi sâu và trưởng thành bền vững." /></p>
-            <ul><li>Lộ trình và tiến trình rõ ràng</li><li>Mentor đồng hành sâu hơn</li><li>Tác phẩm, portfolio và đặc quyền PINO</li></ul>
-          </article>
-        </div>
-      </section>
-
-      <section className="os-schedule" id="sessions" aria-labelledby="sessions-title">
-        <div className="shell">
-          <SectionIntro
-            id="sessions-title"
-            eyebrow="04 · LỊCH SẮP TỚI" eyebrowKey="os_schedule_eyebrow"
-            title={<><CmsText contentKey="os_schedule_title_lead" fallback="Chọn một buổi" /> <em><CmsText contentKey="os_schedule_title_emphasis" fallback="phù hợp với con." /></em></>}
-            copy="Mỗi buổi là một trải nghiệm thật, với chủ đề, độ tuổi và số chỗ được cập nhật từ lịch PINO."
-            copyKey="os_schedule_description"
-          />
-
-          <div className="os-schedule-panel" aria-live="polite" aria-busy={status === "loading"}>
-            {status === "loading" ? <div className="os-card-grid os-skeleton-grid" aria-label="Đang mở lịch Open Studio">
-              {[0, 1, 2].map((item) => <div className="os-session-card os-skeleton-card" key={item} aria-hidden="true">
-                <span className="os-skeleton-media" /><span className="os-skeleton-line wide" /><span className="os-skeleton-line" /><span className="os-skeleton-line short" />
-              </div>)}
-            </div> : null}
-
-            {status === "error" ? <div className="os-state os-error-state">
-              <span aria-hidden="true">↻</span><div><strong><CmsText contentKey="os_load_error" fallback="Lịch đang tạm nghỉ một chút." /></strong><p><CmsText contentKey="os_load_error_description" fallback="Phần còn lại của Open Studio vẫn ở đây. Bạn có thể thử lại hoặc liên hệ PINO để hỏi lịch gần nhất." /></p>
-              <button type="button" onClick={() => void loadSessions()}><CmsText contentKey="os_retry" fallback="Thử tải lại" /></button></div>
-            </div> : null}
-
-            {status === "success" && groupedSessions.length === 0 ? <div className="os-state os-empty-state">
-              <span aria-hidden="true">✳</span><div><strong><CmsText contentKey="os_no_sessions" fallback="Lịch mới đang được chuẩn bị." /></strong><p><CmsText contentKey="os_no_sessions_description" fallback="Chưa có buổi Open Studio sắp tới. Hãy quay lại sau hoặc nhắn PINO để được báo khi lịch mở." /></p></div>
-            </div> : null}
-
-            {status === "success" && groupedSessions.length > 0 ? <div className="os-day-list">
-              {groupedSessions.map(([key, daySessions]) => <section className="os-day" key={key} aria-labelledby={`day-${key}`}>
-                <h3 id={`day-${key}`}>{formatLocalDate(daySessions[0].startsAt)}</h3>
-                <div className="os-card-grid">
-                  {daySessions.map((session) => {
-                    const isFull = isSessionFull(session);
-                    const selected = selectedId === session.id;
-                    const thumbnail = sessionThumbnail(session);
-                    return <article className={`os-session-card${selected ? " is-selected" : ""}${isFull ? " is-full" : ""}`} key={session.id}>
-                      <div className={`os-card-media${thumbnail ? " has-image" : " is-fallback"}`}>
-                        {thumbnail ? <img src={thumbnail} alt={sessionImageAlt(session)} /> : <div className="os-media-fallback" role="img" aria-label={`Minh hoạ Open Studio — ${session.path.displayName}`}><span>OPEN</span><strong>STUDIO</strong><i aria-hidden="true">✳</i></div>}
-                        <span className="os-path-pill">{session.path.displayName}</span>
-                      </div>
-                      <div className="os-card-body">
-                        <div className="os-card-meta"><span>{formatAgeRange(session.syllabus.ageMin, session.syllabus.ageMax)}</span><span className={`os-seats${isFull ? " is-full" : ""}`}><i aria-hidden="true" />{isFull ? "Đã đủ chỗ" : `Còn ${session.availability.remainingSeats} chỗ`}</span></div>
-                        <h4>{publicSyllabusTitle(session.syllabus.title)}</h4>
-                        {session.syllabus.shortDescription ? <p>{session.syllabus.shortDescription}</p> : null}
-                        <div className="os-card-when"><span>{formatLocalDate(session.startsAt)}</span><strong>{formatLocalTimeRange(session.startsAt, session.endsAt)}</strong></div>
-                        <button type="button" disabled={isFull} aria-pressed={selected} onClick={() => selectSession(session)}>{isFull ? "Đã đủ chỗ" : selected ? "Đang xem" : "Khám phá"}<span aria-hidden="true">{isFull ? "" : "→"}</span></button>
-                      </div>
-                    </article>;
-                  })}
-                </div>
-              </section>)}
-            </div> : null}
-          </div>
-
-          {!registrationEnabled && status === "success" ? <div className="os-registration-disabled os-registration-notice" role="status"><span aria-hidden="true">✳</span><div><strong><CmsText contentKey="os_registration_disabled" fallback="Đăng ký trực tuyến sắp mở" /></strong><p><CmsText contentKey="os_registration_disabled_description" fallback="Ba mẹ có thể xem lịch ngay hôm nay. PINO sẽ mở nhận đăng ký khi hệ thống chính thức sẵn sàng." /></p></div></div> : null}
-
-          {selectedSession ? <div className="os-detail" ref={detailRef} tabIndex={-1} aria-labelledby="session-detail-title">
-            <div className={`os-detail-media${sessionCover(selectedSession) ? " has-image" : " is-fallback"}`}>
-              {sessionCover(selectedSession) ? <img src={sessionCover(selectedSession)!} alt={sessionImageAlt(selectedSession)} /> : <div className="os-media-fallback os-media-fallback-large" role="img" aria-label={`Minh hoạ Open Studio — ${selectedSession.path.displayName}`}><span>MAKE ROOM</span><strong>TO GROW.</strong><i aria-hidden="true">✳</i></div>}
+      <section className="os-main os-shell" id="sessions" aria-labelledby="sessions-title">
+        <div className="os-featured-panel">
+          <p className="os-kicker">✦ SẮP TỚI TẠI PINO</p>
+          {status === "loading" ? <div className="os-featured-loading">Đang mở lịch Open Studio…</div> : null}
+          {status === "error" ? <div className="os-featured-error"><strong>Lịch đang tạm nghỉ một chút.</strong><button type="button" onClick={() => void loadSessions()}>Thử tải lại</button></div> : null}
+          {status === "success" && !featuredSession ? <div className="os-featured-error"><strong>Lịch mới đang được chuẩn bị.</strong><span>Hãy quay lại sau để xem buổi Open Studio gần nhất.</span></div> : null}
+          {status === "success" && featuredSession ? (
+            <div className="os-featured-grid">
+              <img className="os-featured-image" src={activityImage(featuredSession)} alt={sessionImageAlt(featuredSession)} />
+              <div className="os-featured-copy">
+                <span className="os-time-label">{formatLocalTimeRange(featuredSession.startsAt, featuredSession.endsAt)}</span>
+                <h2 id="sessions-title">{publicSyllabusTitle(featuredSession.syllabus.title)}</h2>
+                <div className="os-pills"><span>{formatAgeRange(featuredSession.syllabus.ageMin, featuredSession.syllabus.ageMax)}</span><span>{pathLabel(featuredSession)}</span></div>
+                <p>{featuredSession.syllabus.shortDescription || "Một buổi trải nghiệm nhẹ nhàng để con thử, làm và khám phá điều mình tò mò."}</p>
+              </div>
+              <div className="os-featured-meta">
+                <dl>
+                  <div><dt>Path</dt><dd>{pathLabel(featuredSession)}</dd></div>
+                  <div><dt>Chỗ còn lại</dt><dd>{isSessionFull(featuredSession) ? "Đã đủ chỗ" : featuredSession.availability.remainingSeats}</dd></div>
+                  <div><dt>Thời gian</dt><dd>{formatLocalDate(featuredSession.startsAt)}</dd></div>
+                </dl>
+                <button className="os-book-button" type="button" disabled={isSessionFull(featuredSession)} onClick={() => selectSession(featuredSession, true)}>{isSessionFull(featuredSession) ? "Đã đủ chỗ" : "Đăng ký ngay"}<span>→</span></button>
+                <button className="os-detail-link" type="button" disabled={isSessionFull(featuredSession)} onClick={() => selectSession(featuredSession)}>Xem chi tiết</button>
+              </div>
             </div>
-            <div className="os-detail-copy">
-              <p className="eyebrow">{selectedSession.path.displayName} · {formatAgeRange(selectedSession.syllabus.ageMin, selectedSession.syllabus.ageMax)}</p>
-              <h3 id="session-detail-title">{publicSyllabusTitle(selectedSession.syllabus.title)}</h3>
-              <div className="os-detail-when"><strong>{formatLocalDate(selectedSession.startsAt)}</strong><span>{formatLocalTimeRange(selectedSession.startsAt, selectedSession.endsAt)} · Giờ Việt Nam</span><span className="os-seats"><i aria-hidden="true" />Còn {selectedSession.availability.remainingSeats} chỗ</span></div>
-              {selectedSession.syllabus.publicDescription ? <section><h4><CmsText contentKey="os_session_detail_activity_heading" fallback="Con sẽ làm gì?" /></h4><p>{selectedSession.syllabus.publicDescription}</p></section> : null}
-              {selectedSession.syllabus.skillSummary ? <section><h4><CmsText contentKey="os_session_detail_skills_heading" fallback="Con sẽ khám phá" /></h4><p>{selectedSession.syllabus.skillSummary}</p></section> : null}
+          ) : null}
+        </div>
 
-              {!registrationEnabled ? <div className="os-registration-disabled" role="status"><span aria-hidden="true">✳</span><div><strong><CmsText contentKey="os_registration_disabled" fallback="Đăng ký trực tuyến sắp mở" /></strong><p><CmsText contentKey="os_registration_detail_disabled_description" fallback="Ba mẹ vẫn có thể xem lịch và chọn trải nghiệm phù hợp. PINO sẽ mở nhận đăng ký sau khi hệ thống chính thức sẵn sàng." /></p></div></div> : null}
-
-              {registrationEnabled && !showForm && submission !== "success" ? <button className="os-detail-cta" type="button" onClick={() => setShowForm(true)}><CmsText contentKey="os_detail_register_cta" fallback="Đăng ký buổi này" /> <span aria-hidden="true">→</span></button> : null}
-
-              {registrationEnabled && showForm && submission !== "success" ? <form className="os-registration-form" onSubmit={submitRegistration} noValidate>
-                <div className="os-form-heading"><p className="eyebrow"><CmsText contentKey="os_registration_eyebrow" fallback="YÊU CẦU ĐĂNG KÝ" /></p><h4><CmsText contentKey="os_registration_title" fallback="Thông tin của gia đình" /></h4><p><CmsText contentKey="os_registration_description" fallback="PINO sẽ liên hệ để xác nhận chỗ. Một đăng ký dành cho một bé." /></p></div>
-                <label><CmsText contentKey="os_registration_contact_label" fallback="Họ tên phụ huynh" /><input name="contactName" autoComplete="name" value={form.contactName} onChange={(event) => updateForm("contactName", event.target.value)} aria-invalid={Boolean(fieldErrors.contactName)} aria-describedby={fieldErrors.contactName ? "contactName-error" : undefined} />{fieldErrors.contactName ? <small id="contactName-error">{fieldErrors.contactName}</small> : null}</label>
-                <label><CmsText contentKey="os_registration_phone_label" fallback="Số điện thoại" /><input name="phone" type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={(event) => updateForm("phone", event.target.value)} aria-invalid={Boolean(fieldErrors.phone)} aria-describedby={fieldErrors.phone ? "phone-error" : undefined} />{fieldErrors.phone ? <small id="phone-error">{fieldErrors.phone}</small> : null}</label>
-                <label><CmsText contentKey="os_registration_child_label" fallback="Tên của con" /><input name="childName" autoComplete="off" value={form.childName} onChange={(event) => updateForm("childName", event.target.value)} aria-invalid={Boolean(fieldErrors.childName)} aria-describedby={fieldErrors.childName ? "childName-error" : undefined} />{fieldErrors.childName ? <small id="childName-error">{fieldErrors.childName}</small> : null}</label>
-                <label><CmsText contentKey="os_registration_birth_label" fallback="Ngày sinh của con" /><input name="childDateOfBirth" type="date" value={form.childDateOfBirth} onChange={(event) => updateForm("childDateOfBirth", event.target.value)} aria-invalid={Boolean(fieldErrors.childDateOfBirth)} aria-describedby={fieldErrors.childDateOfBirth ? "childDateOfBirth-error" : undefined} />{fieldErrors.childDateOfBirth ? <small id="childDateOfBirth-error">{fieldErrors.childDateOfBirth}</small> : null}</label>
-                {submission === "error" ? <p className="os-submit-message is-error" role="alert">{submissionMessage}</p> : null}
-                <button className="os-detail-cta" type="submit" disabled={submission === "pending"}>{submission === "pending" ? "Đang gửi…" : "Gửi đăng ký"}<span aria-hidden="true">→</span></button>
-                <p className="os-form-note">Đây là yêu cầu đăng ký. PINO sẽ liên hệ để xác nhận buổi tham gia.</p>
-              </form> : null}
-
-              {registrationEnabled && submission === "success" ? <div className="os-registration-success" role="status"><span aria-hidden="true">✓</span><h4>{REGISTRATION_SUCCESS_TITLE}</h4><p>{REGISTRATION_SUCCESS_BODY}</p></div> : null}
+        <div className="os-week-head">
+          <div>
+            <p className="os-kicker">LỊCH OPEN STUDIO</p>
+            <div className="os-date-row" aria-label="Lọc theo ngày">
+              <button className={activeDate === "all" ? "is-active" : ""} onClick={() => setActiveDate("all")} type="button">Tất cả</button>
+              {dateOptions.slice(0, 7).map((date) => {
+                const representative = sessions.find((session) => localDateKey(session.startsAt) === date);
+                return representative ? <button className={activeDate === date ? "is-active" : ""} onClick={() => setActiveDate(date)} type="button" key={date}>{compactDate(representative.startsAt)}</button> : null;
+              })}
             </div>
-          </div> : null}
+          </div>
+          <div className="os-filter-row" aria-label="Lọc theo lộ trình">
+            {(["all", "PianoHouse", "Artchitect", "Little Piner"] as PathFilter[]).map((filter) => <button className={pathFilter === filter ? "is-active" : ""} onClick={() => setPathFilter(filter)} type="button" key={filter}>{filter === "all" ? "Tất cả" : filter}</button>)}
+          </div>
+        </div>
+
+        {status === "loading" ? <div className="os-card-grid os-skeleton-grid">{[0, 1, 2, 3, 4, 5].map((item) => <div className="os-session-card os-skeleton-card" key={item}><span /><i /><i /><i /></div>)}</div> : null}
+        {status === "success" && visibleSessions.length === 0 ? <div className="os-empty">Chưa có buổi phù hợp với bộ lọc này.</div> : null}
+        {status === "success" && visibleSessions.length > 0 ? (
+          <div className="os-card-grid">
+            {visibleSessions.slice(0, 9).map((session, index) => {
+              const full = isSessionFull(session);
+              return (
+                <article className={`os-session-card${selectedId === session.id ? " is-selected" : ""}`} key={session.id}>
+                  <img src={activityImage(session, index)} alt={sessionImageAlt(session)} />
+                  <div className="os-session-body">
+                    <span className="os-time-label">{formatLocalTimeRange(session.startsAt, session.endsAt)}</span>
+                    <h3>{publicSyllabusTitle(session.syllabus.title)}</h3>
+                    <div className="os-pills"><span>{formatAgeRange(session.syllabus.ageMin, session.syllabus.ageMax)}</span><span>{pathLabel(session)}</span></div>
+                    <div className="os-session-bottom">
+                      <strong className={session.availability.remainingSeats <= 3 ? "is-low" : ""}>{full ? "Đã đủ chỗ" : `${session.availability.remainingSeats} chỗ còn lại`}</strong>
+                      <button type="button" disabled={full} onClick={() => selectSession(session)}>{full ? "Đã đủ" : "Xem chi tiết"}<span>{full ? "" : "→"}</span></button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : null}
+
+        {selectedSession ? (
+          <div className="os-session-detail" ref={detailRef} tabIndex={-1} aria-labelledby="session-detail-title">
+            <img src={activityImage(selectedSession)} alt={sessionImageAlt(selectedSession)} />
+            <div className="os-session-detail-copy">
+              <p className="os-kicker">{pathLabel(selectedSession)} · {formatAgeRange(selectedSession.syllabus.ageMin, selectedSession.syllabus.ageMax)}</p>
+              <h2 id="session-detail-title">{publicSyllabusTitle(selectedSession.syllabus.title)}</h2>
+              <p className="os-detail-date">{formatLocalDate(selectedSession.startsAt)} · {formatLocalTimeRange(selectedSession.startsAt, selectedSession.endsAt)} · Giờ Việt Nam</p>
+              {selectedSession.syllabus.publicDescription ? <p>{selectedSession.syllabus.publicDescription}</p> : null}
+              {selectedSession.syllabus.skillSummary ? <div className="os-detail-note"><strong>Con sẽ khám phá</strong><p>{selectedSession.syllabus.skillSummary}</p></div> : null}
+
+              {!registrationEnabled ? <div className="os-registration-notice"><strong>Đăng ký trực tuyến sắp mở</strong><p>Ba mẹ vẫn có thể xem lịch. PINO sẽ mở nhận đăng ký khi hệ thống sẵn sàng.</p></div> : null}
+              {registrationEnabled && !showForm && submission !== "success" ? <button className="os-book-button" type="button" onClick={() => setShowForm(true)}>Đăng ký buổi này <span>→</span></button> : null}
+
+              {registrationEnabled && showForm && submission !== "success" ? (
+                <form className="os-registration-form" onSubmit={submitRegistration} noValidate>
+                  <h3>Thông tin gia đình</h3>
+                  <p>PINO sẽ liên hệ để xác nhận chỗ. Một đăng ký dành cho một bé.</p>
+                  <label>Họ tên phụ huynh<input name="contactName" autoComplete="name" value={form.contactName} onChange={(event) => updateForm("contactName", event.target.value)} aria-invalid={Boolean(fieldErrors.contactName)} />{fieldErrors.contactName ? <small>{fieldErrors.contactName}</small> : null}</label>
+                  <label>Số điện thoại<input name="phone" type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={(event) => updateForm("phone", event.target.value)} aria-invalid={Boolean(fieldErrors.phone)} />{fieldErrors.phone ? <small>{fieldErrors.phone}</small> : null}</label>
+                  <label>Tên của con<input name="childName" autoComplete="off" value={form.childName} onChange={(event) => updateForm("childName", event.target.value)} aria-invalid={Boolean(fieldErrors.childName)} />{fieldErrors.childName ? <small>{fieldErrors.childName}</small> : null}</label>
+                  <label>Ngày sinh của con<input name="childDateOfBirth" type="date" value={form.childDateOfBirth} onChange={(event) => updateForm("childDateOfBirth", event.target.value)} aria-invalid={Boolean(fieldErrors.childDateOfBirth)} />{fieldErrors.childDateOfBirth ? <small>{fieldErrors.childDateOfBirth}</small> : null}</label>
+                  {submission === "error" ? <p className="os-submit-error" role="alert">{submissionMessage}</p> : null}
+                  <button className="os-book-button" type="submit" disabled={submission === "pending"}>{submission === "pending" ? "Đang gửi…" : "Gửi đăng ký"}<span>→</span></button>
+                </form>
+              ) : null}
+              {registrationEnabled && submission === "success" ? <div className="os-registration-success" role="status"><span>✓</span><div><strong>{REGISTRATION_SUCCESS_TITLE}</strong><p>{REGISTRATION_SUCCESS_BODY}</p></div></div> : null}
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section className="os-info os-shell">
+        <article className="os-architecture-card">
+          <div><p className="os-kicker">TUẦN NÀY TẠI PINO</p><h2>Architecture Explorers</h2><p>Trẻ quan sát, phác thảo và biến ý tưởng không gian thành mô hình bằng đôi tay của mình.</p><a href="#sessions">Xem lịch <span>→</span></a></div>
+          <img src={ASSETS.architecture} alt="Mô hình kiến trúc và sổ phác thảo" />
+        </article>
+        <article className="os-how-card"><p className="os-kicker">OPEN STUDIO HOẠT ĐỘNG THẾ NÀO</p><div className="os-how-steps"><span><b>01</b>Chọn một buổi</span><i>→</i><span><b>02</b>Giữ chỗ</span><i>→</i><span><b>03</b>Đến và tận hưởng</span><i>→</i><span><b>04</b>Thử & khám phá</span></div></article>
+        <article className="os-for-card"><p className="os-kicker">DÀNH CHO AI</p><ul><li>Trẻ 3–12 tuổi</li><li>Những bạn nhỏ tò mò và thích thử</li><li>Phụ huynh muốn quan sát con tự nhiên</li><li>Không cần kinh nghiệm trước</li></ul></article>
+      </section>
+
+      <section className="os-faq os-shell" aria-labelledby="faq-title">
+        <h2 id="faq-title">FAQ</h2>
+        <div>
+          <details><summary>Cần đăng ký trước bao lâu?</summary><p>Nên chọn buổi ngay khi lịch mở vì mỗi buổi có số chỗ giới hạn.</p></details>
+          <details><summary>Con cần mang theo gì?</summary><p>PINO chuẩn bị vật liệu và dụng cụ cần thiết. Gia đình chỉ cần đến đúng giờ và mặc đồ thoải mái.</p></details>
+          <details><summary>Phụ huynh có thể ở lại không?</summary><p>Tùy trải nghiệm và độ tuổi. Mentor sẽ hướng dẫn khi PINO xác nhận buổi tham gia.</p></details>
+          <details><summary>Có chỗ đậu xe không?</summary><p>Có. PINO sẽ gửi hướng dẫn cụ thể khi xác nhận đăng ký.</p></details>
         </div>
       </section>
 
-      <section className="os-next shell" aria-labelledby="next-title">
-        <SectionIntro id="next-title" eyebrow="05 · SAU KHI CHỌN BUỔI" eyebrowKey="os_next_eyebrow" title={<><CmsText contentKey="os_next_title_lead" fallback="Ba bước đơn giản," /> <em><CmsText contentKey="os_next_title_emphasis" fallback="không áp lực." /></em></>} />
-        <ol>
-          <li><span>01</span><div><h3>Chọn buổi phù hợp</h3><p>Xem ngày, giờ, lộ trình và số chỗ còn lại ngay trên lịch.</p></div></li>
-          <li><span>02</span><div><h3>Để lại thông tin</h3><p>Khi luồng đăng ký mở, phụ huynh chỉ cần cung cấp thông tin cần thiết để giữ chỗ.</p></div></li>
-          <li><span>03</span><div><h3>Cùng con đến PINO</h3><p>PINO sẽ xác nhận trước buổi trải nghiệm để gia đình biết cần chuẩn bị gì.</p></div></li>
-        </ol>
+      <section className="os-final-cta os-shell">
+        <img className="os-final-bg" src={ASSETS.gate} alt="" aria-hidden="true" />
+        <img className="os-final-leaves os-final-leaves-left" src={ASSETS.leavesOne} alt="" aria-hidden="true" />
+        <img className="os-final-leaves os-final-leaves-right" src={ASSETS.leavesTwo} alt="" aria-hidden="true" />
+        <div><h2>Sẵn sàng khám phá hôm nay?</h2><p>Mỗi buổi chỉ có một số chỗ nhỏ — chọn một trải nghiệm và cùng con tạo nên một buổi chiều đáng nhớ.</p><a className="os-final-button" href="#sessions">Khám phá Open Studio <span>→</span></a></div>
       </section>
 
-      <section className="os-final shell" aria-labelledby="final-title">
-        <div><p className="eyebrow"><CmsText contentKey="os_final_eyebrow" fallback="MỘT BUỔI CHIỀU CÓ THỂ MỞ RA MỘT HÀNH TRÌNH" /></p><h2 id="final-title"><CmsText contentKey="os_final_title_lead" fallback="Hãy để con bắt đầu bằng" /> <em><CmsText contentKey="os_final_title_emphasis" fallback="sự tò mò." /></em></h2>
-        <p><CmsText contentKey="os_final_description" fallback="Open Studio là lời mời khám phá. Premium Journey chỉ bắt đầu khi gia đình và con thực sự muốn đi sâu hơn." /></p><PrimaryCta href="#sessions" contentKey="os_final_cta">Xem lịch Open Studio</PrimaryCta></div>
-        <HouseArtwork compact assetKey="os_hero_image" />
-      </section>
-
-      <PublicFooter />
+      <footer className="os-footer os-shell">
+        <div className="os-footer-brand"><a className="os-brand" href="/"><img src={LOGO_URL} alt="" aria-hidden="true" /><span>PINO House</span></a><p>Art. Music. Creative Growth.</p><small>pinohouse.art</small></div>
+        <div><strong>Explore</strong><a href="/">House</a><a href="/#paths">Paths</a><a href="/open-studio">Open Studio</a></div>
+        <div><strong>About</strong><a href="/#why-pino">Our Story</a><a href="/#journey">Journey</a></div>
+        <div><strong>Information</strong><a href="#sessions">Visit</a><a href="#faq-title">FAQs</a></div>
+        <div><strong>Stay connected</strong><p>Nhận tin về Open Studio và các trải nghiệm đặc biệt tại PINO House.</p></div>
+        <span className="os-copyright">© {new Date().getFullYear()} PINO House. All rights reserved.</span>
+      </footer>
     </main>
   );
 }
