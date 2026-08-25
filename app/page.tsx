@@ -108,6 +108,7 @@ export default function Home() {
               src={`${ASSET}/creative-campus-courtyard-illustration.png`}
               alt="PINO House creative campus courtyard"
               loading="eager"
+              fetchPriority="high"
             />
           </div>
 
@@ -201,7 +202,7 @@ export default function Home() {
             </div>
             <div className={styles.galleryRow}>
               {madeAtPino.map((image, index) => (
-                <img key={image} src={`${ASSET}/${image}`} alt={`PINO creative moment ${index + 1}`} loading="lazy" />
+                <img key={image} src={`${ASSET}/${image}`} alt={`PINO creative moment ${index + 1}`} loading="eager" />
               ))}
             </div>
           </div>
@@ -216,7 +217,7 @@ export default function Home() {
             </div>
             <div className={styles.houseRow}>
               {houseGallery.map((image, index) => (
-                <img key={image} src={`${ASSET}/${image}`} alt={`Inside PINO House ${index + 1}`} loading="lazy" />
+                <img key={image} src={`${ASSET}/${image}`} alt={`Inside PINO House ${index + 1}`} loading="eager" />
               ))}
             </div>
           </div>
