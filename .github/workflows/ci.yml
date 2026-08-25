@@ -28,6 +28,8 @@ jobs:
           bun-version: 1.2.15
       - name: Install dependencies
         run: bun install --frozen-lockfile
+      - name: Piner F0 contract tests
+        run: node --test --experimental-strip-types test/piner-member-core-adapter.test.ts
       - name: Production build
         run: bun run build
 
