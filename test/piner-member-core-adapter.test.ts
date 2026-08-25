@@ -40,13 +40,14 @@ test("converts an authenticated Core login token into an HttpOnly host cookie", 
   assert.equal(seen.url, "https://pino-member-core.internal/v1/parent-auth/pin/login");
   assert.equal(seen.headers.get("authorization"), null, "browser Authorization must never be trusted on login");
   assert.equal(response.status, 200);
+  const responseText = await response.clone().text();
   assert.deepEqual(await response.json(), { data: { authState: "AUTHENTICATED", expiresAt: EXPIRES_AT } });
   const cookies = response.headers.get("set-cookie") ?? "";
   assert.match(cookies, /__Host-piner_session=s{43}/);
   assert.match(cookies, /HttpOnly/);
   assert.match(cookies, /Secure/);
   assert.match(cookies, /SameSite=Lax/);
-  assert.doesNotMatch(JSON.stringify(await response.clone().text()), /token/i);
+  assert.doesNotMatch(responseText, /token/i);
 });
 
 test("keeps temporary PIN change authorization separate from the full member session", async () => {
