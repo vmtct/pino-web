@@ -1,0 +1,178 @@
+/* Shared presentation contract for PINO public routes.
+   Keeps each path's own palette and hero art while aligning chrome rhythm. */
+:root {
+  --pino-public-max: 1360px;
+  --pino-public-side: 36px;
+  --pino-public-line: rgba(32, 48, 74, .10);
+}
+
+:is([data-pino-path-header], main#top > div > header:first-child) {
+  height: 80px !important;
+  display: grid !important;
+  grid-template-columns: minmax(max-content, 1fr) auto minmax(max-content, 1fr) !important;
+  align-items: center !important;
+  gap: 28px !important;
+  padding-block: 0 !important;
+  background: transparent !important;
+  border-bottom: 1px solid var(--pino-public-line) !important;
+  backdrop-filter: none !important;
+}
+
+[data-pino-path-header] {
+  width: min(var(--pino-public-max), calc(100% - (var(--pino-public-side) * 2))) !important;
+  margin-inline: auto !important;
+  padding-inline: 0 !important;
+}
+
+:is([data-pino-path-header], main#top > div > header:first-child) > a:first-child {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: max-content;
+  font-family: "DM Serif Display", Georgia, serif !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+  letter-spacing: -.025em !important;
+  text-decoration: none;
+}
+
+:is([data-pino-path-header], main#top > div > header:first-child) > a:first-child img {
+  width: 32px !important;
+  height: 40px !important;
+  object-fit: contain;
+}
+
+:is([data-pino-path-header], main#top > div > header:first-child) > nav {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 32px !important;
+  font-family: "DM Serif Display", Georgia, serif !important;
+  font-size: 13px !important;
+  white-space: nowrap;
+}
+
+:is([data-pino-path-header], main#top > div > header:first-child) > nav a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px !important;
+  text-decoration: none;
+}
+
+:is([data-pino-path-header], main#top > div > header:first-child) > .pino-header-actions {
+  justify-self: end;
+  gap: 9px;
+}
+
+:is([data-pino-path-header], main#top > div > header:first-child) > .pino-header-actions > a {
+  min-height: 42px !important;
+  padding-block: 0 !important;
+  padding-inline: 18px !important;
+  font: 600 12px/1 "DM Sans", Arial, sans-serif !important;
+}
+
+:is([data-pino-path-header], main#top > div > header:first-child) a:focus-visible,
+:is([data-pino-path-footer], main#top > div > footer) a:focus-visible,
+.locale-toggle button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+
+:is([data-pino-path-footer], main#top > div > footer) {
+  padding-top: 42px !important;
+  padding-bottom: 26px !important;
+  column-gap: 32px !important;
+  row-gap: 20px !important;
+  border-top: 1px solid var(--pino-public-line) !important;
+  font-family: "DM Sans", Arial, sans-serif !important;
+}
+
+:is([data-pino-path-footer], main#top > div > footer) > div:first-child > a:first-child {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 9px !important;
+  font-family: "DM Serif Display", Georgia, serif !important;
+  font-size: 20px !important;
+  line-height: 1 !important;
+}
+
+:is([data-pino-path-footer], main#top > div > footer) > div:first-child > a:first-child img {
+  width: 30px !important;
+  height: 37px !important;
+  object-fit: contain;
+}
+
+:is([data-pino-path-footer], main#top > div > footer) h4 {
+  margin-bottom: 8px !important;
+  font: 700 10px/1.2 "DM Sans", Arial, sans-serif !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase;
+}
+
+:is([data-pino-path-footer], main#top > div > footer) p,
+:is([data-pino-path-footer], main#top > div > footer) a,
+:is([data-pino-path-footer], main#top > div > footer) span,
+:is([data-pino-path-footer], main#top > div > footer) strong {
+  font-size: 11px !important;
+  line-height: 1.55 !important;
+}
+
+:is([data-pino-path-footer], main#top > div > footer) small {
+  font: 500 9.5px/1.4 "DM Sans", Arial, sans-serif !important;
+  opacity: .62;
+}
+
+@media (max-width: 900px) {
+  :root { --pino-public-side: 24px; }
+  :is([data-pino-path-header], main#top > div > header:first-child) {
+    grid-template-columns: 1fr auto !important;
+    gap: 16px !important;
+  }
+  :is([data-pino-path-header], main#top > div > header:first-child) > nav { display: none !important; }
+  :is([data-pino-path-footer], main#top > div > footer) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 26px 22px !important;
+  }
+}
+
+@media (max-width: 560px) {
+  :root { --pino-public-side: 18px; }
+  :is([data-pino-path-header], main#top > div > header:first-child) {
+    height: 68px !important;
+    gap: 10px !important;
+  }
+  :is([data-pino-path-header], main#top > div > header:first-child) > a:first-child {
+    gap: 7px !important;
+    font-size: 18px !important;
+  }
+  :is([data-pino-path-header], main#top > div > header:first-child) > a:first-child img {
+    width: 26px !important;
+    height: 32px !important;
+  }
+  :is([data-pino-path-header], main#top > div > header:first-child) > .pino-header-actions { gap: 6px; }
+  :is([data-pino-path-header], main#top > div > header:first-child) > .pino-header-actions > a {
+    min-height: 38px !important;
+    padding-inline: 12px !important;
+    font-size: 10px !important;
+  }
+  main#top > div > header:first-child > .pino-header-actions > a > span:first-child {
+    display: inline !important;
+  }
+  .locale-toggle {
+    min-height: 32px;
+    padding-inline: 6px;
+  }
+  :is([data-pino-path-footer], main#top > div > footer) {
+    grid-template-columns: 1fr 1fr !important;
+    padding-top: 32px !important;
+    padding-bottom: 22px !important;
+    gap: 22px 18px !important;
+  }
+  :is([data-pino-path-footer], main#top > div > footer) > :first-child,
+  :is([data-pino-path-footer], main#top > div > footer) > :nth-child(5),
+  :is([data-pino-path-footer], main#top > div > footer) > small {
+    grid-column: 1 / -1 !important;
+  }
+}
