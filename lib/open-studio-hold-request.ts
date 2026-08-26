@@ -19,6 +19,8 @@ type HoldRequestBody = {
   sessionDate?: unknown;
 };
 
+const PINO_ZALO_CHAT_URL = "https://zalo.me/0374686860";
+
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,
   headers: {
@@ -115,10 +117,10 @@ export async function createOpenStudioHoldRequest(request: Request, env: Env) {
   if (!/^[A-Za-z0-9._:-]{8,128}$/.test(idempotencyKey)) return json({ error: "Yêu cầu thiếu mã xác nhận an toàn." }, 400);
 
   const phone = normalizePhone(safeText(body.zaloMobile, 32));
-  if (!/^0\d{9}$/.test(phone)) return json({ error: "Ba mẹ vui lòng nhập số Zalo di động hợp lệ." }, 400);
+  if (!/^0\d{9}$/.test(phone)) return json({ error: "Ba Mẹ vui lòng nhập số Zalo di động hợp lệ." }, 400);
 
   const childAge = typeof body.childAge === "number" ? body.childAge : Number(body.childAge);
-  if (!Number.isInteger(childAge) || childAge < 2 || childAge > 15) return json({ error: "Ba mẹ vui lòng chọn tuổi của bé." }, 400);
+  if (!Number.isInteger(childAge) || childAge < 2 || childAge > 15) return json({ error: "Ba Mẹ vui lòng chọn tuổi của bé." }, 400);
 
   const activityTitle = safeText(body.activityTitle, 120) || "Open Studio";
   const activitySlug = safeText(body.activitySlug, 100) || "open-studio";
@@ -131,8 +133,7 @@ export async function createOpenStudioHoldRequest(request: Request, env: Env) {
     const data = await duplicate.json() as any;
     const existing = data.results?.[0];
     if (existing?.id) {
-      const zaloChatUrl = await getConfig(env as any, "os_zalo_chat_url", "https://zalo.me/0779979777");
-      return json({ ok: true, duplicate: true, requestId: existing.id, status: "Pending", zaloChatUrl, message: "PINO sẽ liên hệ qua Zalo để xác nhận chỗ." });
+      return json({ ok: true, duplicate: true, requestId: existing.id, status: "Pending", zaloChatUrl: PINO_ZALO_CHAT_URL, message: "PINO sẽ liên hệ qua Zalo để xác nhận chỗ." });
     }
   }
 
@@ -156,21 +157,18 @@ export async function createOpenStudioHoldRequest(request: Request, env: Env) {
   };
 
   const created = await createBookingLead(env, properties);
-  if (!created.ok) return json({ error: "PINO chưa nhận được yêu cầu. Ba mẹ vui lòng thử lại hoặc chat trực tiếp với PINO." }, 502);
+  if (!created.ok) return json({ error: "PINO chưa nhận được yêu cầu. Ba Mẹ vui lòng thử lại hoặc chat trực tiếp với PINO." }, 502);
   const page = await created.json() as any;
-  if (!page?.id) return json({ error: "PINO chưa nhận được yêu cầu. Ba mẹ vui lòng thử lại." }, 502);
+  if (!page?.id) return json({ error: "PINO chưa nhận được yêu cầu. Ba Mẹ vui lòng thử lại." }, 502);
 
-  const [zaloChatUrl, emailNotified] = await Promise.all([
-    getConfig(env as any, "os_zalo_chat_url", "https://zalo.me/0779979777"),
-    notifyPino(env, { requestId: page.id, phone, childAge, activityTitle, sessionDate }),
-  ]);
+  const emailNotified = await notifyPino(env, { requestId: page.id, phone, childAge, activityTitle, sessionDate });
 
   return json({
     ok: true,
     requestId: page.id,
     status: "Pending",
     emailNotified,
-    zaloChatUrl,
+    zaloChatUrl: PINO_ZALO_CHAT_URL,
     message: "PINO đã nhận yêu cầu và sẽ liên hệ qua Zalo để xác nhận chỗ.",
   }, 201);
 }
