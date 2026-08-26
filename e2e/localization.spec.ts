@@ -17,6 +17,10 @@ test('query locale, toggle, and persistence work across public pages', async ({ 
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page.getByText('Little hands. Big discoveries.')).toBeVisible();
 
+  await page.goto('/pianohouse');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.getByText('Music for expression. Confidence over time.')).toBeVisible();
+
   await page.goto('/open-studio?lang=vi');
   await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
   await expect(page.getByText('Khám phá, sáng tạo và lớn lên — mỗi tuần tại PINO House.')).toBeVisible();
