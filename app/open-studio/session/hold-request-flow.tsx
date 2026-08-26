@@ -12,6 +12,7 @@ type HoldResponse = {
 };
 
 const triggerSelector = ".osd-hero-action button, .osd-final-cta button, .osd-mobile-bar button";
+const PINO_ZALO_CHAT_URL = "https://zalo.me/0374686860";
 
 function normalizePhone(value: string) {
   const digits = value.replace(/\D/g, "");
@@ -34,7 +35,7 @@ export default function HoldRequestFlow() {
   const [childAge, setChildAge] = useState("");
   const [flowState, setFlowState] = useState<FlowState>("idle");
   const [message, setMessage] = useState("");
-  const [zaloChatUrl, setZaloChatUrl] = useState("https://zalo.me/0779979777");
+  const [zaloChatUrl, setZaloChatUrl] = useState(PINO_ZALO_CHAT_URL);
   const idempotencyKey = useRef<string | null>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
 
@@ -90,13 +91,13 @@ export default function HoldRequestFlow() {
     const normalized = normalizePhone(phone);
     if (!/^0\d{9}$/.test(normalized)) {
       setFlowState("error");
-      setMessage("Ba mẹ vui lòng nhập số Zalo di động hợp lệ.");
+      setMessage("Ba Mẹ vui lòng nhập số Zalo di động hợp lệ.");
       return;
     }
     const age = Number(childAge);
     if (!Number.isInteger(age) || age < 2 || age > 15) {
       setFlowState("error");
-      setMessage("Ba mẹ vui lòng chọn tuổi của bé.");
+      setMessage("Ba Mẹ vui lòng chọn tuổi của bé.");
       return;
     }
 
@@ -124,15 +125,15 @@ export default function HoldRequestFlow() {
       const data = await response.json().catch(() => ({})) as HoldResponse;
       if (!response.ok || !data.ok) {
         setFlowState("error");
-        setMessage(data.error || "PINO chưa nhận được yêu cầu. Ba mẹ vui lòng thử lại.");
+        setMessage(data.error || "PINO chưa nhận được yêu cầu. Ba Mẹ vui lòng thử lại.");
         return;
       }
-      if (data.zaloChatUrl) setZaloChatUrl(data.zaloChatUrl);
+      setZaloChatUrl(data.zaloChatUrl || PINO_ZALO_CHAT_URL);
       setMessage(data.message || "PINO đã nhận yêu cầu và sẽ liên hệ qua Zalo để xác nhận chỗ.");
       setFlowState("success");
     } catch {
       setFlowState("error");
-      setMessage("Kết nối đang gián đoạn. Ba mẹ có thể thử lại hoặc chat trực tiếp với PINO.");
+      setMessage("Kết nối đang gián đoạn. Ba Mẹ có thể thử lại hoặc chat trực tiếp với PINO.");
     }
   };
 
@@ -153,7 +154,7 @@ export default function HoldRequestFlow() {
             <p>{message}</p>
             <div className="osd-hold-confirm-note">
               <strong>Chỗ được xác nhận sau khi PINO phản hồi.</strong>
-              <span>Nếu cần xác nhận nhanh hoặc có lưu ý riêng về bé, ba mẹ có thể nhắn PINO ngay.</span>
+              <span>Nếu cần xác nhận nhanh hoặc có lưu ý riêng về bé, Ba Mẹ có thể nhắn PINO ngay.</span>
             </div>
             <a className="osd-hold-zalo" href={zaloChatUrl} target="_blank" rel="noreferrer">Chat ngay với PINO trên Zalo <span>→</span></a>
             <button className="osd-hold-done" type="button" onClick={() => setOpen(false)}>Xong</button>
@@ -165,7 +166,7 @@ export default function HoldRequestFlow() {
             <p className="osd-hold-intro">PINO dùng số Zalo để xác nhận lịch và gửi lưu ý trước buổi. Không cần tạo tài khoản.</p>
 
             <label className="osd-hold-field">
-              <span>Số Zalo của ba mẹ</span>
+              <span>Số Zalo của Ba Mẹ</span>
               <input
                 ref={phoneRef}
                 type="tel"
