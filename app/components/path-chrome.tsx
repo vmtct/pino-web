@@ -28,10 +28,10 @@ export function PathBrand({ styles, locale = "en" }: { styles: ChromeStyles; loc
   return <a className={styles.brand} href="/" aria-label={locale === "vi" ? "Trang chủ PINO House" : "PINO House home"}><img src={SIGIL} alt="" /><span>PINO House</span></a>;
 }
 
-export function PathHeader({ styles, locale = "en", ariaLabel, wrapperClassName, activeHref, activeClassName = "is-active" }: { styles: ChromeStyles; locale?: Locale; ariaLabel: string; wrapperClassName?: string; activeHref?: string; activeClassName?: string }) {
+export function PathHeader({ styles, locale = "en", ariaLabel, wrapperClassName, activeHref, activeClassName = "is-active", ctaHref = "/open-studio", ctaLabel = "Open Studio" }: { styles: ChromeStyles; locale?: Locale; ariaLabel: string; wrapperClassName?: string; activeHref?: string; activeClassName?: string; ctaHref?: string; ctaLabel?: string }) {
   const t = COPY[locale];
   const links = [["/", t.home], ["/#paths", t.paths], ["/open-studio", t.studio], ["/#stories", t.stories], ["/#about", t.about]] as const;
-  const content = <><PathBrand styles={styles} locale={locale} /><nav className={styles.nav} aria-label={ariaLabel}>{links.map(([href, label]) => <a className={href === activeHref ? activeClassName : undefined} href={href} key={href}>{label}</a>)}</nav><a className={styles.navCta} href="/open-studio">Open Studio <span>→</span></a></>;
+  const content = <><PathBrand styles={styles} locale={locale} /><nav className={styles.nav} aria-label={ariaLabel}>{links.map(([href, label]) => <a className={href === activeHref ? activeClassName : undefined} href={href} key={href}>{label}</a>)}</nav><a className={styles.navCta} href={ctaHref}>{ctaLabel} <span>→</span></a></>;
   if (wrapperClassName) return <header className={wrapperClassName} data-pino-path-header><div className={styles.header}>{content}</div></header>;
   return <header className={styles.header} data-pino-path-header>{content}</header>;
 }
