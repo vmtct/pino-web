@@ -3,8 +3,10 @@ import "./globals.css";
 import "./homepage-mobile.css";
 import "./localization.css";
 import "./public-consistency.css";
+import "./public-enhancements.css";
 import CmsHydrator from "./cms-hydrator";
 import { LocaleProvider } from "./localization";
+import PublicEnhancements from "./public-enhancements";
 
 const PINO_LOGO = "https://assets.pinohouse.art/core/Pino%20Logo.png";
 
@@ -26,7 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" suppressHydrationWarning>
-      <body><LocaleProvider><CmsHydrator>{children}</CmsHydrator></LocaleProvider></body>
+      <body><LocaleProvider><CmsHydrator>{children}</CmsHydrator><PublicEnhancements /></LocaleProvider></body>
     </html>
   );
 }
