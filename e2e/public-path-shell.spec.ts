@@ -4,6 +4,7 @@ const paths = [
   { route: '/pianohouse', locale: 'vi' },
   { route: '/artchitect', locale: 'en' },
   { route: '/little-piner', locale: 'en' },
+  { route: '/open-studio', locale: 'en' },
 ] as const;
 
 for (const path of paths) {
@@ -24,3 +25,10 @@ for (const path of paths) {
     await expect(footer.locator('strong').first()).toContainText('pinohouse.art');
   });
 }
+
+test('Open Studio uses a contextual schedule CTA and hides its legacy chrome', async ({ page }) => {
+  await page.goto('/open-studio');
+  await expect(page.locator('[data-pino-path-header] a[href="#sessions"]')).toContainText('Xem lịch');
+  await expect(page.locator('.open-studio-page > .os-site-header')).toBeHidden();
+  await expect(page.locator('.open-studio-page > .os-footer')).toBeHidden();
+});
