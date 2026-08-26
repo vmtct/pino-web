@@ -1,0 +1,140 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&display=swap');
+
+/* Open Studio detail — typography + mobile polish v4 */
+.osd-page h1,
+.osd-page h2,
+.osd-page h3,
+.osd-page .osd-outcomes strong,
+.osd-page .osd-footer strong {
+  font-family: "Lora", Georgia, serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+.osd-page h1,
+.osd-page h2,
+.osd-page h3,
+.osd-page p,
+.osd-page span,
+.osd-page strong,
+.osd-page small,
+.osd-page summary,
+.osd-page dd,
+.osd-page time,
+.osd-page button,
+.osd-page a {
+  -webkit-font-smoothing: antialiased;
+  font-kerning: normal;
+}
+
+.osd-page .osd-panel { overflow: hidden; }
+
+@media (min-width: 721px) {
+  .osd-page .osd-hero h1 { line-height: .95; }
+  .osd-page .osd-about h2,
+  .osd-page .osd-plan h2 { line-height: 1.08; }
+  .osd-page .osd-panel { box-shadow: 0 12px 32px rgba(82,54,33,.045); }
+  .osd-page .osd-quick { box-shadow: 0 14px 36px rgba(82,54,33,.055); }
+}
+
+@media (max-width: 720px) {
+  .osd-page .osd-shell { width: calc(100% - 18px); }
+  .osd-page .osd-header { backdrop-filter: blur(12px); }
+  .osd-page .osd-header nav { height: 54px; }
+  .osd-page .osd-brand span { font-size: 18.5px; }
+  .osd-page .osd-header nav>div a { font-size: 9.4px; }
+  .osd-page .osd-breadcrumb { padding-top: 9px; font-size: 8.4px; }
+
+  .osd-page .osd-hero { gap: 11px; padding-bottom: 18px; }
+  .osd-page .osd-hero-copy { padding-top: 10px; }
+  .osd-page .osd-path-pill { font-size: 8.3px; padding: 6px 8px; }
+  .osd-page .osd-hero h1 { font-size: clamp(39px,11.8vw,50px); line-height: .98; letter-spacing: -.035em; margin: 10px 0 9px; }
+  .osd-page .osd-lede { font-size: 13.3px; line-height: 1.56; }
+
+  .osd-page .osd-meta-pills { gap: 6px; margin: 14px 0 11px; }
+  .osd-page .osd-meta-pills span { min-height: 34px; padding: 7px 6px; font-size: 9.15px; line-height: 1.15; }
+  .osd-page .osd-hero-action button { min-height: 49px; font-size: 12.3px; border-radius: 11px; box-shadow: 0 10px 20px rgba(198,83,47,.14); }
+  .osd-page .osd-hero-action small { font-size: 9.4px; }
+  .osd-page .osd-hero-image { border-radius: 13px; }
+
+  .osd-page .osd-main-grid,
+  .osd-page .osd-content-column,
+  .osd-page .osd-trust-grid { gap: 9px; }
+  .osd-page .osd-trust-grid { margin-top: 9px; }
+  .osd-page .osd-panel { border-radius: 13px; border-color: rgba(224,207,190,.82); box-shadow: 0 6px 18px rgba(82,54,33,.035); }
+  .osd-page .osd-about,
+  .osd-page .osd-plan,
+  .osd-page .osd-quick,
+  .osd-page .osd-mentor,
+  .osd-page .osd-gallery,
+  .osd-page .osd-faq,
+  .osd-page .osd-demo-notice,
+  .osd-page .osd-booking-form { padding: 17px; }
+
+  .osd-page .osd-kicker { margin-bottom: 7px; font-size: 8.6px; line-height: 1.25; letter-spacing: .115em; }
+  .osd-page .osd-about h2,
+  .osd-page .osd-plan h2 { font-size: 26px; line-height: 1.08; letter-spacing: -.025em; margin-bottom: 9px; }
+  .osd-page .osd-about>p:not(.osd-kicker) { font-size: 11.8px; line-height: 1.62; }
+
+  .osd-page .osd-outcomes { margin-top: 15px; }
+  .osd-page .osd-outcomes>div { min-height: 137px; padding: 15px 9px 11px; gap: 7px; }
+  .osd-page .osd-outcomes i { width: 31px; height: 31px; font-size: 12px; }
+  .osd-page .osd-outcomes strong { font-size: 15.7px; line-height: 1.16; letter-spacing: -.02em; }
+  .osd-page .osd-outcomes span { font-size: 10.2px; line-height: 1.48; }
+
+  .osd-page .osd-plan-list { margin-top: 9px; }
+  .osd-page .osd-plan-row { grid-template-columns: 68px minmax(0,1fr); gap: 10px; padding: 12px 0; }
+  .osd-page .osd-plan-row time { font-size: 9.25px; line-height: 1.38; }
+  .osd-page .osd-plan-row strong { font-size: 11.9px; line-height: 1.34; }
+  .osd-page .osd-plan-row span { font-size: 10.55px; line-height: 1.5; }
+
+  .osd-page .osd-quick dl { margin-top: 8px; }
+  .osd-page .osd-quick dl>div { grid-template-columns: 28px minmax(0,1fr); gap: 9px; padding: 8px 0; }
+  .osd-page .osd-quick dt { width: 28px; height: 28px; font-size: 11px; }
+  .osd-page .osd-quick dd strong { font-size: 10.9px; line-height: 1.32; }
+  .osd-page .osd-quick dd span { font-size: 10.45px; line-height: 1.43; }
+  .osd-page .osd-free-note { margin-top: 11px; padding: 12px 13px; border-radius: 10px; }
+  .osd-page .osd-free-note strong { font-size: 10.9px; }
+  .osd-page .osd-free-note span { font-size: 10.2px; line-height: 1.44; }
+
+  .osd-page .osd-mentor-body { grid-template-columns: 54px minmax(0,1fr); gap: 11px; align-items: start; }
+  .osd-page .osd-mentor-mark { width: 54px; height: 54px; margin-top: 2px; }
+  .osd-page .osd-mentor-mark img { width: 21px; height: 35px; }
+  .osd-page .osd-mentor h3 { font-size: 18.5px; line-height: 1.1; letter-spacing: -.02em; margin-bottom: 5px; }
+  .osd-page .osd-mentor p { font-size: 10.4px; line-height: 1.48; margin-bottom: 7px; }
+  .osd-page .osd-mentor span { font-size: 9.2px; line-height: 1.35; }
+
+  .osd-page .osd-gallery-grid { gap: 5px; }
+  .osd-page .osd-gallery-grid img { border-radius: 7px; }
+  .osd-page .osd-gallery>a { margin-top: 10px; padding: 8px 13px; font-size: 9.3px; }
+
+  .osd-page .osd-faq { margin-top: 9px; }
+  .osd-page .osd-faq details { min-height: 46px; padding: 13px 14px; }
+  .osd-page .osd-faq summary { font-size: 10.7px; line-height: 1.38; }
+  .osd-page .osd-faq details p { font-size: 10.4px; line-height: 1.48; }
+
+  .osd-page .osd-final-cta { min-height: 165px; margin-top: 9px; padding: 23px 14px; }
+  .osd-page .osd-final-cta h2 { max-width: 310px; font-size: 27px; line-height: 1.02; letter-spacing: -.025em; }
+  .osd-page .osd-final-cta p { font-size: 9.8px; margin: 6px 0 12px; }
+  .osd-page .osd-final-cta button,
+  .osd-page .osd-final-cta>a { min-height: 40px; padding: 10px 16px; font-size: 10.2px; }
+
+  .osd-page .osd-footer { padding-top: 21px; padding-bottom: 84px; }
+  .osd-page .osd-footer>.osd-shell { width: calc(100% - 22px); column-gap: 18px; row-gap: 12px; }
+  .osd-page .osd-footer strong { font-family: "Lora", Georgia, serif; font-size: 11.5px; }
+  .osd-page .osd-footer a,
+  .osd-page .osd-footer-brand p,
+  .osd-page .osd-footer-brand small,
+  .osd-page .osd-footer div>p { font-size: 9.2px; line-height: 1.43; }
+  .osd-page .osd-copy { margin-top: 15px; font-size: 7.8px; }
+
+  .osd-page .osd-mobile-bar { left: max(7px,env(safe-area-inset-left)); right: max(7px,env(safe-area-inset-right)); bottom: max(7px,env(safe-area-inset-bottom)); padding: 7px 7px 7px 11px; border-radius: 13px; }
+  .osd-page .osd-mobile-bar strong { font-size: 11.2px; }
+  .osd-page .osd-mobile-bar button { min-height: 39px; padding: 9px 16px; font-size: 10.6px; }
+}
+
+@media (max-width: 390px) {
+  .osd-page .osd-hero h1 { font-size: clamp(38px,11.7vw,47px); }
+  .osd-page .osd-meta-pills span { font-size: 8.6px; }
+  .osd-page .osd-outcomes strong { font-size: 15.2px; }
+}
