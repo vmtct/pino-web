@@ -1,5 +1,32 @@
 import { expect, test, type Page } from "@playwright/test";
 
+const littlePinerR2Selector = 'img[src*="assets.pinohouse.art/site/littlePiner/"]';
+
+async function hydrateLazyMedia(page: Page) {
+  const scrollHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+  const step = Math.max(600, Math.floor((await page.viewportSize())?.height ?? 800) * 0.8);
+
+  for (let y = 0; y <= scrollHeight; y += step) {
+    await page.evaluate((top) => window.scrollTo(0, top), y);
+    await page.waitForTimeout(80);
+  }
+
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await page.waitForTimeout(180);
+
+  await page.waitForFunction(
+    (selector) =>
+      [...document.querySelectorAll<HTMLImageElement>(selector)].every(
+        (image) => image.complete && image.naturalWidth > 0,
+      ),
+    littlePinerR2Selector,
+    { timeout: 15_000 },
+  );
+
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(100);
+}
+
 async function expectLittlePiner(page: Page) {
   await expect(page.getByRole("heading", { name: "Little Piner", level: 1 })).toBeVisible();
   await expect(page.getByText("Little hands. Big discoveries.")).toBeVisible();
@@ -7,7 +34,7 @@ async function expectLittlePiner(page: Page) {
   await expect(page.getByRole("heading", { name: "Inside Little Piner" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Made by little hands" })).toBeVisible();
 
-  const r2Images = page.locator('img[src*="assets.pinohouse.art/site/littlePiner/"]');
+  const r2Images = page.locator(littlePinerR2Selector);
   await expect(r2Images).toHaveCount(28);
 
   const broken = await r2Images.evaluateAll((images) =>
@@ -38,8 +65,8 @@ test("Little Piner production custom domain renders on desktop and mobile", asyn
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true });
   const mobileResponse = await mobile.goto("https://pinohouse.art/little-piner", { waitUntil: "networkidle" });
   expect(mobileResponse?.status()).toBe(200);
-  await expect(mobile.getByRole("heading", { name: "Little Piner", level: 1 })).toBeVisible();
-  await expect(mobile.getByRole("heading", { name: "Two ways to explore." })).toBeVisible();
+  await hydrateLazyMedia(mobile);
+  await expectLittlePiner(mobile);
   await testInfo.attach("little-piner-prod-mobile", {
     body: await mobile.screenshot({ fullPage: true }),
     contentType: "image/png",
