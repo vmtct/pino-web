@@ -2,22 +2,25 @@
 
 import type { ReactNode } from "react";
 import { CmsText, useCmsImage } from "../cms-hydrator";
+import { LocaleToggle, useLocale } from "../localization";
 
 export function BrandMark({ href = "/" }: { href?: string }) {
-  return <a className="wordmark" href={href} aria-label="PINO House — trang chủ">PINO<span>•</span></a>;
+  const { locale } = useLocale();
+  return <a className="wordmark" href={href} aria-label={locale === "vi" ? "PINO House — trang chủ" : "PINO House — home"}>PINO<span>•</span></a>;
 }
 
 export function PublicNav() {
+  const { locale } = useLocale();
   return (
     <header className="site-header" id="top">
-      <nav className="nav shell" aria-label="Điều hướng chính">
+      <nav className="nav shell" aria-label={locale === "vi" ? "Điều hướng chính" : "Main navigation"}>
         <BrandMark href="#top" />
         <div className="nav-links">
           <a href="#why-pino"><CmsText contentKey="site_nav_why_pino" fallback="Vì sao PINO" /></a>
           <a href="#paths"><CmsText contentKey="site_nav_paths" fallback="Bốn lộ trình" /></a>
           <a href="#journey"><CmsText contentKey="site_nav_premium" fallback="Premium Journey" /></a>
         </div>
-        <a className="nav-cta" href="/open-studio"><CmsText contentKey="site_nav_open_studio" fallback="Khám phá Open Studio" /></a>
+        <div className="pino-header-actions"><a className="nav-cta" href="/open-studio"><CmsText contentKey="site_nav_open_studio" fallback="Khám phá Open Studio" /></a><LocaleToggle /></div>
       </nav>
     </header>
   );
@@ -56,10 +59,11 @@ export function HouseArtwork({ compact = false, assetKey }: { compact?: boolean;
 }
 
 export function PublicFooter() {
+  const { locale } = useLocale();
   return (
     <footer className="footer shell">
       <div><BrandMark /><p className="footer-note"><CmsText contentKey="site_footer_note" fallback="Một ngôi nhà sáng tạo cho trẻ em." /></p></div>
-      <div className="footer-links" aria-label="Liên kết cuối trang">
+      <div className="footer-links" aria-label={locale === "vi" ? "Liên kết cuối trang" : "Footer links"}>
         <a href="#paths"><CmsText contentKey="site_nav_paths" fallback="Bốn lộ trình" /></a>
         <a href="#journey"><CmsText contentKey="site_nav_premium" fallback="Premium Journey" /></a>
         <a href="/open-studio"><CmsText contentKey="site_footer_open_studio" fallback="Open Studio" /></a>
