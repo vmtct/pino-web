@@ -3,6 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Open Studio public journey', () => {
   const scheduleEndpoint = '/api/pino-core/open-studio/sessions';
   const capabilityEndpoint = '/api/pino-core/open-studio/capabilities';
+  const landingRoute = '/open-studio?lang=vi';
 
   async function waitForRenderedSessions(page: import('@playwright/test').Page) {
     const cards = page.locator('.os-session-card');
@@ -29,7 +30,7 @@ test.describe('Open Studio public journey', () => {
 
   test('landing renders the approved Open Studio visual system and live sessions', async ({ page }) => {
     const scheduleResponse = page.waitForResponse(response => response.url().includes(scheduleEndpoint));
-    await page.goto('/open-studio');
+    await page.goto(landingRoute);
 
     const response = await scheduleResponse;
     expect(response.ok()).toBeTruthy();
@@ -44,7 +45,7 @@ test.describe('Open Studio public journey', () => {
   });
 
   test('session cards open the inline detail experience', async ({ page }) => {
-    await page.goto('/open-studio');
+    await page.goto(landingRoute);
     const cards = await waitForRenderedSessions(page);
     expect(await cards.count()).toBeGreaterThan(0);
 
@@ -62,7 +63,7 @@ test.describe('Open Studio public journey', () => {
     expect(capabilityResponse.ok()).toBeTruthy();
     const capability = await capabilityResponse.json() as { registrationEnabled?: boolean };
 
-    await page.goto('/open-studio');
+    await page.goto(landingRoute);
     const cards = await waitForRenderedSessions(page);
     expect(await cards.count()).toBeGreaterThan(0);
 
