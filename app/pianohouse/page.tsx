@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import styles from "./page.module.css";
+import { PathFooter, PathHeader } from "../components/path-chrome";
 
 export const metadata: Metadata = {
   title: "PianoHouse — PINO House",
@@ -7,7 +8,6 @@ export const metadata: Metadata = {
 };
 
 const ASSET = "https://assets.pinohouse.art/site/pianohouse";
-const SIGIL = "https://assets.pinohouse.art/core/Pino%20Sigil.png";
 const FOLIAGE_LEFT = "https://assets.pinohouse.art/site/Artchitect/botanical-leaf-illustration.png";
 const FOLIAGE_RIGHT = "https://assets.pinohouse.art/site/Artchitect/neutral-botanical-abstract.png";
 const STUDENT_VIDEO = "https://www.youtube-nocookie.com/embed/x_H1mEDuvTE?list=PLw19K34NDuLiJHTQWj3AjtfVGIPWRwwvc&rel=0&playsinline=1";
@@ -128,11 +128,11 @@ const mobilePolishStyles = `
 
 @media (max-width:760px){
   .${styles.page}{overflow-x:hidden;}
-  .${styles.header}{position:sticky;top:0;height:58px;padding:0 14px;background:rgba(252,248,243,.96);box-shadow:0 8px 22px rgba(64,42,30,.045);}
+  .${styles.header}{position:sticky;top:0;height:62px;padding:0 16px;background:rgba(252,248,243,.96);box-shadow:0 8px 22px rgba(64,42,30,.045);}
   .${styles.brand}{gap:7px;font-size:18px;}
   .${styles.brand} img{width:22px;height:27px;}
-  .${styles.navCta}{width:38px;min-width:38px;height:38px;min-height:38px;padding:0;font-size:0;box-shadow:0 7px 18px rgba(94,13,25,.16);}
-  .${styles.navCta} span{font-size:14px;}
+  .${styles.navCta}{width:auto;min-width:96px;height:40px;min-height:40px;padding:0 12px;font-size:10px;box-shadow:0 7px 18px rgba(94,13,25,.12);}
+  .${styles.navCta} span{font-size:12px;}
 
   .${styles.hero}{display:flex;flex-direction:column;min-height:0;background:#fbf7f1;}
   .${styles.heroCopy}{padding:28px 16px 22px;}
@@ -230,30 +230,11 @@ const mobilePolishStyles = `
 }
 `;
 
-function Brand() {
-  return (
-    <a className={styles.brand} href="/" aria-label="Trang chủ PINO House">
-      <img src={SIGIL} alt="" />
-      <span>PINO House</span>
-    </a>
-  );
-}
-
 export default function PianoHousePage() {
   return (
     <main className={styles.page}>
       <style>{mobilePolishStyles}</style>
-      <header className={styles.header}>
-        <Brand />
-        <nav className={styles.nav} aria-label="Điều hướng PianoHouse">
-          <a href="/">Trang chủ</a>
-          <a href="/#paths">Hành trình</a>
-          <a href="/open-studio">Open Studio</a>
-          <a href="/#stories">Câu chuyện</a>
-          <a href="/#about">Về PINO</a>
-        </nav>
-        <a className={styles.navCta} href="/open-studio">Khám phá Open Studio <span>→</span></a>
-      </header>
+      <PathHeader styles={styles} locale="vi" ariaLabel="Điều hướng PianoHouse" />
 
       <section className={styles.hero}>
         <img className={styles.heroFoliage} src={FOLIAGE_LEFT} alt="" />
@@ -371,7 +352,7 @@ export default function PianoHousePage() {
       </section>
 
       <section className={styles.cta}>
-        <img className={styles.ctaBg} src={`${ASSET}/front-door.png`} alt="Lối vào PianoHouse trong ánh sáng ấm" />
+        <img className={styles.ctaBg} src={`${ASSET}/grand-piano-in-sunlit-living-room.png`} alt="Không gian PianoHouse trong ánh sáng ấm" />
         <div className={styles.ctaShade} />
         <img className={styles.ctaFoliage} src={FOLIAGE_RIGHT} alt="" />
         <div className={styles.ctaCopy}>
@@ -388,14 +369,7 @@ export default function PianoHousePage() {
         </div>
       </section>
 
-      <footer className={styles.footer}>
-        <div><Brand /><p>Nghệ thuật. Âm nhạc. Lớn lên sáng tạo.</p><strong>pinohouse.art</strong></div>
-        <div><h4>Khám phá</h4><a href="/">Trang chủ</a><a href="/#paths">Hành trình</a><a href="/open-studio">Open Studio</a><a href="/#stories">Câu chuyện</a></div>
-        <div><h4>Về PINO</h4><a href="/#about">Câu chuyện PINO</a><a href="/#about">PINO House</a><a href="/#about">Đội ngũ</a><a href="/#about">Tuyển dụng</a></div>
-        <div><h4>Thông tin</h4><a href="/open-studio">Đến thăm</a><a href="/#about">Câu hỏi thường gặp</a><a href="/#about">Chính sách</a><a href="/#about">Liên hệ</a></div>
-        <div className={styles.stay}><h4>Kết nối</h4><p>Nhận tin về Open Studio và các hoạt động đặc biệt.</p><span>Instagram · Facebook · YouTube</span></div>
-        <small>© {new Date().getFullYear()} PINO House. Đã đăng ký bản quyền.</small>
-      </footer>
+      <PathFooter styles={styles} locale="vi" />
       <img className={styles.footerFoliage} src={FOLIAGE_RIGHT} alt="" />
     </main>
   );

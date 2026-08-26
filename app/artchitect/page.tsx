@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import styles from "./page.module.css";
+import { PathFooter, PathHeader } from "../components/path-chrome";
 
 export const metadata: Metadata = {
   title: "Artchitect — PINO House",
@@ -8,7 +9,6 @@ export const metadata: Metadata = {
 };
 
 const ASSET = "https://assets.pinohouse.art/site/Artchitect";
-const SIGIL = "https://assets.pinohouse.art/core/Pino%20Sigil.png";
 
 const journey = [
   ["Line", "We begin by observing closely and drawing with intention.", "artchitect-journey-01-line.png"],
@@ -45,25 +45,10 @@ const gallery = [
   "oil-paint-sticks-and-palette.png",
 ];
 
-function Brand() {
-  return (
-    <a className={styles.brand} href="/" aria-label="PINO House home">
-      <img src={SIGIL} alt="" />
-      <span>PINO House</span>
-    </a>
-  );
-}
-
 export default function ArtchitectPage() {
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <Brand />
-        <nav className={styles.nav} aria-label="Artchitect navigation">
-          <a href="/">House</a><a href="/#paths">Paths</a><a href="/open-studio">Open Studio</a><a href="/#stories">Stories</a><a href="/#about">About</a>
-        </nav>
-        <a className={styles.navCta} href="/open-studio">Open Studio <span>→</span></a>
-      </header>
+      <PathHeader styles={styles} ariaLabel="Artchitect navigation" />
 
       <section className={styles.hero}>
         <div className={styles.heroCopy}>
@@ -132,14 +117,7 @@ export default function ArtchitectPage() {
         <div><h2>Come visit Artchitect.</h2><p>Step into the studio and see creativity in action.</p><a href="/open-studio">Visit the Studio <span>→</span></a></div>
       </section>
 
-      <footer className={styles.footer}>
-        <div className={styles.footerWide}><Brand /><p>Art. Music. Creative Growth.</p><strong>pinohouse.art</strong></div>
-        <div><h4>Explore</h4><a href="/">House</a><a href="/#paths">Paths</a><a href="/open-studio">Open Studio</a><a href="/#stories">Stories</a></div>
-        <div><h4>About</h4><a href="/#about">Our Story</a><a href="/#about">The House</a><a href="/#about">Team</a><a href="/#about">Careers</a></div>
-        <div><h4>Information</h4><a href="/open-studio">Visit</a><a href="/#about">FAQs</a><a href="/#about">Policies</a><a href="/#about">Contact</a></div>
-        <div className={`${styles.stay} ${styles.footerWide}`}><h4>Stay connected</h4><p>Get news about Open Studio and special events.</p><span>Instagram · Facebook · YouTube</span></div>
-        <small>© {new Date().getFullYear()} PINO House. All rights reserved.</small>
-      </footer>
+      <PathFooter styles={styles} leadClassName={styles.footerWide} stayClassName={styles.footerWide} />
       <img className={styles.botanicalLeft} src={`${ASSET}/botanical-leaf-illustration.png`} alt=""/>
       <img className={styles.botanicalRight} src={`${ASSET}/neutral-botanical-abstract.png`} alt=""/>
     </main>
