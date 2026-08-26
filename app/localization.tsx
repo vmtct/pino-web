@@ -49,7 +49,7 @@ export function useLocalized<T>(vi: T, en: T): T { return useLocale().locale ===
 
 export function Localized({ vi, en }: { vi: ReactNode; en: ReactNode }) {
   const { locale } = useLocale();
-  return <>{locale === "vi" ? vi : en}</>;
+  return <span lang={locale} data-pino-localized={locale}>{locale === "vi" ? vi : en}</span>;
 }
 
 export function LocaleToggle({ className = "" }: { className?: string }) {
