@@ -1,31 +1,37 @@
 #student-story{
   background:
-    radial-gradient(circle at 70% 34%,rgba(255,255,255,.72),transparent 30%),
-    rgba(255,248,239,.34);
+    radial-gradient(circle at 66% 36%,rgba(255,255,255,.88),transparent 29%),
+    linear-gradient(180deg,rgba(255,250,244,.34),rgba(255,247,237,.5));
+}
+
+#student-story .sectionLead{
+  padding-top:10px;
 }
 
 #student-story .pianoStudentStory{
   display:grid!important;
-  grid-template-columns:minmax(238px,292px) minmax(0,1fr)!important;
-  align-items:stretch;
+  grid-template-columns:258px minmax(0,1fr)!important;
+  width:min(100%,920px);
+  min-height:0!important;
+  justify-self:start;
+  align-self:start;
   overflow:hidden!important;
-  min-height:518px;
-  border:1px solid rgba(115,78,55,.14)!important;
-  border-radius:18px!important;
-  background:linear-gradient(135deg,rgba(255,255,255,.74),rgba(255,250,243,.86))!important;
-  box-shadow:0 20px 52px rgba(76,48,34,.07)!important;
+  border:1px solid rgba(115,78,55,.13)!important;
+  border-radius:20px!important;
+  background:linear-gradient(135deg,rgba(255,255,255,.84),rgba(255,250,243,.92))!important;
+  box-shadow:0 22px 56px rgba(76,48,34,.075)!important;
 }
 
 #student-story .pianoStudentVideo{
   position:relative;
-  width:100%!important;
-  max-width:none!important;
+  width:258px!important;
+  max-width:258px!important;
   min-height:0!important;
   aspect-ratio:9/16!important;
   align-self:center;
   overflow:hidden;
   background:#100d0d;
-  border-right:1px solid rgba(115,78,55,.13);
+  border-right:1px solid rgba(115,78,55,.12);
 }
 
 #student-story .pianoStudentVideo iframe{
@@ -39,95 +45,149 @@
 #student-story .pianoStudentCopy{
   position:relative;
   justify-content:center!important;
-  padding:42px 44px 38px!important;
+  min-height:458px;
+  padding:40px 42px 36px!important;
 }
 
 #student-story .pianoStudentCopy::before{
   content:"05";
   position:absolute;
-  top:30px;
-  right:34px;
-  color:rgba(183,124,53,.18);
-  font:500 58px/1 "Palatino Linotype","Book Antiqua",Georgia,serif;
+  top:26px;
+  right:28px;
+  color:rgba(183,124,53,.16);
+  font:500 54px/1 "Palatino Linotype","Book Antiqua",Georgia,serif;
   letter-spacing:-.05em;
 }
 
+#student-story .pianoStudentCopy::after{
+  content:"";
+  position:absolute;
+  left:42px;
+  right:42px;
+  bottom:28px;
+  height:1px;
+  background:linear-gradient(90deg,rgba(183,124,53,.18),rgba(183,124,53,0));
+}
+
 #student-story .pianoStudentMeta{
-  gap:8px!important;
-  margin-bottom:22px!important;
-  padding-right:72px;
+  gap:7px!important;
+  margin-bottom:18px!important;
+  padding-right:68px;
 }
 
 #student-story .pianoStudentMeta span{
-  min-height:29px!important;
-  padding:0 11px!important;
-  border-color:rgba(183,124,53,.28)!important;
-  background:rgba(255,248,238,.9)!important;
-  font-size:9px!important;
+  min-height:28px!important;
+  padding:0 10px!important;
+  border-color:rgba(183,124,53,.26)!important;
+  background:rgba(255,248,238,.92)!important;
+  color:#8d5e28!important;
+  font-size:8.8px!important;
+  letter-spacing:.03em!important;
 }
 
 #student-story .pianoStudentSong{
-  margin-bottom:8px!important;
-  font-size:9px!important;
-  letter-spacing:.14em!important;
+  margin-bottom:7px!important;
+  color:#a86f2d!important;
+  font-size:8.8px!important;
+  letter-spacing:.15em!important;
 }
 
 #student-story .pianoStudentCopy h3{
-  max-width:520px;
+  max-width:500px;
   margin:0 0 12px!important;
-  font-size:34px!important;
-  line-height:1!important;
+  font-size:32px!important;
+  line-height:1.02!important;
   letter-spacing:-.035em!important;
 }
 
 #student-story .pianoStudentCopy p:not(.pianoStudentSong){
-  max-width:500px;
+  max-width:470px;
   margin-bottom:20px!important;
-  font-size:12px!important;
-  line-height:1.7!important;
+  color:#5e7185!important;
+  font-size:11.8px!important;
+  line-height:1.66!important;
 }
 
 #student-story .pianoStudentCopy a{
   display:inline-flex;
   align-items:center;
   gap:8px;
+  width:max-content;
   min-height:38px;
   padding:0 15px;
-  border:1px solid rgba(116,20,35,.24);
+  border:1px solid rgba(116,20,35,.22);
   border-radius:999px;
-  background:rgba(255,255,255,.5);
-  font-size:10.5px!important;
-  transition:background .2s ease,border-color .2s ease,transform .2s ease;
+  background:rgba(255,255,255,.66);
+  box-shadow:0 6px 16px rgba(74,32,30,.035);
+  font-size:10.3px!important;
+  transition:background .2s ease,border-color .2s ease,transform .2s ease,box-shadow .2s ease;
 }
 
 #student-story .pianoStudentCopy a:hover{
   transform:translateY(-1px);
-  border-color:rgba(116,20,35,.42);
+  border-color:rgba(116,20,35,.4);
   background:#fff;
+  box-shadow:0 9px 20px rgba(74,32,30,.07);
+}
+
+@media (min-width:1350px){
+  #student-story .pianoStudentStory{
+    width:min(100%,960px);
+  }
+  #student-story .pianoStudentCopy{
+    padding-left:46px!important;
+    padding-right:46px!important;
+  }
 }
 
 @media (max-width:1100px) and (min-width:761px){
   #student-story .pianoStudentStory{
-    grid-template-columns:minmax(220px,260px) minmax(0,1fr)!important;
-    min-height:462px;
+    grid-template-columns:232px minmax(0,1fr)!important;
+    width:min(100%,760px);
+  }
+  #student-story .pianoStudentVideo{
+    width:232px!important;
+    max-width:232px!important;
   }
   #student-story .pianoStudentCopy{
-    padding:32px 30px!important;
+    min-height:412px;
+    padding:30px 28px 28px!important;
+  }
+  #student-story .pianoStudentCopy::before{
+    top:22px;
+    right:22px;
+    font-size:46px;
+  }
+  #student-story .pianoStudentCopy::after{
+    left:28px;
+    right:28px;
+    bottom:22px;
+  }
+  #student-story .pianoStudentMeta{
+    padding-right:56px;
   }
   #student-story .pianoStudentCopy h3{
-    font-size:29px!important;
+    font-size:28px!important;
+  }
+  #student-story .pianoStudentCopy p:not(.pianoStudentSong){
+    font-size:11.2px!important;
   }
 }
 
 @media (max-width:760px){
   #student-story{
-    background:rgba(255,248,239,.38);
+    background:linear-gradient(180deg,rgba(255,250,244,.32),rgba(255,247,237,.5));
+  }
+
+  #student-story .sectionLead{
+    padding-top:0;
   }
 
   #student-story .pianoStudentStory{
     display:flex!important;
     flex-direction:column;
-    min-height:0;
+    width:100%;
+    min-height:0!important;
     overflow:visible!important;
     border:0!important;
     border-radius:0!important;
@@ -136,27 +196,33 @@
   }
 
   #student-story .pianoStudentVideo{
-    width:min(74vw,286px)!important;
+    width:min(68vw,252px)!important;
+    max-width:252px!important;
     aspect-ratio:9/16!important;
     margin:0 auto;
-    border:1px solid rgba(115,78,55,.16);
-    border-radius:15px;
-    box-shadow:0 16px 34px rgba(49,31,24,.12);
+    border:1px solid rgba(115,78,55,.15);
+    border-radius:16px;
+    box-shadow:0 18px 38px rgba(49,31,24,.13);
   }
 
   #student-story .pianoStudentCopy{
-    margin-top:13px;
-    padding:18px 16px 19px!important;
-    border:1px solid rgba(115,78,55,.12);
-    border-radius:13px;
-    background:rgba(255,255,255,.62);
-    box-shadow:0 10px 24px rgba(76,48,34,.04);
+    min-height:0;
+    margin-top:15px;
+    padding:19px 16px 20px!important;
+    border:1px solid rgba(115,78,55,.11);
+    border-radius:14px;
+    background:rgba(255,255,255,.68);
+    box-shadow:0 11px 26px rgba(76,48,34,.045);
   }
 
   #student-story .pianoStudentCopy::before{
     top:17px;
     right:16px;
-    font-size:42px;
+    font-size:40px;
+  }
+
+  #student-story .pianoStudentCopy::after{
+    display:none;
   }
 
   #student-story .pianoStudentMeta{
@@ -177,14 +243,14 @@
   }
 
   #student-story .pianoStudentCopy h3{
-    max-width:260px;
+    max-width:270px;
     margin-bottom:9px!important;
     font-size:24px!important;
   }
 
   #student-story .pianoStudentCopy p:not(.pianoStudentSong){
     margin-bottom:14px!important;
-    font-size:10.8px!important;
+    font-size:10.9px!important;
     line-height:1.58!important;
   }
 
@@ -197,6 +263,6 @@
 
 @media (max-width:430px){
   #student-story .pianoStudentVideo{
-    width:min(78vw,276px)!important;
+    width:min(70vw,244px)!important;
   }
 }
