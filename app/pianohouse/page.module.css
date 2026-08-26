@@ -207,3 +207,43 @@
 @media (prefers-reduced-motion:reduce){
   .nav a::after,.navCta,.primary,.secondary,.ctaActions a,.collectionCard,.lessonCard,.momentCard,.collectionCard>img,.lessonCard>img,.momentCard>img{transition:none}
 }
+
+/* Mobile production refinement: more readable, shorter, and intentionally touch-first. */
+@media (max-width:760px){
+  .header{position:sticky;top:0;height:58px;padding:0 14px;background:rgba(252,248,243,.96);box-shadow:0 5px 18px rgba(46,31,25,.035)}
+  .brand{font-size:16.5px;gap:6px}.brand img{width:22px;height:27px}
+  .navCta{width:36px;min-width:36px;height:36px;min-height:36px;padding:0;font-size:0;box-shadow:none}.navCta span{font-size:14px}
+
+  .heroCopy{padding:27px 16px 22px}.eyebrow{margin-bottom:8px;font-size:8px}.hero h1{margin-bottom:8px;font-size:50px;line-height:.92;letter-spacing:-.05em}.heroLead{margin-bottom:8px;font-size:17.5px;line-height:1.28}.heroText{margin-bottom:18px;max-width:none;font-size:13px;line-height:1.58}
+  .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}.primary,.secondary{min-height:42px;padding:0 10px;font-size:10.3px}
+  .heroImage{height:238px}.heroImage img{object-position:center 52%}.heroFoliage{display:none}
+
+  .contentSection,.journeySection{padding:30px 16px 32px}.sectionLead{margin-bottom:17px}.sectionKicker{margin-bottom:7px;font-size:8px}.sectionLead h2{margin-bottom:8px;max-width:330px;font-size:29px;line-height:1.02}.sectionLead p{max-width:none;margin-bottom:13px;font-size:12.2px;line-height:1.55}.sectionLead a{font-size:11.5px}
+
+  .collectionGrid,.momentsGrid{display:grid;grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:86%;gap:10px;overflow-x:auto;overscroll-behavior-inline:contain;scroll-snap-type:x mandatory;scroll-padding-left:0;padding:0 16px 5px 0;margin-right:-16px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .collectionGrid::-webkit-scrollbar,.momentsGrid::-webkit-scrollbar{display:none}
+  .collectionCard,.momentCard{scroll-snap-align:start;scroll-snap-stop:always;border-radius:12px;box-shadow:0 8px 20px rgba(76,48,34,.05)}
+  .collectionCard>div{padding:11px 12px 12px}.collectionCard h3{font-size:16px}.collectionCard p{font-size:10.6px;line-height:1.48}.collectionCard a{font-size:10.5px}
+
+  .journeyGrid{display:grid;grid-template-columns:1fr;gap:9px;padding:0}.journeyGrid::before{display:none}.journeyStep,.journeyStep:last-child{display:grid;grid-template-columns:46px minmax(0,1fr);grid-template-areas:"icon number" "icon title" "icon copy";gap:1px 11px;max-width:none;margin:0;padding:11px 12px;text-align:left;border:1px solid rgba(115,78,55,.11);border-radius:12px;background:rgba(255,255,255,.6);box-shadow:0 6px 16px rgba(76,48,34,.025)}
+  .iconWrap{grid-area:icon;width:46px;height:46px;margin:0;align-self:center}.iconWrap img{width:25px;height:25px}.journeyStep strong{grid-area:number;margin:0 0 1px;font-size:9px}.journeyStep h3{grid-area:title;margin:0 0 2px;font-size:14px;line-height:1.16}.journeyStep p{grid-area:copy;max-width:none;margin:0;font-size:10.7px;line-height:1.42}
+
+  .lessonGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.lessonCard{border-radius:11px}.lessonCard>div{min-height:0;padding:9px 9px 10px}.lessonCard h3{margin-bottom:4px;font-size:12.3px}.lessonCard p{font-size:10px;line-height:1.43;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.lessonCard:last-child{grid-column:1/-1;width:calc(50% - 4.5px);justify-self:center}
+
+  .momentCard h3{padding:10px 9px 11px;font-size:11.5px}
+
+  .cta{margin:18px 12px 0;min-height:242px;border-radius:14px}.ctaBg{display:none}.ctaShade{background:linear-gradient(145deg,rgba(77,9,23,.98),rgba(108,18,34,.96))}.ctaFoliage{display:block;left:-36px;bottom:-84px;width:180px;opacity:.36}.ctaCopy{min-height:242px;display:block;padding:22px 18px 18px}.ctaEyebrow{margin-bottom:6px;font-size:8px}.ctaCopy h2{margin-bottom:7px;font-size:30px;line-height:1.02}.ctaCopy p{max-width:none;font-size:10.8px;line-height:1.52}.ctaActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:17px;max-width:none}.ctaActions a{min-height:40px;padding:0 10px;font-size:9.7px}.ctaActions .ctaPrimary{grid-column:1/-1;min-width:0}
+
+  .footer{grid-template-columns:1fr 1fr;gap:20px 18px;padding:27px 16px 52px}.footer>div:first-child{grid-column:1/-1;margin-bottom:1px}.footer>div:nth-child(3),.footer>div:nth-child(4){display:flex}.footer .stay{display:none}.footer h4{font-size:11.5px}.footer p,.footer a,.footer span,.footer strong{font-size:10px;line-height:1.5}.footer .brand{font-size:17px}.footer small{margin-top:7px;padding-top:12px;font-size:8.7px}.footerFoliage{width:96px;right:-24px;bottom:-12px;opacity:.26}
+
+  .collectionCard:hover,.lessonCard:hover,.momentCard:hover,.collectionCard:hover>img,.lessonCard:hover>img,.momentCard:hover>img,.navCta:hover,.primary:hover,.secondary:hover,.ctaActions a:hover{transform:none}
+}
+
+@media (max-width:430px){
+  .collectionGrid,.momentsGrid{grid-template-columns:none;grid-auto-columns:84%}
+  .hero h1{font-size:48px}.heroLead{font-size:17px}.heroText{font-size:12.8px}
+  .sectionLead h2{font-size:28px}.sectionLead p{font-size:12px}
+  .lessonCard:last-child{width:calc(50% - 4.5px)}
+  .ctaCopy h2{font-size:29px}.ctaActions a{font-size:9.4px}
+  .footer{grid-template-columns:1fr 1fr}.footer>div:first-child{grid-column:1/-1}
+}
