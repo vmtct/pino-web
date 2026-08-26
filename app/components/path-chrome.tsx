@@ -37,7 +37,7 @@ export function PathHeader({ styles, ariaLabel, wrapperClassName, activeHref, ac
   const links = [["/", t.home], ["/#paths", t.paths], ["/open-studio", t.studio], ["/#stories", t.stories], ["/#about", t.about]] as const;
   const resolvedCta = locale === "vi" ? (ctaLabelVi || ctaLabel || "Open Studio") : (ctaLabelEn || ctaLabel || "Open Studio");
   const content = <><PathBrand styles={styles} /><nav className={styles.nav} aria-label={ariaLabel || t.navLabel}>{links.map(([href, label]) => <a className={href === activeHref ? activeClassName : undefined} href={href} key={href}>{label}</a>)}</nav><div className="pino-header-actions"><a className={styles.navCta} href={ctaHref}>{resolvedCta} <span>→</span></a><LocaleToggle /></div></>;
-  if (wrapperClassName) return <header className={wrapperClassName} data-pino-path-header><div className={styles.header}>{content}</div></header>;
+  if (wrapperClassName) return <header className={wrapperClassName} data-pino-path-header-wrap><div className={styles.header} data-pino-path-header>{content}</div></header>;
   return <header className={styles.header} data-pino-path-header>{content}</header>;
 }
 
