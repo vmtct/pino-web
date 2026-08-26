@@ -26,6 +26,8 @@ export default function OpenStudioPublicChrome({ children }: { children: ReactNo
         ariaLabel="Điều hướng Open Studio"
         wrapperClassName="os-public-header-wrap"
         activeHref="/open-studio"
+        ctaHref="#sessions"
+        ctaLabel="Xem lịch"
       />
       {children}
       <PathFooter
