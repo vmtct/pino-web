@@ -1,21 +1,31 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;500;600;700&display=swap');
+html[lang="vi"] :is(h1,h2,h3,h4):has([data-pino-localized="vi"]) {
+  font-family: var(--font-display-vi), Georgia, serif !important;
+  font-synthesis: none;
+}
+html[lang="vi"] h1:has([data-pino-localized="vi"]) { letter-spacing: -.025em !important; }
+html[lang="vi"] :is(h2,h3,h4):has([data-pino-localized="vi"]) { letter-spacing: -.014em !important; }
+
+/* PianoHouse still has legacy Vietnamese body copy without <Localized>. */
+html[lang="vi"] body[data-public-page="pianohouse"] main :is(h2,h3,h4),
+/* Open Studio session titles can come directly from CMS/runtime data. */
+html[lang="vi"] .open-studio-page :is(h2,h3,h4),
+/* Shared path footer labels are dictionary-driven rather than <Localized>. */
+html[lang="vi"] [data-pino-path-footer] h4 {
+  font-family: var(--font-display-vi), Georgia, serif !important;
+  font-synthesis: none;
+  letter-spacing: -.014em !important;
+}
 
 html[lang="vi"] body[data-public-page="home"] main#top > div > section:first-of-type {
   grid-template-columns: 42% 58% !important;
 }
 html[lang="vi"] body[data-public-page="home"] main#top > div > section:first-of-type h1 {
   max-width: 620px !important;
-  font-family: "Noto Serif", Georgia, serif !important;
+  font-family: var(--font-display-vi), Georgia, serif !important;
   font-size: clamp(50px, 4.45vw, 70px) !important;
   line-height: 1.01 !important;
-  letter-spacing: -.045em !important;
+  letter-spacing: -.025em !important;
   text-wrap: balance;
-}
-html[lang="vi"] body[data-public-page="artchitect"] main h1,
-html[lang="vi"] body[data-public-page="artchitect"] main h2,
-html[lang="vi"] body[data-public-page="artchitect"] main h3 {
-  font-family: "Noto Serif", Georgia, serif !important;
-  letter-spacing: -.018em !important;
 }
 
 .pino-monthly {
@@ -33,14 +43,14 @@ html[lang="vi"] body[data-public-page="artchitect"] main h3 {
 .pino-monthly--piano { --monthly-accent:#741423; --monthly-ink:#102c50; --monthly-soft:#5d7085; background:rgba(255,248,239,.34); }
 .pino-monthly__lead { padding:3px 12px 0 0; }
 .pino-monthly__lead>span { display:block; margin:0 0 9px; color:var(--monthly-accent); font:700 9px/1.2 Arial,sans-serif; letter-spacing:.12em; text-transform:uppercase; }
-.pino-monthly__lead h2 { max-width:230px; margin:0 0 11px; color:var(--monthly-ink); font:500 31px/1.02 "Noto Serif",Georgia,serif; letter-spacing:-.028em; text-wrap:balance; }
+.pino-monthly__lead h2 { max-width:230px; margin:0 0 11px; color:var(--monthly-ink); font-size:31px; line-height:1.02; font-weight:500; font-family:var(--font-display-vi),Georgia,serif; letter-spacing:-.028em; text-wrap:balance; }
 .pino-monthly__lead p { max-width:220px; margin:0; color:var(--monthly-soft); font:12.2px/1.62 Arial,sans-serif; text-wrap:pretty; }
 .pino-monthly__grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
 .pino-monthly__card { display:grid; grid-template-columns:42% 58%; min-height:220px; overflow:hidden; border:1px solid var(--monthly-line); border-radius:16px; background:rgba(255,255,255,.62); box-shadow:0 14px 34px rgba(76,48,34,.045); }
 .pino-monthly__card>img { width:100%; height:100%; object-fit:cover; }
 .pino-monthly__card>div { display:flex; flex-direction:column; justify-content:center; padding:22px 24px; }
 .pino-monthly__card span { color:var(--monthly-accent); font:700 9px/1 Arial,sans-serif; letter-spacing:.12em; }
-.pino-monthly__card h3 { margin:9px 0 7px; color:var(--monthly-ink); font:500 25px/1.05 "Noto Serif",Georgia,serif; letter-spacing:-.02em; }
+.pino-monthly__card h3 { margin:9px 0 7px; color:var(--monthly-ink); font-size:25px; line-height:1.05; font-weight:500; font-family:var(--font-display-vi),Georgia,serif; letter-spacing:-.02em; }
 .pino-monthly__card p { margin:0 0 12px; color:var(--monthly-soft); font:11.5px/1.55 Arial,sans-serif; }
 .pino-monthly__card a { width:max-content; color:var(--monthly-accent); text-decoration:none; font:700 10.5px Arial,sans-serif; }
 
