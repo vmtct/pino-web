@@ -1,0 +1,493 @@
+/* Homepage mobile refinement pass. Scoped to the CSS-module class names emitted by app/homepage.module.css. */
+@media (max-width: 760px) {
+  main#top[class*="homepage_page"] [class*="homepage_header"] {
+    height: 62px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_brand"] {
+    gap: 7px;
+    font-size: 19px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_brand"] img {
+    width: 26px;
+    height: 33px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_navCta"] {
+    min-width: 38px;
+    min-height: 38px;
+    padding: 7px 10px;
+    box-shadow: 0 6px 18px rgba(140, 67, 39, .10);
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_hero"] {
+    border-bottom-color: rgba(85, 67, 52, .11);
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_heroCopy"] {
+    padding: 26px 3px 0;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_hero"] h1 {
+    max-width: 355px;
+    margin-bottom: 12px;
+    font-size: clamp(48px, 13.1vw, 61px);
+    line-height: .91;
+    letter-spacing: -.038em;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_heroCopy"] > p {
+    max-width: 350px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_heroActions"] {
+    gap: 9px;
+    margin-top: 18px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_primary"],
+  main#top[class*="homepage_page"] [class*="homepage_secondary"] {
+    min-height: 41px;
+    padding-inline: 16px;
+    font-size: 11px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_heroVisual"] {
+    min-height: 246px;
+    margin-top: -2px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_heroCampus"] {
+    width: 116%;
+    max-width: none;
+    margin-right: -8%;
+    object-position: center bottom;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_heroLeaves"] {
+    width: 112px;
+    left: -39px;
+    bottom: 3px;
+    opacity: .70;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_heroHalo"] {
+    width: 245px;
+    height: 245px;
+    right: 10%;
+    top: 8px;
+    opacity: .75;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_section"] {
+    padding-block: 24px 22px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_withIntro"],
+  main#top[class*="homepage_page"] [class*="homepage_openStudio"] {
+    gap: 14px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_intro"],
+  main#top[class*="homepage_page"] [class*="homepage_openLead"] {
+    max-width: 390px;
+    padding-left: 2px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_intro"] h2,
+  main#top[class*="homepage_page"] [class*="homepage_openLead"] h2 {
+    margin-bottom: 7px;
+    font-size: 28px;
+    line-height: .96;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_intro"] p,
+  main#top[class*="homepage_page"] [class*="homepage_openLead"] p {
+    font-size: 11px;
+    line-height: 1.52;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_textLink"] {
+    margin-top: 10px;
+    font-size: 10px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_pathGrid"] {
+    gap: 10px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_pathCard"] {
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(104, 75, 54, .045);
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_openGrid"] {
+    gap: 8px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_openFeature"],
+  main#top[class*="homepage_page"] [class*="homepage_openCard"] {
+    border-radius: 12px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_openFeature"] {
+    min-height: 184px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_openFeature"] img {
+    height: 184px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_openCard"] img {
+    height: 118px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_openCardBody"] {
+    padding: 10px 10px 11px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_openCardBody"] h3 {
+    font-size: 15px;
+    line-height: 1.05;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_how"] {
+    padding-block: 22px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_galleryRow"],
+  main#top[class*="homepage_page"] [class*="homepage_houseRow"] {
+    gap: 8px;
+    padding-bottom: 5px;
+    scroll-padding-inline: 2px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_galleryRow"] img {
+    flex-basis: min(76vw, 300px);
+    height: 168px;
+    border-radius: 12px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_houseRow"] img {
+    flex-basis: min(80vw, 318px);
+    height: 174px;
+    border-radius: 12px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_ctaWrap"] {
+    padding-top: 12px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_cta"] {
+    min-height: 154px;
+    border-radius: 15px;
+    box-shadow: 0 12px 28px rgba(145, 66, 39, .11);
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_cta"] > img {
+    object-position: center 46%;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_ctaContent"] {
+    padding: 16px 14px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_cta"] h2 {
+    max-width: 310px;
+    margin-inline: auto;
+    font-size: 28px;
+    line-height: .95;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_cta"] p {
+    margin: 5px 0 8px;
+    font-size: 10px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_cta"] a {
+    padding: 8px 19px;
+    font-size: 10px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_footer"] {
+    padding-top: 26px;
+  }
+}
+
+@media (max-width: 480px) {
+  main#top[class*="homepage_page"] [class*="homepage_shell"] {
+    width: min(calc(100% - 20px), 440px);
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_header"] {
+    height: 58px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_navCta"] {
+    min-width: 36px;
+    min-height: 36px;
+    padding: 6px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_arrowCircle"] {
+    width: 22px;
+    height: 22px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_heroCopy"] {
+    padding-top: 24px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_hero"] h1 {
+    max-width: 330px;
+    font-size: clamp(46px, 13.4vw, 54px);
+    line-height: .90;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_heroCopy"] > p {
+    max-width: 330px;
+    font-size: 11.5px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_heroActions"] {
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin-top: 17px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_primary"],
+  main#top[class*="homepage_page"] [class*="homepage_secondary"] {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 40px;
+    padding-inline: 10px;
+    gap: 8px;
+    font-size: 10.5px;
+    white-space: nowrap;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_heroVisual"] {
+    min-height: 220px;
+    margin-top: 3px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_heroCampus"] {
+    width: 119%;
+    margin-right: -9%;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_heroHalo"] {
+    width: 215px;
+    height: 215px;
+    right: 7%;
+    top: 7px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_heroLeaves"] {
+    width: 104px;
+    left: -38px;
+    bottom: 0;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_section"] {
+    padding-block: 22px 20px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_intro"] h2,
+  main#top[class*="homepage_page"] [class*="homepage_openLead"] h2 {
+    font-size: 27px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_sparkline"] {
+    margin: 5px 0 8px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_pathCard"],
+  main#top[class*="homepage_page"] [class*="homepage_pathCard"]:nth-child(2) {
+    grid-template-columns: 41% 59%;
+    min-height: 138px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_cardImage"] {
+    width: 100%;
+    height: 138px;
+    min-height: 138px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_cardCopy"] {
+    min-height: 138px;
+    padding: 15px 13px 12px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_cardCopy"] h3 {
+    margin-bottom: 5px;
+    font-size: 20px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_cardCopy"] p {
+    max-width: none;
+    font-size: 9.5px;
+    line-height: 1.42;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_cardCopy"] a {
+    margin-top: auto;
+    font-size: 9px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_openLead"] h3 {
+    margin: 7px 0 5px;
+    font-size: 21px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_openFeature"] {
+    min-height: 168px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_openFeature"] img {
+    height: 168px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_openCard"] img {
+    height: 108px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_openCardBody"] {
+    padding: 9px 9px 10px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_openCardBody"] h3 {
+    font-size: 14px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_openCardBody"] p {
+    font-size: 8.5px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_badge"] {
+    top: 7px;
+    left: 7px;
+    min-width: 36px;
+    padding: 5px;
+    font-size: 6.5px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_how"] {
+    padding-block: 21px 22px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_howGrid"] {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_howTitle"] {
+    grid-column: 1 / -1;
+    padding: 0 2px 5px;
+    font-size: 27px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_step"] {
+    grid-template-columns: 40px 1fr;
+    gap: 7px;
+    min-height: 92px;
+    align-items: center;
+    padding: 10px 8px;
+    border: 1px solid rgba(157, 123, 96, .12);
+    border-radius: 11px;
+    background: rgba(255, 255, 255, .30);
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_step"]::after {
+    display: none !important;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_step"] img {
+    width: 36px;
+    height: 36px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_step"] strong {
+    margin-bottom: 3px;
+    font-size: 12px;
+    line-height: 1.05;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_step"] p {
+    max-width: none;
+    font-size: 8.5px;
+    line-height: 1.35;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_galleryRow"] img {
+    flex-basis: 76vw;
+    height: 158px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_houseRow"] img {
+    flex-basis: 80vw;
+    height: 166px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_cta"] {
+    min-height: 148px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_cta"] h2 {
+    max-width: 280px;
+    font-size: 25px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_footer"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px 12px;
+    padding: 26px 2px 58px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_footerLead"] {
+    grid-column: 1 / -1;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_footerBrand"] {
+    font-size: 19px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_footerLead"] p,
+  main#top[class*="homepage_page"] [class*="homepage_footerLead"] strong {
+    font-size: 9px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_footer"] h4 {
+    margin-bottom: 7px;
+    font-size: 11px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_footerCol"] {
+    gap: 6px;
+    font-size: 8.5px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_news"] {
+    grid-column: 1 / -1;
+    max-width: 300px;
+    margin-top: 2px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_news"] p {
+    font-size: 9px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_emailMock"] {
+    max-width: 280px;
+    padding-block: 6px;
+  }
+
+  main#top[class*="homepage_page"] [class*="homepage_footerLeaves"] {
+    width: 102px;
+    right: -30px;
+    bottom: -28px;
+  }
+}
