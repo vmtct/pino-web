@@ -1,5 +1,6 @@
 import memberWorker from "./worker-member";
 import { createPublicBooking, getPublicSessions } from "./lib/open-studio-public";
+import { createOpenStudioHoldRequest } from "./lib/open-studio-hold-request";
 import { getWebContent } from "./lib/web-content";
 import { getWebImages } from "./lib/web-images";
 import { WORKER_BUILD_INFO } from "./worker-build-info";
@@ -32,6 +33,7 @@ const handler = {
     if (request.method === "GET" && url.pathname === "/api/pino-core/open-studio/sessions") return proxyCoreSessions(request, env);
     if (request.method === "GET" && url.pathname === "/api/pino-core/open-studio/capabilities") return registrationCapability(request, env);
     if (request.method === "POST" && url.pathname === "/api/pino-core/open-studio/registrations") return proxyCoreRegistration(request, env);
+    if (request.method === "POST" && url.pathname === "/api/open-studio/hold-request") return createOpenStudioHoldRequest(request, env as any);
     if (request.method === "GET" && url.pathname === "/api/os-sessions") return getPublicSessions(env as any, url.searchParams);
     if (request.method === "GET" && url.pathname === "/api/web-content") {
       try { return cmsJson({ content: await getWebContent(env as any) }); }
