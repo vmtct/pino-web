@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;500;600;700&display=swap');
+
+html[lang="vi"] body[data-public-page="home"] main#top > div > section:first-of-type {
+  grid-template-columns: 42% 58% !important;
+}
+html[lang="vi"] body[data-public-page="home"] main#top > div > section:first-of-type h1 {
+  max-width: 620px !important;
+  font-family: "Noto Serif", Georgia, serif !important;
+  font-size: clamp(50px, 4.45vw, 70px) !important;
+  line-height: 1.01 !important;
+  letter-spacing: -.045em !important;
+  text-wrap: balance;
+}
+html[lang="vi"] body[data-public-page="artchitect"] main h1,
+html[lang="vi"] body[data-public-page="artchitect"] main h2,
+html[lang="vi"] body[data-public-page="artchitect"] main h3 {
+  font-family: "Noto Serif", Georgia, serif !important;
+  letter-spacing: -.018em !important;
+}
+
+.pino-monthly {
+  --monthly-accent:#b9502d;
+  --monthly-ink:#173557;
+  --monthly-soft:#536a80;
+  --monthly-line:rgba(119,88,62,.16);
+  display:grid;
+  grid-template-columns:240px minmax(0,1fr);
+  gap:38px;
+  padding:48px 6.2vw 50px;
+  border-bottom:1px solid var(--monthly-line);
+  background:rgba(255,252,247,.48);
+}
+.pino-monthly--piano { --monthly-accent:#741423; --monthly-ink:#102c50; --monthly-soft:#5d7085; background:rgba(255,248,239,.34); }
+.pino-monthly__lead { padding:3px 12px 0 0; }
+.pino-monthly__lead>span { display:block; margin:0 0 9px; color:var(--monthly-accent); font:700 9px/1.2 Arial,sans-serif; letter-spacing:.12em; text-transform:uppercase; }
+.pino-monthly__lead h2 { max-width:230px; margin:0 0 11px; color:var(--monthly-ink); font:500 31px/1.02 "Noto Serif",Georgia,serif; letter-spacing:-.028em; text-wrap:balance; }
+.pino-monthly__lead p { max-width:220px; margin:0; color:var(--monthly-soft); font:12.2px/1.62 Arial,sans-serif; text-wrap:pretty; }
+.pino-monthly__grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.pino-monthly__card { display:grid; grid-template-columns:42% 58%; min-height:220px; overflow:hidden; border:1px solid var(--monthly-line); border-radius:16px; background:rgba(255,255,255,.62); box-shadow:0 14px 34px rgba(76,48,34,.045); }
+.pino-monthly__card>img { width:100%; height:100%; object-fit:cover; }
+.pino-monthly__card>div { display:flex; flex-direction:column; justify-content:center; padding:22px 24px; }
+.pino-monthly__card span { color:var(--monthly-accent); font:700 9px/1 Arial,sans-serif; letter-spacing:.12em; }
+.pino-monthly__card h3 { margin:9px 0 7px; color:var(--monthly-ink); font:500 25px/1.05 "Noto Serif",Georgia,serif; letter-spacing:-.02em; }
+.pino-monthly__card p { margin:0 0 12px; color:var(--monthly-soft); font:11.5px/1.55 Arial,sans-serif; }
+.pino-monthly__card a { width:max-content; color:var(--monthly-accent); text-decoration:none; font:700 10.5px Arial,sans-serif; }
+
+@media (max-width:900px){
+  .pino-monthly{grid-template-columns:190px minmax(0,1fr);gap:26px;padding-left:5vw;padding-right:5vw}
+  .pino-monthly__lead h2{max-width:185px;font-size:28px}.pino-monthly__lead p{max-width:180px}
+}
+@media (max-width:760px){
+  html[lang="vi"] body[data-public-page="home"] main#top > div > section:first-of-type { grid-template-columns:1fr !important; }
+  html[lang="vi"] body[data-public-page="home"] main#top > div > section:first-of-type h1 { font-size:clamp(46px,13vw,62px) !important; line-height:.98 !important; }
+  .pino-monthly{display:block;padding:34px 18px 36px}.pino-monthly__lead{max-width:390px;margin-bottom:22px;padding:0}.pino-monthly__lead h2{max-width:350px;font-size:28px}.pino-monthly__lead p{max-width:355px;font-size:11.5px}.pino-monthly__grid{grid-template-columns:1fr;gap:11px}.pino-monthly__card{grid-template-columns:40% 60%;min-height:180px;border-radius:13px}.pino-monthly__card>div{padding:16px}.pino-monthly__card h3{font-size:21px}.pino-monthly__card p{font-size:10.8px}
+}
