@@ -19,7 +19,7 @@ for (const path of paths) {
     const expectedNav = ['/', '/#paths', '/open-studio', '/#stories', '/#about'];
     await expect(header.locator('nav a')).toHaveCount(expectedNav.length);
     expect(await header.locator('nav a').evaluateAll((links) => links.map((link) => link.getAttribute('href')))).toEqual(expectedNav);
-    await expect(header.locator('a[href="/open-studio"]')).toContainText('Open Studio');
+    await expect(header.locator('a[href="/open-studio"]').last()).toContainText('Open Studio');
 
     await expect(footer.locator('a[href="/"]').first()).toContainText('PINO House');
     await expect(footer.locator('strong').first()).toContainText('pinohouse.art');
