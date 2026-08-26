@@ -16,6 +16,15 @@ html[lang="vi"] [data-pino-path-footer] h4 {
   letter-spacing: -.014em !important;
 }
 
+/* Artchitect's localized hero strapline is a paragraph, so opt it into the VI display face explicitly. */
+html[lang="vi"] body[data-public-page="artchitect"] main > section:first-of-type p:first-of-type > [data-pino-localized="vi"] {
+  font-family: var(--font-display-vi), Georgia, serif;
+  font-synthesis: none;
+  font-kerning: normal;
+  letter-spacing: -.012em;
+  word-spacing: 0;
+}
+
 html[lang="vi"] body[data-public-page="home"] main#top > div > section:first-of-type {
   grid-template-columns: 42% 58% !important;
 }
@@ -42,24 +51,48 @@ html[lang="vi"] body[data-public-page="home"] main#top > div > section:first-of-
 }
 .pino-monthly--piano { --monthly-accent:#741423; --monthly-ink:#102c50; --monthly-soft:#5d7085; background:rgba(255,248,239,.34); }
 .pino-monthly__lead { padding:3px 12px 0 0; }
-.pino-monthly__lead>span { display:block; margin:0 0 9px; color:var(--monthly-accent); font:700 9px/1.2 Arial,sans-serif; letter-spacing:.12em; text-transform:uppercase; }
-.pino-monthly__lead h2 { max-width:230px; margin:0 0 11px; color:var(--monthly-ink); font-size:31px; line-height:1.02; font-weight:500; font-family:var(--font-display-vi),Georgia,serif; letter-spacing:-.028em; text-wrap:balance; }
-.pino-monthly__lead p { max-width:220px; margin:0; color:var(--monthly-soft); font:12.2px/1.62 Arial,sans-serif; text-wrap:pretty; }
+.pino-monthly__lead>span { display:block; margin:0 0 9px; color:var(--monthly-accent); font:700 9px/1.2 "DM Sans",Arial,sans-serif; letter-spacing:.12em; text-transform:uppercase; }
+.pino-monthly__lead h2 { max-width:230px; margin:0 0 11px; color:var(--monthly-ink); font:500 31px/1.02 "DM Serif Display",Georgia,serif; letter-spacing:-.028em; text-wrap:balance; }
+.pino-monthly__lead p { max-width:220px; margin:0; color:var(--monthly-soft); font:12.2px/1.62 "DM Sans",Arial,sans-serif; text-wrap:pretty; }
 .pino-monthly__grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
 .pino-monthly__card { display:grid; grid-template-columns:42% 58%; min-height:220px; overflow:hidden; border:1px solid var(--monthly-line); border-radius:16px; background:rgba(255,255,255,.62); box-shadow:0 14px 34px rgba(76,48,34,.045); }
 .pino-monthly__card>img { width:100%; height:100%; object-fit:cover; }
 .pino-monthly__card>div { display:flex; flex-direction:column; justify-content:center; padding:22px 24px; }
-.pino-monthly__card span { color:var(--monthly-accent); font:700 9px/1 Arial,sans-serif; letter-spacing:.12em; }
-.pino-monthly__card h3 { margin:9px 0 7px; color:var(--monthly-ink); font-size:25px; line-height:1.05; font-weight:500; font-family:var(--font-display-vi),Georgia,serif; letter-spacing:-.02em; }
-.pino-monthly__card p { margin:0 0 12px; color:var(--monthly-soft); font:11.5px/1.55 Arial,sans-serif; }
-.pino-monthly__card a { width:max-content; color:var(--monthly-accent); text-decoration:none; font:700 10.5px Arial,sans-serif; }
+.pino-monthly__card>div>span:first-child { color:var(--monthly-accent); font:700 9px/1 "DM Sans",Arial,sans-serif; letter-spacing:.12em; text-transform:uppercase; }
+.pino-monthly__card h3 { margin:9px 0 7px; color:var(--monthly-ink); font:500 25px/1.05 "DM Serif Display",Georgia,serif; letter-spacing:-.02em; }
+.pino-monthly__card p { margin:0 0 12px; color:var(--monthly-soft); font:11.5px/1.55 "DM Sans",Arial,sans-serif; }
+.pino-monthly__card a { width:max-content; color:var(--monthly-accent); text-decoration:none; font:700 10.5px/1.2 "DM Sans",Arial,sans-serif; }
 
+/* Artchitect monthly themes: larger editorial cards with clearer content hierarchy. */
+.pino-monthly--art { grid-template-columns:260px minmax(0,1fr); gap:42px; padding:56px max(5vw,calc((100vw - 1360px)/2 + 28px)) 60px; background:linear-gradient(180deg,rgba(255,253,249,.78),rgba(248,241,232,.38)); }
+.pino-monthly--art .pino-monthly__lead { padding:2px 10px 0 0; }
+.pino-monthly--art .pino-monthly__lead>span { margin-bottom:14px; font-size:10px; letter-spacing:.13em; }
+.pino-monthly--art .pino-monthly__lead h2 { max-width:250px; margin-bottom:14px; font-size:36px; line-height:1.06; letter-spacing:-.022em; }
+.pino-monthly--art .pino-monthly__lead p { max-width:245px; color:#526a80; font-size:13.5px; line-height:1.68; }
+.pino-monthly--art .pino-monthly__grid { gap:20px; }
+.pino-monthly--art .pino-monthly__card { grid-template-columns:minmax(210px,44%) minmax(0,1fr); min-height:250px; gap:24px; padding:13px; border-radius:20px; background:rgba(255,255,255,.80); box-shadow:0 16px 40px rgba(72,51,37,.055); transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease; }
+.pino-monthly--art .pino-monthly__card:hover { transform:translateY(-2px); border-color:rgba(185,80,45,.28); box-shadow:0 22px 48px rgba(72,51,37,.09); }
+.pino-monthly--art .pino-monthly__card>img { min-height:224px; border-radius:14px; object-position:center; }
+.pino-monthly--art .pino-monthly__card>div { justify-content:center; padding:20px 24px 20px 0; }
+.pino-monthly--art .pino-monthly__card>div>span:first-child { width:max-content; padding:6px 9px 5px; border-radius:999px; background:rgba(185,80,45,.08); font-size:10px; line-height:1.1; letter-spacing:.10em; }
+.pino-monthly--art .pino-monthly__card h3 { margin:14px 0 9px; font-size:30px; line-height:1.05; letter-spacing:-.018em; }
+.pino-monthly--art .pino-monthly__card p { max-width:31ch; margin:0 0 18px; color:#536c82; font-size:13.5px; line-height:1.65; text-wrap:pretty; }
+.pino-monthly--art .pino-monthly__card a { display:inline-flex; align-items:center; gap:8px; padding-bottom:3px; border-bottom:1px solid rgba(185,80,45,.28); font-size:12.5px; line-height:1.2; }
+
+@media (max-width:1100px){
+  .pino-monthly--art{grid-template-columns:210px minmax(0,1fr);gap:28px;padding-left:4vw;padding-right:4vw}
+  .pino-monthly--art .pino-monthly__grid{grid-template-columns:1fr}
+  .pino-monthly--art .pino-monthly__lead h2{max-width:205px;font-size:32px}
+}
 @media (max-width:900px){
   .pino-monthly{grid-template-columns:190px minmax(0,1fr);gap:26px;padding-left:5vw;padding-right:5vw}
   .pino-monthly__lead h2{max-width:185px;font-size:28px}.pino-monthly__lead p{max-width:180px}
+  .pino-monthly--art{grid-template-columns:200px minmax(0,1fr);gap:24px;padding-left:4vw;padding-right:4vw}
+  .pino-monthly--art .pino-monthly__lead h2{max-width:195px;font-size:31px}.pino-monthly--art .pino-monthly__lead p{max-width:195px;font-size:13px}
 }
 @media (max-width:760px){
   html[lang="vi"] body[data-public-page="home"] main#top > div > section:first-of-type { grid-template-columns:1fr !important; }
   html[lang="vi"] body[data-public-page="home"] main#top > div > section:first-of-type h1 { font-size:clamp(46px,13vw,62px) !important; line-height:.98 !important; }
   .pino-monthly{display:block;padding:34px 18px 36px}.pino-monthly__lead{max-width:390px;margin-bottom:22px;padding:0}.pino-monthly__lead h2{max-width:350px;font-size:28px}.pino-monthly__lead p{max-width:355px;font-size:11.5px}.pino-monthly__grid{grid-template-columns:1fr;gap:11px}.pino-monthly__card{grid-template-columns:40% 60%;min-height:180px;border-radius:13px}.pino-monthly__card>div{padding:16px}.pino-monthly__card h3{font-size:21px}.pino-monthly__card p{font-size:10.8px}
+  .pino-monthly--art{display:block;padding:40px 18px 44px}.pino-monthly--art .pino-monthly__lead{max-width:360px;margin-bottom:24px;padding:0}.pino-monthly--art .pino-monthly__lead h2{max-width:340px;font-size:31px}.pino-monthly--art .pino-monthly__lead p{max-width:350px;font-size:13px}.pino-monthly--art .pino-monthly__grid{gap:14px}.pino-monthly--art .pino-monthly__card{grid-template-columns:1fr;min-height:0;gap:0;padding:10px;border-radius:16px}.pino-monthly--art .pino-monthly__card>img{width:100%;min-height:0;height:auto;aspect-ratio:16/10;border-radius:12px}.pino-monthly--art .pino-monthly__card>div{padding:18px 10px 12px}.pino-monthly--art .pino-monthly__card h3{font-size:26px}.pino-monthly--art .pino-monthly__card p{max-width:none;font-size:13px}
 }
