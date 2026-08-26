@@ -8,7 +8,7 @@ const paths = [
     name: "PianoHouse",
     copy: "Music as expression. Confidence as harmony.",
     image: "hands-playing-piano-top-view.png",
-    href: "/open-studio",
+    href: "/pianohouse",
   },
   {
     name: "Artchitect",
@@ -20,7 +20,7 @@ const paths = [
     name: "Little Piner",
     copy: "Play, wonder, and grow — at their own beautiful pace.",
     image: "open-plan-creative-studio.png",
-    href: "/open-studio",
+    href: "/little-piner",
   },
 ] as const;
 

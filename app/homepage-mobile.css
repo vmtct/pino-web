@@ -181,13 +181,13 @@
     padding-top: 12px;
   }
 
-  main#top[class*="homepage_page"] [class*="homepage_cta"] {
+  main#top[class*="homepage_page"] [class*="homepage_cta__"] {
     min-height: 154px;
     border-radius: 15px;
     box-shadow: 0 12px 28px rgba(145, 66, 39, .11);
   }
 
-  main#top[class*="homepage_page"] [class*="homepage_cta"] > img {
+  main#top[class*="homepage_page"] [class*="homepage_cta__"] > img {
     object-position: center 46%;
   }
 
@@ -195,24 +195,24 @@
     padding: 16px 14px;
   }
 
-  main#top[class*="homepage_page"] [class*="homepage_cta"] h2 {
+  main#top[class*="homepage_page"] [class*="homepage_cta__"] h2 {
     max-width: 310px;
     margin-inline: auto;
     font-size: 28px;
     line-height: .95;
   }
 
-  main#top[class*="homepage_page"] [class*="homepage_cta"] p {
+  main#top[class*="homepage_page"] [class*="homepage_cta__"] p {
     margin: 5px 0 8px;
     font-size: 10px;
   }
 
-  main#top[class*="homepage_page"] [class*="homepage_cta"] a {
+  main#top[class*="homepage_page"] [class*="homepage_cta__"] a {
     padding: 8px 19px;
     font-size: 10px;
   }
 
-  main#top[class*="homepage_page"] [class*="homepage_footer"] {
+  main#top[class*="homepage_page"] [class*="homepage_footer__"] {
     padding-top: 26px;
   }
 }
@@ -432,16 +432,16 @@
     height: 166px;
   }
 
-  main#top[class*="homepage_page"] [class*="homepage_cta"] {
+  main#top[class*="homepage_page"] [class*="homepage_cta__"] {
     min-height: 148px;
   }
 
-  main#top[class*="homepage_page"] [class*="homepage_cta"] h2 {
+  main#top[class*="homepage_page"] [class*="homepage_cta__"] h2 {
     max-width: 280px;
     font-size: 25px;
   }
 
-  main#top[class*="homepage_page"] [class*="homepage_footer"] {
+  main#top[class*="homepage_page"] [class*="homepage_footer__"] {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 18px 12px;
     padding: 26px 2px 58px;
@@ -489,5 +489,53 @@
     width: 102px;
     right: -30px;
     bottom: -28px;
+  }
+}
+
+
+/* Homepage UI polish — repo/domain audit 2026-08-26 */
+main#top[class*="homepage_page"] [class*="homepage_step"] p {
+  font-size: 9px;
+}
+main#top[class*="homepage_page"] [class*="homepage_footerCol"] {
+  font-size: 9px;
+}
+
+@media (max-width: 480px) {
+  main#top[class*="homepage_page"] [class*="homepage_navCta"] {
+    min-width: auto;
+    min-height: 40px;
+    padding: 7px 12px;
+    gap: 7px;
+  }
+  main#top[class*="homepage_page"] [class*="homepage_navCta"] [class*="homepage_ctaLabel"] {
+    display: inline;
+    font-size: 10px;
+  }
+  main#top[class*="homepage_page"] [class*="homepage_arrowCircle"] {
+    width: 20px;
+    height: 20px;
+  }
+  main#top[class*="homepage_page"] [class*="homepage_primary"],
+  main#top[class*="homepage_page"] [class*="homepage_secondary"] {
+    min-height: 44px;
+  }
+  main#top[class*="homepage_page"] [class*="homepage_cardCopy"] p {
+    font-size: 10.5px;
+    line-height: 1.5;
+  }
+  main#top[class*="homepage_page"] [class*="homepage_cardCopy"] a,
+  main#top[class*="homepage_page"] [class*="homepage_textLink"] {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    font-size: 10.5px;
+  }
+  main#top[class*="homepage_page"] [class*="homepage_step"] p {
+    font-size: 10px;
+    line-height: 1.42;
+  }
+  main#top[class*="homepage_page"] [class*="homepage_openCardBody"] p {
+    font-size: 9.5px;
   }
 }
