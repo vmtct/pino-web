@@ -189,9 +189,9 @@ export default function HoldRequestFlow() {
             {flowState === "error" && <p className="osd-hold-error" role="alert">{message}</p>}
 
             <button className="osd-hold-submit" type="submit" disabled={flowState === "submitting"}>
-              {flowState === "submitting" ? "Đang gửi…" : "Gửi yêu cầu giữ chỗ"}<span>→</span>
+              {flowState === "submitting" ? "Đang gửi…" : "Giữ chỗ cho bé"}<span>→</span>
             </button>
-            <small className="osd-hold-privacy">Thông tin chỉ được dùng để PINO liên hệ về buổi Open Studio này.</small>
+            <small className="osd-hold-privacy">Chỉ dùng để PINO liên hệ về buổi Open Studio này.</small>
           </form>
         )}
       </section>
