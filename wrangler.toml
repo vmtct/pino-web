@@ -2,6 +2,10 @@ name = "pino-web"
 compatibility_date = "2026-08-10"
 main = "worker-entry.ts"
 keep_vars = true
+# `routes` makes Wrangler infer workers_dev=false. Keep the service hostname
+# available during incremental cutover because CI and existing API consumers
+# still use pino-web.minhtri-van42.workers.dev.
+workers_dev = true
 
 # Incremental production cutover: Artchitect and Little Piner are served by
 # pino-web while the remaining pinohouse.art pages continue to resolve to
