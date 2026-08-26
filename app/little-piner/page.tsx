@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import styles from "./page.module.css";
+import { PathFooter, PathHeader } from "../components/path-chrome";
 
 export const metadata: Metadata = {
   title: "Little Piner — PINO House",
@@ -7,7 +8,6 @@ export const metadata: Metadata = {
 };
 
 const ASSET = "https://assets.pinohouse.art/site/littlePiner";
-const SIGIL = "https://assets.pinohouse.art/core/Pino%20Sigil.png";
 const asset = (name: string) => `${ASSET}/${encodeURIComponent(name)}`;
 
 const learning = [
@@ -43,25 +43,10 @@ const gallery = [
   "ChatGPT Image Aug 26, 2026, 08_55_30 AM (6).png",
 ] as const;
 
-function Brand() {
-  return (
-    <a className={styles.brand} href="/" aria-label="PINO House home">
-      <img src={SIGIL} alt="" />
-      <span>PINO House</span>
-    </a>
-  );
-}
-
 export default function LittlePinerPage() {
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <Brand />
-        <nav className={styles.nav} aria-label="Little Piner navigation">
-          <a href="/">House</a><a href="/#paths">Paths</a><a href="/open-studio">Open Studio</a><a href="#gallery">Stories</a><a href="/#about">About</a>
-        </nav>
-        <a className={styles.navCta} href="/open-studio">Open Studio <span>→</span></a>
-      </header>
+      <PathHeader styles={styles} ariaLabel="Little Piner navigation" />
 
       <section className={styles.hero}>
         <div className={styles.heroCopy}>
@@ -118,14 +103,7 @@ export default function LittlePinerPage() {
         <div><p>Step into the little house.</p><h2>Come visit Little Piner.</h2><span>See creativity, music and play in motion.</span><a href="/open-studio">Visit the Studio <b>→</b></a></div>
       </section>
 
-      <footer className={styles.footer}>
-        <div><Brand /><p>Art. Music. Creative Growth.</p><strong>pinohouse.art</strong></div>
-        <div><h4>Explore</h4><a href="/">House</a><a href="/#paths">Paths</a><a href="/open-studio">Open Studio</a><a href="#gallery">Stories</a></div>
-        <div><h4>About</h4><a href="/#about">Our Story</a><a href="/#about">The House</a><a href="/#about">Team</a><a href="/#about">Careers</a></div>
-        <div><h4>Information</h4><a href="/open-studio">Visit</a><a href="/#about">FAQs</a><a href="/#about">Policies</a><a href="/#about">Contact</a></div>
-        <div className={styles.stay}><h4>Stay connected</h4><p>Get news about Open Studio and special events.</p><span>Instagram · Facebook · YouTube</span></div>
-        <small>© {new Date().getFullYear()} PINO House. All rights reserved.</small>
-      </footer>
+      <PathFooter styles={styles} />
 
       <img className={styles.botanical} src={asset("ChatGPT Image Aug 26, 2026, 08_55_34 AM (8).png")} alt="" loading="lazy" />
       <img className={styles.motifs} src={asset("ChatGPT Image Aug 26, 2026, 08_55_34 AM (9).png")} alt="" loading="lazy" />
