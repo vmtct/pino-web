@@ -9,7 +9,7 @@ const paths = [
 
 for (const path of paths) {
   test(`${path.route} uses the shared PINO path chrome`, async ({ page }) => {
-    await page.goto(path.route);
+    await page.goto(`${path.route}?lang=${path.locale}`);
 
     const header = page.locator('[data-pino-path-header]');
     const footer = page.locator('[data-pino-path-footer]');
@@ -27,7 +27,7 @@ for (const path of paths) {
 }
 
 test('Open Studio uses a contextual schedule CTA and hides its legacy chrome', async ({ page }) => {
-  await page.goto('/open-studio');
+  await page.goto('/open-studio?lang=vi');
   await expect(page.locator('[data-pino-path-header] a[href="#sessions"]')).toContainText('Xem lịch');
   await expect(page.locator('.open-studio-page > .os-site-header')).toBeHidden();
   await expect(page.locator('.open-studio-page > .os-footer')).toBeHidden();
