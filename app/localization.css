@@ -1,0 +1,10 @@
+.pino-header-actions { display:inline-flex; align-items:center; justify-self:end; gap:10px; }
+.locale-toggle { display:inline-flex; align-items:center; gap:3px; min-height:34px; padding:3px 7px; border:1px solid rgba(54,68,76,.16); border-radius:999px; background:rgba(255,255,255,.55); color:inherit; font:700 9px/1 Arial,sans-serif; letter-spacing:.045em; backdrop-filter:blur(8px); }
+.locale-toggle button { border:0; padding:5px 3px; background:transparent; color:inherit; font:inherit; opacity:.42; cursor:pointer; }
+.locale-toggle button.is-active { opacity:1; }
+.locale-toggle span { opacity:.2; }
+@media (max-width:560px) {
+  .pino-header-actions { gap:6px; }
+  .locale-toggle { min-height:32px; padding:2px 6px; font-size:8px; }
+  .homepage .nav-cta { padding-inline:11px; }
+}
