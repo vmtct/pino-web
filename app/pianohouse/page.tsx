@@ -10,6 +10,8 @@ const ASSET = "https://assets.pinohouse.art/site/pianohouse";
 const SIGIL = "https://assets.pinohouse.art/core/Pino%20Sigil.png";
 const FOLIAGE_LEFT = "https://assets.pinohouse.art/site/Artchitect/botanical-leaf-illustration.png";
 const FOLIAGE_RIGHT = "https://assets.pinohouse.art/site/Artchitect/neutral-botanical-abstract.png";
+const STUDENT_VIDEO = "https://www.youtube-nocookie.com/embed/x_H1mEDuvTE?list=PLw19K34NDuLiJHTQWj3AjtfVGIPWRwwvc&rel=0&playsinline=1";
+const STUDENT_VIDEO_URL = "https://www.youtube.com/watch?v=x_H1mEDuvTE&list=PLw19K34NDuLiJHTQWj3AjtfVGIPWRwwvc";
 
 const collections = [
   ["Thế giới kỳ diệu", "Những giai điệu vui tươi khơi mở tò mò và trí tưởng tượng.", "dreamlike-piano-under-starry-sky.png"],
@@ -43,6 +45,87 @@ const moments = [
 ] as const;
 
 const mobilePolishStyles = `
+.pianoStudentStory{
+  display:grid;
+  grid-template-columns:minmax(0,1.45fr) minmax(250px,.72fr);
+  overflow:hidden;
+  align-self:start;
+  border:1px solid rgba(115,78,55,.14);
+  border-radius:16px;
+  background:rgba(255,255,255,.62);
+  box-shadow:0 16px 40px rgba(76,48,34,.055);
+}
+.pianoStudentVideo{
+  position:relative;
+  min-height:330px;
+  background:#120d0d;
+}
+.pianoStudentVideo iframe{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  border:0;
+}
+.pianoStudentCopy{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding:28px 28px 26px;
+}
+.pianoStudentMeta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  margin-bottom:17px;
+}
+.pianoStudentMeta span{
+  display:inline-flex;
+  align-items:center;
+  min-height:27px;
+  padding:0 10px;
+  border:1px solid rgba(183,124,53,.24);
+  border-radius:999px;
+  background:#fff8ee;
+  color:#8d5e28;
+  font:700 9px/1 Arial,sans-serif;
+  letter-spacing:.035em;
+}
+.pianoStudentSong{
+  margin-bottom:7px!important;
+  color:#b77c35;
+  font:700 9px/1.2 Arial,sans-serif;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.pianoStudentCopy h3{
+  margin:0 0 10px;
+  color:#102c50;
+  font-size:27px;
+  line-height:1.03;
+  font-weight:500;
+  letter-spacing:-.025em;
+  text-wrap:balance;
+}
+.pianoStudentCopy p:not(.pianoStudentSong){
+  margin-bottom:17px;
+  color:#607489;
+  font:11.5px/1.62 Arial,sans-serif;
+  text-wrap:pretty;
+}
+.pianoStudentCopy a{
+  width:max-content;
+  color:#741423;
+  text-decoration:none;
+  font:700 10.5px Arial,sans-serif;
+}
+
+@media (max-width:1100px){
+  .pianoStudentStory{grid-template-columns:1fr;}
+  .pianoStudentVideo{min-height:0;aspect-ratio:16/9;}
+  .pianoStudentCopy{padding:22px 24px 24px;}
+}
+
 @media (max-width:760px){
   .${styles.page}{overflow-x:hidden;}
   .${styles.header}{position:sticky;top:0;height:58px;padding:0 14px;background:rgba(252,248,243,.96);box-shadow:0 8px 22px rgba(64,42,30,.045);}
@@ -102,6 +185,16 @@ const mobilePolishStyles = `
   .${styles.momentCard}{scroll-snap-align:start;border-radius:12px;}
   .${styles.momentCard}>img{aspect-ratio:1.58/1;}
   .${styles.momentCard} h3{padding:10px 9px 11px;font-size:12px;}
+
+  .pianoStudentStory{grid-template-columns:1fr;border-radius:13px;box-shadow:0 12px 28px rgba(76,48,34,.05);}
+  .pianoStudentVideo{aspect-ratio:16/9;min-height:0;}
+  .pianoStudentCopy{padding:17px 16px 18px;}
+  .pianoStudentMeta{gap:6px;margin-bottom:13px;}
+  .pianoStudentMeta span{min-height:25px;padding:0 9px;font-size:8.5px;}
+  .pianoStudentSong{margin-bottom:6px!important;font-size:8.4px;}
+  .pianoStudentCopy h3{margin-bottom:8px;font-size:23px;}
+  .pianoStudentCopy p:not(.pianoStudentSong){margin-bottom:13px;font-size:10.8px;line-height:1.55;}
+  .pianoStudentCopy a{font-size:10.4px;}
 
   .${styles.cta}{min-height:274px;margin:18px 12px 0;border-radius:13px;}
   .${styles.ctaBg}{left:0;right:auto;width:100%;height:100%;object-position:76% 50%;opacity:.34;}
@@ -210,6 +303,37 @@ export default function PianoHousePage() {
             </article>
           ))}
         </div>
+      </section>
+
+      <section className={styles.contentSection} id="student-story">
+        <div className={styles.sectionLead}>
+          <p className={styles.sectionKicker}>Câu chuyện học viên</p>
+          <h2>Một bản nhạc. Hai anh em. <span>✦</span></h2>
+          <p>Hồng Thiện, 8 tuổi, đang ở trình độ Cấp 5. Với “Nơi này có anh”, Thiện phối hợp cùng anh trai Hồng Nhẫn để tạo nên một phần trình diễn rất riêng.</p>
+        </div>
+        <article className="pianoStudentStory">
+          <div className="pianoStudentVideo">
+            <iframe
+              src={STUDENT_VIDEO}
+              title="Hồng Thiện - Nơi này có anh | PianoHouse"
+              loading="lazy"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          </div>
+          <div className="pianoStudentCopy">
+            <div className="pianoStudentMeta">
+              <span>8 tuổi</span>
+              <span>Cấp 5</span>
+              <span>Cùng anh trai</span>
+            </div>
+            <p className="pianoStudentSong">Nơi này có anh</p>
+            <h3>Hồng Thiện × Hồng Nhẫn</h3>
+            <p>Thiện trình diễn “Nơi này có anh” và phối hợp cùng anh trai Hồng Nhẫn — một khoảnh khắc để việc học đàn trở thành trải nghiệm âm nhạc được chia sẻ trong gia đình.</p>
+            <a href={STUDENT_VIDEO_URL} target="_blank" rel="noreferrer">Xem trên YouTube <span>→</span></a>
+          </div>
+        </article>
       </section>
 
       <section className={styles.contentSection} id="lesson">
