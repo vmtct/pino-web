@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import styles from "./page.module.css";
 
@@ -61,7 +62,7 @@ export default function ArtchitectPage() {
         <nav className={styles.nav} aria-label="Artchitect navigation">
           <a href="/">House</a><a href="/#paths">Paths</a><a href="/open-studio">Open Studio</a><a href="/#stories">Stories</a><a href="/#about">About</a>
         </nav>
-        <a className={styles.navCta} href="/open-studio">Explore Open Studio <span>→</span></a>
+        <a className={styles.navCta} href="/open-studio">Open Studio <span>→</span></a>
       </header>
 
       <section className={styles.hero}>
@@ -69,29 +70,61 @@ export default function ArtchitectPage() {
           <h1>Artchitect</h1>
           <p className={styles.heroLead}>Observe. Make. Design. Build.</p>
           <p className={styles.heroText}>We shape the way children see and build the visual world.</p>
-          <div className={styles.actions}><a className={styles.primary} href="#journey">Explore Artchitect <span>→</span></a><a className={styles.secondary} href="/open-studio">Visit the Studio <span>→</span></a></div>
+          <div className={styles.actions}>
+            <a className={styles.primary} href="#journey">Explore Artchitect <span>→</span></a>
+            <a className={styles.secondary} href="/open-studio">Visit the Studio <span>→</span></a>
+          </div>
         </div>
         <div className={styles.heroImage}><img src={`${ASSET}/artist-studio-workspace.png`} alt="Warm Artchitect studio workspace" /></div>
       </section>
 
       <section className={styles.section} id="journey">
-        <div className={styles.sectionLead}><h2>The Artchitect<br/>Journey</h2><span>✦</span><p>A way of seeing. A way of making.<br/>A way of shaping stories in the world.</p></div>
-        <div className={styles.journeyGrid}>{journey.map(([title, copy, image], i) => <article className={styles.journeyCard} key={title}><img src={`${ASSET}/${image}`} alt=""/><h3>{title}</h3><p>{copy}</p>{i < journey.length - 1 ? <span className={styles.arrow}>→</span> : null}</article>)}</div>
+        <div className={styles.sectionLead}><h2>The Artchitect Journey</h2><span>✦</span><p>A way of seeing. A way of making.<br/>A way of shaping stories in the world.</p></div>
+        <div className={styles.journeyGrid}>
+          {journey.map(([title, copy, image], i) => (
+            <article className={styles.journeyCard} key={title}>
+              <img src={`${ASSET}/${image}`} alt=""/>
+              <h3>{title}</h3><p>{copy}</p>
+              {i < journey.length - 1 ? <span className={styles.arrow}>→</span> : null}
+            </article>
+          ))}
+        </div>
       </section>
 
       <section className={styles.section}>
         <div className={styles.sectionLead}><h2>Inside the studio</h2><span>✦</span><p>How we learn and grow together.</p><a href="#projects">Our approach →</a></div>
-        <div className={styles.cardGrid}>{process.map(([title, copy, pos]) => <article className={styles.featureCard} key={title}><div className={styles.processCrop}><img src={`${ASSET}/creative-process-photo-strip.png`} alt="" style={{objectPosition: pos}}/></div><h3>{title}</h3><p>{copy}</p></article>)}</div>
+        <div className={styles.cardGrid}>
+          {process.map(([title, copy, pos], i) => {
+            const cropStyle = {
+              backgroundImage: `url(${ASSET}/creative-process-photo-strip.png)`,
+              backgroundPosition: `${pos} center`,
+            } as CSSProperties;
+            return (
+              <article className={`${styles.featureCard} ${i === process.length - 1 ? styles.mobileOrphan : ""}`} key={title}>
+                <div className={styles.processCrop} style={cropStyle} aria-hidden="true" />
+                <h3>{title}</h3><p>{copy}</p>
+              </article>
+            );
+          })}
+        </div>
       </section>
 
       <section className={styles.section} id="projects">
-        <div className={styles.sectionLead}><h2>Projects &<br/>outcomes</h2><p>From ideas to meaningful work that leaves a mark.</p><a href="#gallery">See student stories →</a></div>
-        <div className={styles.cardGrid}>{projects.map(([title, copy, image]) => <article className={styles.featureCard} key={title}><img src={`${ASSET}/${image}`} alt=""/><h3>{title}</h3><p>{copy}</p></article>)}</div>
+        <div className={styles.sectionLead}><h2>Projects & outcomes</h2><p>From ideas to meaningful work that leaves a mark.</p><a href="#gallery">See student stories →</a></div>
+        <div className={styles.cardGrid}>
+          {projects.map(([title, copy, image], i) => (
+            <article className={`${styles.featureCard} ${i === projects.length - 1 ? styles.mobileOrphan : ""}`} key={title}>
+              <img src={`${ASSET}/${image}`} alt=""/><h3>{title}</h3><p>{copy}</p>
+            </article>
+          ))}
+        </div>
       </section>
 
       <section className={`${styles.section} ${styles.gallerySection}`} id="gallery">
-        <div className={styles.sectionLead}><h2>Made in<br/>the studio</h2><span>✦</span></div>
-        <div className={styles.gallery}>{gallery.map((image) => <img key={image} src={`${ASSET}/${image}`} alt="Artchitect studio work" />)}</div>
+        <div className={styles.sectionLead}><h2>Made in the studio</h2><span>✦</span></div>
+        <div className={styles.gallery}>
+          {gallery.map((image, i) => <img className={i === gallery.length - 1 ? styles.galleryOrphan : ""} key={image} src={`${ASSET}/${image}`} alt="Artchitect studio work" />)}
+        </div>
       </section>
 
       <section className={styles.cta}>
@@ -100,11 +133,11 @@ export default function ArtchitectPage() {
       </section>
 
       <footer className={styles.footer}>
-        <div><Brand /><p>Art. Music. Creative Growth.</p><strong>pinohouse.art</strong></div>
+        <div className={styles.footerWide}><Brand /><p>Art. Music. Creative Growth.</p><strong>pinohouse.art</strong></div>
         <div><h4>Explore</h4><a href="/">House</a><a href="/#paths">Paths</a><a href="/open-studio">Open Studio</a><a href="/#stories">Stories</a></div>
         <div><h4>About</h4><a href="/#about">Our Story</a><a href="/#about">The House</a><a href="/#about">Team</a><a href="/#about">Careers</a></div>
         <div><h4>Information</h4><a href="/open-studio">Visit</a><a href="/#about">FAQs</a><a href="/#about">Policies</a><a href="/#about">Contact</a></div>
-        <div className={styles.stay}><h4>Stay connected</h4><p>Get news about Open Studio and special events.</p><span>Instagram · Facebook · YouTube</span></div>
+        <div className={`${styles.stay} ${styles.footerWide}`}><h4>Stay connected</h4><p>Get news about Open Studio and special events.</p><span>Instagram · Facebook · YouTube</span></div>
         <small>© {new Date().getFullYear()} PINO House. All rights reserved.</small>
       </footer>
       <img className={styles.botanicalLeft} src={`${ASSET}/botanical-leaf-illustration.png`} alt=""/>
