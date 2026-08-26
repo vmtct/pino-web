@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./homepage-mobile.css";
 import CmsHydrator from "./cms-hydrator";
 
 const PINO_LOGO = "https://assets.pinohouse.art/core/Pino%20Logo.png";
