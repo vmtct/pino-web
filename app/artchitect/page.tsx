@@ -21,11 +21,11 @@ const journey = [
 ] as const;
 
 const process = [
-  { en: ["Observe & draw", "We build seeing skills through sketching, studies, and wondering about the world."], vi: ["Quan sát & vẽ", "Rèn khả năng nhìn qua ký hoạ, nghiên cứu và những câu hỏi về thế giới xung quanh."], pos: "0%" },
-  { en: ["Explore & experiment", "We try new materials and techniques, and learn through play and discovery."], vi: ["Khám phá & thử nghiệm", "Thử chất liệu và kỹ thuật mới, học qua chơi và khám phá."], pos: "25%" },
+  { en: ["Observe & draw", "We build seeing skills through sketching, studies, and wondering about the world."], vi: ["Quan sát & vẽ", "Rèn khả năng nhìn qua ký hoạ, nghiên cứu và những câu hỏi về thế giới xung quanh."], pos: "2.5%" },
+  { en: ["Explore & experiment", "We try new materials and techniques, and learn through play and discovery."], vi: ["Khám phá & thử nghiệm", "Thử chất liệu và kỹ thuật mới, học qua chơi và khám phá."], pos: "26.5%" },
   { en: ["Make & build", "We shape ideas in three dimensions, from maquettes to expressive sculptures."], vi: ["Làm & dựng", "Đưa ý tưởng thành hình khối ba chiều, từ mô hình nhỏ đến điêu khắc biểu cảm."], pos: "50%" },
-  { en: ["Imagine & create", "We develop our voice through original artworks and visual storytelling."], vi: ["Tưởng tượng & sáng tạo", "Phát triển tiếng nói riêng qua tác phẩm nguyên bản và kể chuyện bằng hình ảnh."], pos: "75%" },
-  { en: ["Reflect & share", "We celebrate progress and learn from each other’s tools and ideas."], vi: ["Nhìn lại & chia sẻ", "Ghi nhận tiến bộ và học từ công cụ, cách làm cùng ý tưởng của nhau."], pos: "100%" },
+  { en: ["Imagine & create", "We develop our voice through original artworks and visual storytelling."], vi: ["Tưởng tượng & sáng tạo", "Phát triển tiếng nói riêng qua tác phẩm nguyên bản và kể chuyện bằng hình ảnh."], pos: "73.5%" },
+  { en: ["Reflect & share", "We celebrate progress and learn from each other’s tools and ideas."], vi: ["Nhìn lại & chia sẻ", "Ghi nhận tiến bộ và học từ công cụ, cách làm cùng ý tưởng của nhau."], pos: "97.5%" },
 ] as const;
 
 const projects = [
