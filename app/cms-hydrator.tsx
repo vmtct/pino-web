@@ -2,6 +2,8 @@
 
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 import type { ImageAsset } from "../lib/web-images";
+import { PUBLIC_COPY_EN } from "../lib/public-copy-en";
+import { useLocale } from "./localization";
 
 type CmsState = {
   content: Record<string, string>;
@@ -39,8 +41,12 @@ export default function CmsHydrator({ children }: { children: ReactNode }) {
 
 export function CmsText({ contentKey, fallback }: { contentKey: string; fallback: string }) {
   const { content } = useContext(CmsContext);
-  const value = content[contentKey]?.trim() || fallback;
-  return <span data-cms-key={contentKey}>{value}</span>;
+  const { locale } = useLocale();
+  const localized = content[`${contentKey}__${locale}`]?.trim();
+  const legacyVi = locale === "vi" ? content[contentKey]?.trim() : undefined;
+  const staticFallback = locale === "en" ? PUBLIC_COPY_EN[contentKey] || fallback : fallback;
+  const value = localized || legacyVi || staticFallback;
+  return <span data-cms-key={contentKey} data-locale={locale}>{value}</span>;
 }
 
 export function useCmsImage(assetKey?: string): ImageAsset | null {

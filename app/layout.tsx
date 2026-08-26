@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./homepage-mobile.css";
+import "./localization.css";
 import CmsHydrator from "./cms-hydrator";
+import { LocaleProvider } from "./localization";
 
 const PINO_LOGO = "https://assets.pinohouse.art/core/Pino%20Logo.png";
 
@@ -22,8 +24,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body><CmsHydrator>{children}</CmsHydrator></body>
+    <html lang="vi" suppressHydrationWarning>
+      <body><LocaleProvider><CmsHydrator>{children}</CmsHydrator></LocaleProvider></body>
     </html>
   );
 }

@@ -1,5 +1,7 @@
 export const PINO_TIMEZONE = "Asia/Ho_Chi_Minh";
 
+export type PublicLocale = "vi" | "en";
+
 export type PublicSyllabus = {
   id: string;
   title: string;
@@ -40,7 +42,7 @@ export type RegistrationIssue = {
   retryable?: boolean;
 };
 
-const formatter = (options: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat("vi-VN", {
+const formatter = (locale: PublicLocale, options: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(locale === "vi" ? "vi-VN" : "en-US", {
   timeZone: PINO_TIMEZONE,
   ...options,
 });
@@ -52,17 +54,23 @@ export const localDateKey = (iso: string) => new Intl.DateTimeFormat("en-CA", {
   day: "2-digit",
 }).format(new Date(iso));
 
-export const formatLocalDate = (iso: string) => {
-  const value = formatter({ weekday: "long", day: "2-digit", month: "2-digit" }).format(new Date(iso));
+export const formatLocalDate = (iso: string, locale: PublicLocale = "vi") => {
+  const value = formatter(locale, { weekday: "long", day: "2-digit", month: locale === "vi" ? "2-digit" : "short" }).format(new Date(iso));
   return value.charAt(0).toUpperCase() + value.slice(1);
 };
 
-export const formatLocalTimeRange = (startsAt: string, endsAt: string) => {
-  const time = formatter({ hour: "2-digit", minute: "2-digit", hour12: false });
+export const formatLocalTimeRange = (startsAt: string, endsAt: string, locale: PublicLocale = "vi") => {
+  const time = formatter(locale, { hour: "2-digit", minute: "2-digit", hour12: false });
   return `${time.format(new Date(startsAt))}–${time.format(new Date(endsAt))}`;
 };
 
-export const formatAgeRange = (ageMin: number | null, ageMax: number | null) => {
+export const formatAgeRange = (ageMin: number | null, ageMax: number | null, locale: PublicLocale = "vi") => {
+  if (locale === "en") {
+    if (ageMin !== null && ageMax !== null) return ageMin === ageMax ? `${ageMin} years old` : `Ages ${ageMin}–${ageMax}`;
+    if (ageMin !== null) return `Ages ${ageMin}+`;
+    if (ageMax !== null) return `Up to age ${ageMax}`;
+    return "All ages";
+  }
   if (ageMin !== null && ageMax !== null) return ageMin === ageMax ? `${ageMin} tuổi` : `${ageMin}–${ageMax} tuổi`;
   if (ageMin !== null) return `${ageMin}+ tuổi`;
   if (ageMax !== null) return `Đến ${ageMax} tuổi`;
@@ -94,36 +102,39 @@ export const serializeRegistration = (sessionId: string, form: RegistrationForm)
   childDateOfBirth: form.childDateOfBirth,
 });
 
-export const validateRegistration = (form: RegistrationForm): Partial<Record<keyof RegistrationForm, string>> => {
+export const validateRegistration = (form: RegistrationForm, locale: PublicLocale = "vi"): Partial<Record<keyof RegistrationForm, string>> => {
   const errors: Partial<Record<keyof RegistrationForm, string>> = {};
-  if (!form.contactName.trim()) errors.contactName = "Vui lòng nhập họ tên phụ huynh.";
-  if (!form.phone.trim()) errors.phone = "Vui lòng nhập số điện thoại.";
-  if (!form.childName.trim()) errors.childName = "Vui lòng nhập tên của con.";
-  if (!form.childDateOfBirth) errors.childDateOfBirth = "Vui lòng chọn ngày sinh của con.";
+  if (!form.contactName.trim()) errors.contactName = locale === "vi" ? "Vui lòng nhập họ tên phụ huynh." : "Please enter the parent or guardian name.";
+  if (!form.phone.trim()) errors.phone = locale === "vi" ? "Vui lòng nhập số điện thoại." : "Please enter a phone number.";
+  if (!form.childName.trim()) errors.childName = locale === "vi" ? "Vui lòng nhập tên của con." : "Please enter the child's name.";
+  if (!form.childDateOfBirth) errors.childDateOfBirth = locale === "vi" ? "Vui lòng chọn ngày sinh của con." : "Please choose the child's date of birth.";
   return errors;
 };
 
 export const createSubmissionAttempt = (currentKey: string | null, makeKey: () => string) => currentKey || makeKey();
 
-export const mapRegistrationError = (code?: string): RegistrationIssue => {
+export const mapRegistrationError = (code?: string, locale: PublicLocale = "vi"): RegistrationIssue => {
+  const en = locale === "en";
   switch (code) {
     case "PLATFORM_INVALID_INPUT":
-      return { message: "Một vài thông tin chưa đúng. Ba mẹ vui lòng kiểm tra lại các ô bên trên." };
+      return { message: en ? "Some information is not valid. Please check the fields above." : "Một vài thông tin chưa đúng. Ba mẹ vui lòng kiểm tra lại các ô bên trên." };
     case "SESSION_FULL":
-      return { message: "Buổi này vừa đủ chỗ. Mời ba mẹ chọn một buổi khác.", refreshSchedule: true };
+      return { message: en ? "This session has just filled up. Please choose another session." : "Buổi này vừa đủ chỗ. Mời ba mẹ chọn một buổi khác.", refreshSchedule: true };
     case "SESSION_NOT_OPEN":
-      return { message: "Buổi này hiện không còn nhận đăng ký. Mời ba mẹ chọn một buổi khác.", refreshSchedule: true };
+      return { message: en ? "This session is no longer accepting registrations. Please choose another session." : "Buổi này hiện không còn nhận đăng ký. Mời ba mẹ chọn một buổi khác.", refreshSchedule: true };
     case "IDEMPOTENCY_CONFLICT":
-      return { message: "Thông tin đăng ký đã thay đổi. Ba mẹ vui lòng gửi lại một lần nữa." };
+      return { message: en ? "The registration details changed. Please submit once more." : "Thông tin đăng ký đã thay đổi. Ba mẹ vui lòng gửi lại một lần nữa." };
     case "REGISTRATION_DISABLED":
-      return { message: "Đăng ký trực tuyến sắp mở. Ba mẹ có thể xem lịch và quay lại sau." };
+      return { message: en ? "Online registration is opening soon. You can browse the schedule and return later." : "Đăng ký trực tuyến sắp mở. Ba mẹ có thể xem lịch và quay lại sau." };
     default:
-      return { message: "Chưa thể gửi đăng ký lúc này. Ba mẹ vui lòng thử lại.", retryable: true };
+      return { message: en ? "We could not send the registration right now. Please try again." : "Chưa thể gửi đăng ký lúc này. Ba mẹ vui lòng thử lại.", retryable: true };
   }
 };
 
 export const REGISTRATION_SUCCESS_TITLE = "Đã nhận đăng ký";
 export const REGISTRATION_SUCCESS_BODY = "PINO sẽ liên hệ với ba mẹ để xác nhận buổi tham gia và hướng dẫn chuẩn bị.";
+export const registrationSuccessTitle = (locale: PublicLocale = "vi") => locale === "vi" ? REGISTRATION_SUCCESS_TITLE : "Registration received";
+export const registrationSuccessBody = (locale: PublicLocale = "vi") => locale === "vi" ? REGISTRATION_SUCCESS_BODY : "PINO will contact you to confirm the session and share what to prepare.";
 
 export function isCoreSession(value: unknown): value is CoreSession {
   if (!value || typeof value !== "object") return false;
