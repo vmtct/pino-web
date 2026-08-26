@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./homepage-mobile.css";
 import "./localization.css";
+import "./public-consistency.css";
 import CmsHydrator from "./cms-hydrator";
 import { LocaleProvider } from "./localization";
 
