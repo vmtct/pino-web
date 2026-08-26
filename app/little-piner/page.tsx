@@ -60,7 +60,7 @@ export default function LittlePinerPage() {
         <nav className={styles.nav} aria-label="Little Piner navigation">
           <a href="/">House</a><a href="/#paths">Paths</a><a href="/open-studio">Open Studio</a><a href="#gallery">Stories</a><a href="/#about">About</a>
         </nav>
-        <a className={styles.navCta} href="/open-studio">Explore Open Studio <span>→</span></a>
+        <a className={styles.navCta} href="/open-studio">Open Studio <span>→</span></a>
       </header>
 
       <section className={styles.hero}>

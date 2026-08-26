@@ -220,3 +220,37 @@
 @media (prefers-reduced-motion:reduce) {
   .navCta,.primary,.secondary,.cta a { transition:none; }
 }
+
+
+/* UI polish — production audit 2026-08-26 */
+.sectionLead p { font-size:13px; }
+.iconCard p { font-size:11.5px; line-height:1.52; }
+.photoCard h3 { font-size:16px; }
+.photoCard p { font-size:11px; line-height:1.5; }
+.pathCopy a,.sectionLead a { display:inline-flex; align-items:center; min-height:32px; }
+
+@media (max-width:920px) and (min-width:701px) {
+  .iconGrid,.photoGrid { grid-template-columns:repeat(6,minmax(0,1fr)); }
+  .iconCard,.photoCard { grid-column:span 2; }
+  .iconGrid>:nth-child(4),.photoGrid>:nth-child(4) { grid-column:2 / span 2; }
+  .iconGrid>:nth-child(5),.photoGrid>:nth-child(5) { grid-column:4 / span 2; }
+}
+
+@media (max-width:700px) {
+  .navCta { min-height:42px; padding:0 14px; font-size:10.5px; }
+  .primary,.secondary { min-height:44px; }
+  .pathBridge { display:flex; padding:2px 0 4px; gap:4px; }
+  .pathBridge img { width:76px; }
+  .pathBridge span { font-size:9.5px; line-height:1.35; }
+  .iconCard,.photoCard { grid-column:auto; }
+  .iconGrid>:nth-child(4),.photoGrid>:nth-child(4) { grid-column:auto; }
+  .iconGrid>:nth-child(5),.photoGrid>:nth-child(5) { grid-column:1 / -1; width:calc(50% - 5.5px); justify-self:center; }
+  .pathCopy a,.sectionLead a { min-height:44px; padding-block:8px; }
+  .cta>img { object-position:18% center; }
+  .cta a { min-height:44px; }
+}
+
+@media (max-width:430px) {
+  .navCta { width:auto; min-width:96px; padding:0 12px; font-size:10px; }
+  .navCta span { font-size:12px; }
+}
