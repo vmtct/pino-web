@@ -61,3 +61,17 @@ test("late sibling responses cannot overwrite the active Student projection", ()
   assert.equal(projectionResponseIsCurrent(studentId, studentId, studentId, 3, 4), false);
   assert.equal(projectionResponseIsCurrent(studentId, "018f7f5a-4321-7abc-8def-000000000000", studentId, 4, 4), false);
 });
+
+test("rejects malformed nested Home and Journey contract shapes", () => {
+  assert.equal(parseHomeProjection({
+    state: "READY", student, primaryAction: null,
+    nextTouchpoint: { sessionId: "s1", commitment: "CONFIRMED", scheduledStartsAt: "not-time", scheduledEndsAt: "2026-08-29T07:00:00.000Z", pathProgramId: "p1" },
+    journey: null, recentOutcome: null, asOf: "2026-08-29T06:00:00.000Z", resolverVersion: "f0-v1",
+  }, studentId), null);
+
+  assert.equal(parseJourneyProjection({
+    state: "READY", student, paths: [],
+    journeys: [{ journeyId: "j1", path: { id: "p1", key: "pianohouse", displayName: "PianoHouse" }, grammar: "REPERTOIRE_PIECE", focus: null, progress: {}, lastRecognizedAt: null }],
+    asOf: "2026-08-29T06:00:00.000Z",
+  }, studentId), null);
+});

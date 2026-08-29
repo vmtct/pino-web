@@ -88,24 +88,23 @@ const HOME_ACTIONS = new Set<HomeActionKind>([
   "RECOVERY", "PHYSICAL_TOUCHPOINT", "VIEW_FRESH_OUTCOME",
   "CONTINUE_JOURNEY", "EXPLORE_RETURN", "VIEW_RETAINED_VALUE",
 ]);
+const TOUCHPOINT_COMMITMENTS = new Set(["CONFIRMED", "COMMITTED", "PENDING"]);
+
 export function parseJourneyProjection(value: unknown, expectedStudentId: string): MemberJourneyProjection | null {
   if (!isRecord(value) || !JOURNEY_STATES.has(value.state as JourneyState)) return null;
-  if (!sameStudent(value.student, expectedStudentId)) return null;
-  if (!Array.isArray(value.paths) || !Array.isArray(value.journeys) || typeof value.asOf !== "string") return null;
+  if (!sameStudent(value.student, expectedStudentId) || !isTimestamp(value.asOf)) return null;
+  if (!Array.isArray(value.paths) || !value.paths.every(isJourneyPathProjection)) return null;
+  if (!Array.isArray(value.journeys) || !value.journeys.every(isJourneySummary)) return null;
   return value as MemberJourneyProjection;
 }
 
 export function parseHomeProjection(value: unknown, expectedStudentId: string): MemberHomeProjection | null {
   if (!isRecord(value) || !HOME_STATES.has(value.state as HomeSceneState)) return null;
-  if (!sameStudent(value.student, expectedStudentId)) return null;
-  if (typeof value.asOf !== "string" || typeof value.resolverVersion !== "string") return null;
-  if (value.primaryAction !== null) {
-    if (!isRecord(value.primaryAction)) return null;
-    if (!HOME_ACTIONS.has(value.primaryAction.kind as HomeActionKind)) return null;
-    if (typeof value.primaryAction.reasonCode !== "string" || !isRecord(value.primaryAction.target)) return null;
-  }
-  if (value.nextTouchpoint !== null && !isRecord(value.nextTouchpoint)) return null;
-  if (value.journey !== null && !isRecord(value.journey)) return null;
+  if (!sameStudent(value.student, expectedStudentId) || !isTimestamp(value.asOf) || !nonEmptyString(value.resolverVersion)) return null;
+  if (value.primaryAction !== null && !isHomeAction(value.primaryAction)) return null;
+  if (value.nextTouchpoint !== null && !isHomeTouchpoint(value.nextTouchpoint)) return null;
+  if (value.journey !== null && !isHomeJourney(value.journey)) return null;
+  if (value.recentOutcome !== null) return null;
   return value as MemberHomeProjection;
 }
 
@@ -120,12 +119,92 @@ export function projectionResponseIsCurrent(
     && requestedStudentId === activeStudentId
     && requestVersion === currentVersion;
 }
-function sameStudent(value: unknown, expectedStudentId: string): boolean {
+
+function isJourneyPathProjection(value: unknown): boolean {
   return isRecord(value)
-    && value.id === expectedStudentId
-    && typeof value.displayName === "string";
+    && isPathIdentity(value.path)
+    && (value.support === "SUPPORTED" || value.support === "UNSUPPORTED")
+    && (value.unsupportedReason === null || typeof value.unsupportedReason === "string")
+    && Array.isArray(value.journeys)
+    && value.journeys.every(isJourneySummary);
 }
 
+function isJourneySummary(value: unknown): boolean {
+  if (!isRecord(value) || !nonEmptyString(value.journeyId) || !isPathIdentity(value.path)) return false;
+  if (!nonEmptyString(value.grammar) || !isRecord(value.focus) || !nonEmptyString(value.focus.id) || !nonEmptyString(value.focus.label)) return false;
+  if (value.focus.note !== null && typeof value.focus.note !== "string") return false;
+  if (!isRecord(value.progress) || !nonEmptyString(value.progress.kind)) return false;
+  if (!nonNegativeInteger(value.progress.achievedMilestoneCount) || !nonNegativeInteger(value.progress.totalMilestoneCount)) return false;
+  if (value.progress.achievedMilestoneCount > value.progress.totalMilestoneCount) return false;
+  if (value.progress.currentMilestone !== null && !isMilestone(value.progress.currentMilestone)) return false;
+  return value.lastRecognizedAt === null || isTimestamp(value.lastRecognizedAt);
+}
+
+function isMilestone(value: unknown): boolean {
+  return isRecord(value) && positiveInteger(value.number) && nonEmptyString(value.code) && nonEmptyString(value.label);
+}
+
+function isPathIdentity(value: unknown): boolean {
+  return isRecord(value) && nonEmptyString(value.id) && nonEmptyString(value.key) && nonEmptyString(value.displayName);
+}
+
+function isHomeAction(value: unknown): boolean {
+  if (!isRecord(value) || !HOME_ACTIONS.has(value.kind as HomeActionKind)) return false;
+  if (!nonEmptyString(value.reasonCode) || !isTimestamp(value.effectiveAt) || !isRecord(value.target)) return false;
+  switch (value.kind as HomeActionKind) {
+    case "RECOVERY":
+      return value.target.kind === "MEMBER_CONTEXT" && nonEmptyString(value.target.recovery);
+    case "PHYSICAL_TOUCHPOINT":
+      return value.target.kind === "SESSION" && nonEmptyString(value.target.sessionId);
+    case "VIEW_FRESH_OUTCOME":
+      return value.target.kind === "LEARNER_OUTCOME" && nonEmptyString(value.target.outcomeId);
+    case "CONTINUE_JOURNEY":
+      return value.target.kind === "JOURNEY" && nonEmptyString(value.target.journeyId) && nonEmptyString(value.target.pathProgramId);
+    case "EXPLORE_RETURN":
+      return value.target.kind === "OPEN_STUDIO"
+        && nonEmptyString(value.target.passId)
+        && nonEmptyString(value.target.listingId)
+        && nonEmptyString(value.target.sessionId)
+        && nonEmptyString(value.target.pathProgramId);
+    case "VIEW_RETAINED_VALUE":
+      return value.target.kind === "MEMBER_CONTENT_LIBRARY" && nonEmptyString(value.target.pathProgramId);
+  }
+}
+
+function isHomeTouchpoint(value: unknown): boolean {
+  return isRecord(value)
+    && nonEmptyString(value.sessionId)
+    && TOUCHPOINT_COMMITMENTS.has(value.commitment as string)
+    && isTimestamp(value.scheduledStartsAt)
+    && isTimestamp(value.scheduledEndsAt)
+    && nonEmptyString(value.pathProgramId);
+}
+
+function isHomeJourney(value: unknown): boolean {
+  return isRecord(value)
+    && nonEmptyString(value.journeyId)
+    && nonEmptyString(value.pathProgramId)
+    && nonEmptyString(value.pathDisplayName)
+    && nonEmptyString(value.focusLabel)
+    && (value.currentMilestoneLabel === null || typeof value.currentMilestoneLabel === "string");
+}
+
+function sameStudent(value: unknown, expectedStudentId: string): boolean {
+  return isRecord(value) && value.id === expectedStudentId && nonEmptyString(value.displayName);
+}
+
+function isTimestamp(value: unknown): value is string {
+  return typeof value === "string" && Number.isFinite(Date.parse(value));
+}
+function nonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+function nonNegativeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0;
+}
+function positiveInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value > 0;
+}
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
