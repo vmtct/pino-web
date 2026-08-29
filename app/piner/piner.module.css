@@ -430,3 +430,36 @@
 .householdActions strong { display: inline-flex; align-items: center; gap: 5px; }
 .householdActions strong img { width: 14px; height: 14px; display: block; }
 .primaryButton { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+
+/* Mobile viewport hardening: no horizontal bleed, fixed navigation, iOS safe-area aware. */
+.prototype, .deviceStage, .device, .appHeader, .screen, .surface, .stack {
+  min-width: 0;
+  max-width: 100%;
+}
+.prototype { width: 100%; overflow-x: hidden; }
+.deviceStage, .device, .appHeader, .screen, .surface { width: 100%; }
+.appHeader { overflow: hidden; }
+.studentButton { flex: 1 1 auto; max-width: calc(100% - 64px); overflow: hidden; }
+.studentMeta { flex: 1 1 auto; max-width: 100%; overflow: hidden; }
+.studentMeta strong, .studentMeta small { max-width: 100%; }
+.wordmark { flex: 0 0 auto; margin-left: 10px; }
+.glanceCopy, .returnCard > div, .journeyHeroRow > div, .pageTitle { min-width: 0; }
+.prototype img { max-width: 100%; }
+.prototype h1, .prototype h2, .prototype h3, .prototype p, .prototype strong, .prototype small { overflow-wrap: anywhere; }
+
+@media (max-width: 560px) {
+  .prototype { width: 100vw; max-width: 100vw; min-height: 100dvh; overflow-x: hidden; }
+  .deviceStage { width: 100vw; max-width: 100vw; overflow: hidden; }
+  .device { width: 100vw; max-width: 100vw; height: 100dvh; min-height: 100dvh; max-height: 100dvh; overflow: hidden; }
+  .screen { height: calc(100dvh - 66px); min-height: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: calc(126px + env(safe-area-inset-bottom)); }
+  .bottomNav {
+    position: fixed;
+    left: max(10px, env(safe-area-inset-left));
+    right: max(10px, env(safe-area-inset-right));
+    bottom: max(10px, env(safe-area-inset-bottom));
+    width: auto;
+    max-width: none;
+    z-index: 30;
+  }
+  .overlayBackdrop { position: fixed; inset: 0; z-index: 40; }
+}
