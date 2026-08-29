@@ -463,3 +463,41 @@
   }
   .overlayBackdrop { position: fixed; inset: 0; z-index: 40; }
 }
+
+/* iOS login hardening: prevent Safari focus zoom and horizontal drift. */
+.authPage {
+  width: 100%;
+  min-width: 0;
+  min-height: 100dvh;
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+}
+.authCard, .authCard > div, .form, .form label {
+  min-width: 0;
+  max-width: 100%;
+}
+.form input {
+  min-width: 0;
+  max-width: 100%;
+  font-size: 16px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+@media (max-width: 560px) {
+  .authPage {
+    width: 100vw;
+    min-height: 100dvh;
+    padding: max(18px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom));
+    align-items: stretch;
+    overflow-y: auto;
+  }
+  .authCard {
+    width: 100%;
+    min-height: calc(100dvh - 36px);
+    padding: clamp(36px, 9dvh, 72px) 4px 28px;
+    align-content: center;
+  }
+  .form input { font-size: 16px; }
+  .form { scroll-margin-bottom: 35dvh; }
+  .securityNote { max-width: 34rem; }
+}
