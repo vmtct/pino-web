@@ -230,3 +230,33 @@ test("reserves unknown Piner routes and methods instead of falling through to le
   );
   assert.equal(wrongMethod.status, 405);
 });
+
+
+test("forwards bounded OWNER Open Studio admission through the private member binding", async () => {
+  let seen: Request | undefined;
+  const binding: ParentMemberCoreBinding = {
+    async fetch(request) {
+      seen = request;
+      return jsonResponse({ data: { claimStatus: "RESERVED" } }, 201);
+    },
+  };
+  const studentId = "018f7f5a-4321-7abc-8def-1234567890ab";
+  const body = { passId: "018f7f5a-4321-7abc-8def-111111111111", listingId: "018f7f5a-4321-7abc-8def-222222222222", participantMode: "OWNER" };
+  const response = await proxyPinerMemberRequest(new Request(`https://pinohouse.art/api/piner/students/${studentId}/open-studio/admissions`, {
+    method: "POST",
+    headers: {
+      cookie: `__Host-piner_session=${SESSION_TOKEN}`,
+      authorization: `Bearer ${SPOOFED_TOKEN}`,
+      "content-type": "application/json",
+      "idempotency-key": "piner-owner-admission-1",
+    },
+    body: JSON.stringify(body),
+  }), { PINO_MEMBER_CORE: binding });
+
+  assert.equal(response.status, 201);
+  assert.ok(seen);
+  assert.equal(seen.url, `https://pino-member-core.internal/v1/member/students/${studentId}/open-studio/admissions`);
+  assert.equal(seen.headers.get("authorization"), `Bearer ${SESSION_TOKEN}`);
+  assert.equal(seen.headers.get("idempotency-key"), "piner-owner-admission-1");
+  assert.deepEqual(await seen.json(), body);
+});

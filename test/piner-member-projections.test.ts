@@ -75,3 +75,28 @@ test("rejects malformed nested Home and Journey contract shapes", () => {
     asOf: "2026-08-29T06:00:00.000Z",
   }, studentId), null);
 });
+
+
+test("validates member session, Student list, and OWNER admission envelopes", async () => {
+  const { parseOwnerOpenStudioAdmission, parseParentSession, parseStudentList } = await import("../lib/piner-member-projections.ts");
+  const parentId = "018f7f5a-4321-7abc-8def-111111111111";
+  const sessionId = "018f7f5a-4321-7abc-8def-222222222222";
+  assert.ok(parseParentSession({
+    principalType: "PARENT_USER",
+    parent: { id: parentId, displayName: "Gia đình A" },
+    session: { id: sessionId, issuedAt: "2026-08-29T06:00:00.000Z", expiresAt: "2026-11-29T06:00:00.000Z" },
+  }));
+  assert.equal(parseParentSession({ principalType: "PARENT_USER", parent: null, session: {} }), null);
+
+  assert.deepEqual(parseStudentList([student]), [student]);
+  assert.equal(parseStudentList([{ id: studentId, displayName: "A" }, { id: studentId, displayName: "B" }]), null);
+
+  const listingId = "018f7f5a-4321-7abc-8def-333333333333";
+  const sessionTarget = "018f7f5a-4321-7abc-8def-444444444444";
+  assert.ok(parseOwnerOpenStudioAdmission({
+    claimId: "018f7f5a-4321-7abc-8def-555555555555",
+    reservation: { id: "018f7f5a-4321-7abc-8def-666666666666", type: "BOOKING", status: "CONFIRMED" },
+    claimStatus: "RESERVED", listingId, session: { id: sessionTarget }, participantMode: "OWNER",
+  }, listingId, sessionTarget));
+  assert.equal(parseOwnerOpenStudioAdmission({ claimId: "bad" }, listingId, sessionTarget), null);
+});

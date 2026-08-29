@@ -1,4 +1,9 @@
 export type PinerStudentSummary = { id: string; displayName: string };
+export type PinerParentSession = {
+  principalType: "PARENT_USER";
+  parent: { id: string; displayName: string };
+  session: { id: string; issuedAt: string; expiresAt: string };
+};
 
 export type JourneyState = "READY" | "NO_ACTIVE_JOURNEY" | "NO_SUPPORTED_PATH";
 export type JourneyPathIdentity = { id: string; key: string; displayName: string };
@@ -53,6 +58,14 @@ export type HomeActionTarget =
     }
   | { kind: "MEMBER_CONTENT_LIBRARY"; pathProgramId: string };
 
+export type OwnerOpenStudioAdmissionResult = {
+  claimId: string;
+  reservation: { id: string; type: "BOOKING"; status: "CONFIRMED" };
+  claimStatus: "RESERVED";
+  listingId: string;
+  session: { id: string };
+  participantMode: "OWNER";
+};
 export type HomePrimaryAction = {
   kind: HomeActionKind;
   reasonCode: string;
@@ -90,6 +103,35 @@ const HOME_ACTIONS = new Set<HomeActionKind>([
 ]);
 const TOUCHPOINT_COMMITMENTS = new Set(["CONFIRMED", "COMMITTED", "PENDING"]);
 
+export function parseOwnerOpenStudioAdmission(
+  value: unknown,
+  expectedListingId: string,
+  expectedSessionId: string,
+): OwnerOpenStudioAdmissionResult | null {
+  if (!isRecord(value) || !canonicalId(value.claimId)) return null;
+  if (value.claimStatus !== "RESERVED" || value.participantMode !== "OWNER") return null;
+  if (value.listingId !== expectedListingId) return null;
+  if (!isRecord(value.session) || value.session.id !== expectedSessionId) return null;
+  if (!isRecord(value.reservation) || !canonicalId(value.reservation.id)) return null;
+  if (value.reservation.type !== "BOOKING" || value.reservation.status !== "CONFIRMED") return null;
+  return value as OwnerOpenStudioAdmissionResult;
+}
+export function parseParentSession(value: unknown): PinerParentSession | null {
+  if (!isRecord(value) || value.principalType !== "PARENT_USER") return null;
+  if (!isRecord(value.parent) || !canonicalId(value.parent.id) || !nonEmptyString(value.parent.displayName)) return null;
+  if (!isRecord(value.session) || !canonicalId(value.session.id)) return null;
+  if (!isTimestamp(value.session.issuedAt) || !isTimestamp(value.session.expiresAt)) return null;
+  if (Date.parse(value.session.expiresAt) <= Date.parse(value.session.issuedAt)) return null;
+  return value as PinerParentSession;
+}
+
+export function parseStudentList(value: unknown): PinerStudentSummary[] | null {
+  if (!Array.isArray(value)) return null;
+  if (!value.every((item) => isRecord(item) && canonicalId(item.id) && nonEmptyString(item.displayName))) return null;
+  const ids = new Set(value.map((item) => (item as { id: string }).id));
+  if (ids.size !== value.length) return null;
+  return value as PinerStudentSummary[];
+}
 export function parseJourneyProjection(value: unknown, expectedStudentId: string): MemberJourneyProjection | null {
   if (!isRecord(value) || !JOURNEY_STATES.has(value.state as JourneyState)) return null;
   if (!sameStudent(value.student, expectedStudentId) || !isTimestamp(value.asOf)) return null;
@@ -193,6 +235,9 @@ function sameStudent(value: unknown, expectedStudentId: string): boolean {
   return isRecord(value) && value.id === expectedStudentId && nonEmptyString(value.displayName);
 }
 
+function canonicalId(value: unknown): value is string {
+  return typeof value === "string" && /^[0-9a-f-]{36}$/i.test(value);
+}
 function isTimestamp(value: unknown): value is string {
   return typeof value === "string" && Number.isFinite(Date.parse(value));
 }

@@ -63,6 +63,16 @@ function routeFor(pathname: string): RouteContract | null {
   const exact = STATIC_ROUTES[pathname];
   if (exact) return exact;
 
+  const admission = /^\/api\/piner\/students\/([^/]+)\/open-studio\/admissions$/.exec(pathname);
+  if (admission) {
+    return {
+      method: "POST",
+      upstreamPath: `/v1/member/students/${admission[1]}/open-studio/admissions`,
+      auth: "session",
+      result: "none",
+      body: "forward",
+    };
+  }
   const projection = /^\/api\/piner\/students\/([^/]+)\/(journey|home)$/.exec(pathname);
   if (!projection) return null;
   const [, studentId, resource] = projection;
