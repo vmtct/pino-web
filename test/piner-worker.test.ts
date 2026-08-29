@@ -19,7 +19,7 @@ test("serves only the Piner shell at the first-class root", async () => {
   const { env, assetUrls } = fixture();
   const response = await pinerWorker.fetch(new Request("https://piner.pinohouse.art/"), env);
   assert.equal(response.status, 200);
-  assert.deepEqual(assetUrls, ["https://piner.pinohouse.art/piner.html"]);
+  assert.deepEqual(assetUrls, ["https://piner.pinohouse.art/piner"]);
 });
 
 test("passes only Next static assets outside the Piner shell", async () => {

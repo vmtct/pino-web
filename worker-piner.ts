@@ -42,7 +42,7 @@ const handler = {
       return noStoreJson({ error: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed" } }, 405);
     }
     if (url.pathname === "/" || url.pathname === "/piner" || url.pathname === "/piner/") {
-      return env.ASSETS.fetch(assetRequest(request, "/piner.html"));
+      return env.ASSETS.fetch(assetRequest(request, "/piner"));
     }
     if (url.pathname.startsWith("/_next/")) {
       return env.ASSETS.fetch(request);
