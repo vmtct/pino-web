@@ -28,6 +28,26 @@ type ProjectionResult<T> =
   | { kind: "aborted" }
   | { kind: "error"; message: string };
 
+const PINER_ICON_BASE = "https://assets.pinohouse.art/site/shared/piner-space-icon-";
+
+function PinerIcon({ name, className }: { name: string; className?: string }) {
+  return <img className={className} src={`${PINER_ICON_BASE}${name}.svg`} alt="" aria-hidden="true" />;
+}
+
+function pathIcon(label: string) {
+  if (/ArtChitect/i.test(label)) return "path-artchitect";
+  if (/Little Piner Art/i.test(label)) return "path-little-piner-art";
+  if (/Little Piner Piano/i.test(label)) return "path-little-piner-piano";
+  return "path-pianohouse";
+}
+
+function displayMockLabel(value: string) {
+  const marked = /^PINO_PROD_E2E_SYNTHETIC_DO_NOT_CONTACT/i.test(value);
+  let next = value.replace(/^PINO_PROD_E2E_SYNTHETIC_DO_NOT_CONTACT\s*[·-]?\s*/i, "");
+  next = next.replace(/\s+JOURNEY$/i, "").replace(/\s+EXPLORE$/i, "").trim();
+  return marked && !/\smock$/i.test(next) ? `${next} mock` : next;
+}
+
 export default function PinerMemberEntry() {
   const [view, setView] = useState<ViewState>("loading");
   const [session, setSession] = useState<PinerParentSession | null>(null);
@@ -313,10 +333,10 @@ export default function PinerMemberEntry() {
             <button type="button" className={styles.studentButton} onClick={() => setStudentPickerOpen(true)} aria-label="Đổi Piner">
               <span className={styles.avatar}>{initials(activeStudent?.displayName || "P")}</span>
               <span className={styles.studentMeta}>
-                <strong>{activeStudent?.displayName || "Piner"}</strong>
+                <strong>{displayMockLabel(activeStudent?.displayName || "Piner")}</strong>
                 <small>{home?.journey?.pathDisplayName || "Piner Space"}</small>
               </span>
-              <span className={styles.chevron}>⌄</span>
+              <span className={styles.chevron}><PinerIcon name="chevron-down" /></span>
             </button>
             <span className={styles.wordmark}>PINO</span>
           </header>
@@ -359,10 +379,10 @@ export default function PinerMemberEntry() {
           </div>
 
           <nav className={styles.bottomNav} aria-label="Không gian Piner">
-            <DestinationButton icon="⌂" active={destination === "home"} onClick={() => setDestination("home")}>Trang chủ</DestinationButton>
-            <DestinationButton icon="◌" active={destination === "journey"} onClick={() => setDestination("journey")}>Hành trình</DestinationButton>
-            <DestinationButton icon="✦" active={destination === "collection"} onClick={() => setDestination("collection")}>Thành quả</DestinationButton>
-            <DestinationButton icon="◇" active={destination === "explore"} onClick={() => setDestination("explore")}>Khám phá</DestinationButton>
+            <DestinationButton icon="nav-home" active={destination === "home"} onClick={() => setDestination("home")}>Trang chủ</DestinationButton>
+            <DestinationButton icon="nav-journey" active={destination === "journey"} onClick={() => setDestination("journey")}>Hành trình</DestinationButton>
+            <DestinationButton icon="nav-outcomes" active={destination === "collection"} onClick={() => setDestination("collection")}>Thành quả</DestinationButton>
+            <DestinationButton icon="nav-explore" active={destination === "explore"} onClick={() => setDestination("explore")}>Khám phá</DestinationButton>
           </nav>
           {studentPickerOpen ? (
             <div className={styles.overlayBackdrop} onMouseDown={() => setStudentPickerOpen(false)}>
@@ -370,7 +390,7 @@ export default function PinerMemberEntry() {
                 <div className={styles.sheetHandle} />
                 <div className={styles.sheetTitleRow}>
                   <div><span className={styles.eyebrow}>GIA ĐÌNH PINO</span><h3>Chọn Piner</h3></div>
-                  <button type="button" onClick={() => setStudentPickerOpen(false)}>×</button>
+                  <button type="button" className={styles.iconButton} onClick={() => setStudentPickerOpen(false)} aria-label="Đóng"><PinerIcon name="close" /></button>
                 </div>
                 <div className={styles.studentList}>
                   {students.map((student) => {
@@ -378,14 +398,14 @@ export default function PinerMemberEntry() {
                     return (
                       <button type="button" key={student.id} onClick={() => selectStudent(student.id)} aria-pressed={selected}>
                         <span className={styles.avatar}>{initials(student.displayName)}</span>
-                        <span><strong>{student.displayName}</strong><small>{selected ? "Đang xem" : "Chuyển sang hồ sơ này"}</small></span>
-                        <em>{selected ? "✓" : "→"}</em>
+                        <span><strong>{displayMockLabel(student.displayName)}</strong><small>{selected ? "Đang xem" : "Chuyển sang hồ sơ này"}</small></span>
+                        <em className={styles.studentStateIcon}><PinerIcon name={selected ? "check" : "arrow-right"} /></em>
                       </button>
                     );
                   })}
                 </div>
                 <div className={styles.householdActions}>
-                  <button type="button" onClick={() => void logout()}><span>{session?.parent.displayName || "Gia đình PINO"}</span><strong>Đăng xuất →</strong></button>
+                  <button type="button" onClick={() => void logout()}><span>{session?.parent.displayName || "Gia đình PINO"}</span><strong>Đăng xuất <PinerIcon name="arrow-right" /></strong></button>
                 </div>
               </div>
             </div>
@@ -399,7 +419,7 @@ export default function PinerMemberEntry() {
 function DestinationButton({ icon, active, onClick, children }: { icon: string; active: boolean; onClick: () => void; children: ReactNode }) {
   return (
     <button type="button" className={active ? styles.navActive : ""} onClick={onClick} aria-pressed={active}>
-      <span>{icon}</span><small>{children}</small>
+      <span className={styles.navIcon}><PinerIcon name={icon} /></span><small>{children}</small>
     </button>
   );
 }
@@ -437,30 +457,30 @@ function HomeSurface({
         <span className={styles.eyebrow}>{eyebrow}</span>
         <h2>{copy.title}</h2>
         <p>{copy.note}</p>
-        {action?.kind === "CONTINUE_JOURNEY" ? <button className={styles.primaryButton} type="button" onClick={() => onDestination("journey")}>Tiếp tục luyện <span>→</span></button> : null}
+        {action?.kind === "CONTINUE_JOURNEY" ? <button className={styles.primaryButton} type="button" onClick={() => onDestination("journey")}>Tiếp tục luyện <span className={styles.buttonIcon}><PinerIcon name="arrow-right" /></span></button> : null}
         {action?.kind === "EXPLORE_RETURN" && action.target.kind === "OPEN_STUDIO" ? <button className={styles.primaryButton} type="button" disabled={actionBusy} onClick={() => void onOpenStudioAdmission(action)}>{actionBusy ? "Đang giữ chỗ…" : "Giữ chỗ Open Studio →"}</button> : null}
-        {action?.kind === "PHYSICAL_TOUCHPOINT" ? <button className={styles.primaryButton} type="button" onClick={() => onDestination("home")}>Xem buổi hôm nay <span>→</span></button> : null}
+        {action?.kind === "PHYSICAL_TOUCHPOINT" ? <button className={styles.primaryButton} type="button" onClick={() => onDestination("home")}>Xem buổi hôm nay <span className={styles.buttonIcon}><PinerIcon name="arrow-right" /></span></button> : null}
         {actionError ? <div className={styles.heroError}>{actionError}</div> : null}
       </section>
       {home.journey ? (
         <section className={styles.sectionBlock}>
           <div className={styles.sectionHeading}><div><span className={styles.eyebrow}>TỔNG QUAN HÀNH TRÌNH</span><h3>Con đang ở đâu?</h3></div></div>
           <button type="button" className={styles.glanceCard} onClick={() => onDestination("journey")}>
-            <span className={styles.pathMark}>♬</span>
-            <span className={styles.glanceCopy}><strong>{home.journey.focusLabel}</strong><small>{home.journey.pathDisplayName}{home.journey.currentMilestoneLabel ? ` · ${home.journey.currentMilestoneLabel}` : ""}</small></span>
-            <span className={styles.arrow}>→</span>
+            <span className={styles.pathMark}><PinerIcon name={pathIcon(home.journey.pathDisplayName)} /></span>
+            <span className={styles.glanceCopy}><strong>{displayMockLabel(home.journey.focusLabel)}</strong><small>{home.journey.pathDisplayName}{home.journey.currentMilestoneLabel ? ` · ${home.journey.currentMilestoneLabel}` : ""}</small></span>
+            <span className={styles.arrow}><PinerIcon name="arrow-right" /></span>
           </button>
         </section>
       ) : null}
 
       <section className={styles.returnCard}>
-        <span className={styles.returnIcon}>⌂</span>
+        <span className={styles.returnIcon}><PinerIcon name={home.journey ? pathIcon(home.journey.pathDisplayName) : "nav-explore"} /></span>
         <div>
           <span className={styles.eyebrow}>QUAY LẠI PINO</span>
           <h3>{home.nextTouchpoint ? formatDateTime(home.nextTouchpoint.scheduledStartsAt) : "Khám phá một buổi phù hợp"}</h3>
           <p>{home.nextTouchpoint ? `Kết thúc lúc ${formatTime(home.nextTouchpoint.scheduledEndsAt)}` : "Open Studio và những trải nghiệm mới đang chờ con."}</p>
         </div>
-        <button type="button" className={styles.circleButton} onClick={() => onDestination(home.nextTouchpoint ? "home" : "explore")}>→</button>
+        <button type="button" className={styles.circleButton} onClick={() => onDestination(home.nextTouchpoint ? "home" : "explore")} aria-label="Mở"><PinerIcon name="arrow-right" /></button>
       </section>
     </div>
   );
@@ -517,7 +537,7 @@ function PrimaryActionCard({
 function primaryActionCopy(action: HomePrimaryAction, home: MemberHomeProjection): { title: string; note: string } {
   switch (action.kind) {
     case "CONTINUE_JOURNEY":
-      return { title: home.journey?.focusLabel || "Tiếp tục Hành trình", note: home.journey?.currentMilestoneLabel || "Bài đang học đã sẵn sàng để con tiếp tục." };
+      return { title: home.journey?.focusLabel ? displayMockLabel(home.journey.focusLabel) : "Tiếp tục Hành trình", note: home.journey?.currentMilestoneLabel || "Bài đang học đã sẵn sàng để con tiếp tục." };
     case "PHYSICAL_TOUCHPOINT":
       return { title: "Buổi học sắp tới", note: home.nextTouchpoint ? formatDateTime(home.nextTouchpoint.scheduledStartsAt) : "Một điểm hẹn tại PINO đang đến gần." };
     case "EXPLORE_RETURN":
@@ -539,7 +559,7 @@ function JourneySurface({ student, journey, loading, error }: { student: PinerSt
     <div className={styles.stack}>
       <div className={styles.pageTitle}>
         <span className={styles.eyebrow}>HÀNH TRÌNH</span>
-        <h2>Hành trình của {student.displayName}</h2>
+        <h2>Hành trình của {displayMockLabel(student.displayName)}</h2>
         <p>Mỗi chương trình giữ một mạch tiến bộ riêng của con.</p>
       </div>
 
@@ -558,15 +578,15 @@ function JourneySurface({ student, journey, loading, error }: { student: PinerSt
           <section className={styles.journeyHero} key={item.journeyId}>
             <span className={styles.eyebrow}>{item.path.displayName}</span>
             <div className={styles.journeyHeroRow}>
-              <div><h3>{item.focus.label}</h3><p>{item.progress.currentMilestone?.label || "Đang tiếp tục theo nhịp của con"}</p></div>
-              <span className={styles.bigGlyph}>♬</span>
+              <div><h3>{displayMockLabel(item.focus.label)}</h3><p>{item.progress.currentMilestone?.label || "Đang tiếp tục theo nhịp của con"}</p></div>
+              <span className={styles.bigGlyph}><PinerIcon name={pathIcon(item.path.displayName)} /></span>
             </div>
             <div className={styles.levelLadder} aria-label={`${achieved} trên ${total} cột mốc`}>
               {Array.from({ length: total }, (_, index) => {
                 const level = index + 1;
                 const done = level <= achieved;
                 const current = level === Math.min(achieved + 1, total);
-                return <div key={level} className={`${styles.levelNode} ${done ? styles.levelDone : ""} ${current ? styles.levelCurrent : ""}`}><strong>L{level}</strong><small>{done ? "✓" : current ? "Hiện tại" : ""}</small></div>;
+                return <div key={level} className={`${styles.levelNode} ${done ? styles.levelDone : ""} ${current ? styles.levelCurrent : ""}`}><strong>L{level}</strong><small className={styles.levelState}>{done ? <PinerIcon name="check" /> : current ? <PinerIcon name="current" /> : <PinerIcon name="pending" />}</small></div>;
               })}
             </div>
             {item.lastRecognizedAt ? <p className={styles.footnote}>Ghi nhận gần nhất · {formatDateTime(item.lastRecognizedAt)}</p> : null}
@@ -589,11 +609,11 @@ function CollectionSurface({ student }: { student: PinerStudentSummary }) {
     <div className={styles.stack}>
       <div className={styles.pageTitle}>
         <span className={styles.eyebrow}>THÀNH QUẢ</span>
-        <h2>Những điều {student.displayName} đã làm.</h2>
+        <h2>Những điều {displayMockLabel(student.displayName)} đã làm.</h2>
         <p>Tác phẩm, bản ghi và cột mốc được giữ lại theo thời gian.</p>
       </div>
       <section className={styles.collectionEmpty}>
-        <span className={styles.collectionGlyph}>✦</span>
+        <span className={styles.collectionGlyph}><PinerIcon name="media-artwork" /></span>
         <strong>Thành quả đầu tiên sẽ xuất hiện ở đây.</strong>
         <p>Khi PINO ghi nhận một tác phẩm, bản ghi hoặc cột mốc, gia đình sẽ có thể mở lại từ Piner Space.</p>
       </section>
@@ -618,7 +638,7 @@ function ExploreSurface({ student, home, onOpenStudioAdmission, actionBusy, acti
     <div className={styles.stack}>
       <div className={styles.pageTitle}>
         <span className={styles.eyebrow}>KHÁM PHÁ</span>
-        <h2>Một lý do để {student.displayName} quay lại PINO.</h2>
+        <h2>Một lý do để {displayMockLabel(student.displayName)} quay lại PINO.</h2>
         <p>Open Studio và những trải nghiệm ngoài Hành trình chính được gom tại đây.</p>
       </div>
       <section className={`${styles.eligibilityCard} ${bookable ? "" : styles.eligibilityBlocked}`}>
