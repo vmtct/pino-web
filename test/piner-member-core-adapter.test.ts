@@ -125,6 +125,37 @@ test("uses only the HttpOnly session cookie for protected member reads", async (
   assert.equal(response.headers.get("access-control-allow-origin"), null);
 });
 
+test("maps protected Home and Journey reads through the private member binding", async () => {
+  const seen: string[] = [];
+  const authorizations: Array<string | null> = [];
+  const binding: ParentMemberCoreBinding = {
+    async fetch(request) {
+      seen.push(request.url);
+      authorizations.push(request.headers.get("authorization"));
+      return jsonResponse({ data: { state: "NEUTRAL" } });
+    },
+  };
+  const cookie = `__Host-piner_session=${SESSION_TOKEN}`;
+  const headers = { cookie, authorization: `Bearer ${SPOOFED_TOKEN}` };
+
+  const home = await proxyPinerMemberRequest(
+    new Request("https://pinohouse.art/api/piner/students/018f7f5a-4321-7abc-8def-1234567890ab/home", { headers }),
+    { PINO_MEMBER_CORE: binding },
+  );
+  const journey = await proxyPinerMemberRequest(
+    new Request("https://pinohouse.art/api/piner/students/018f7f5a-4321-7abc-8def-1234567890ab/journey", { headers }),
+    { PINO_MEMBER_CORE: binding },
+  );
+
+  assert.equal(home.status, 200);
+  assert.equal(journey.status, 200);
+  assert.deepEqual(seen, [
+    "https://pino-member-core.internal/v1/member/students/018f7f5a-4321-7abc-8def-1234567890ab/home",
+    "https://pino-member-core.internal/v1/member/students/018f7f5a-4321-7abc-8def-1234567890ab/journey",
+  ]);
+  assert.deepEqual(authorizations, [`Bearer ${SESSION_TOKEN}`, `Bearer ${SESSION_TOKEN}`]);
+});
+
 test("fails closed before Core when the required member cookie is absent", async () => {
   let calls = 0;
   const binding: ParentMemberCoreBinding = {

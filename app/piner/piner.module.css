@@ -266,3 +266,206 @@
   .heroCard { grid-column: auto; min-height: 260px; flex-direction: column; align-items: flex-start; }
   .surfaceCard { min-height: 160px; }
 }
+
+.accountActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #777a72;
+  font-size: 0.82rem;
+}
+.destinationNav {
+  display: flex;
+  gap: 8px;
+  margin: 28px 0 18px;
+  padding: 6px;
+  overflow-x: auto;
+  border: 1px solid rgba(32, 35, 30, 0.08);
+  border-radius: 18px;
+  background: rgba(255,255,255,0.58);
+  width: fit-content;
+  max-width: 100%;
+}
+.destinationButton {
+  border: 0;
+  border-radius: 13px;
+  background: transparent;
+  color: #77796f;
+  padding: 10px 15px;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.destinationButtonActive {
+  background: #282c25;
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(40,44,37,0.12);
+}
+.surface { min-height: 430px; }
+.surfaceStack { display: grid; gap: 16px; }
+.degradedBadge {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 7px 10px;
+  background: #f4e8d6;
+  color: #8b653c;
+  font-size: 0.72rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.degradedNotice {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  border: 1px solid #e4d3ba;
+  border-radius: 16px;
+  background: #faf4ea;
+  padding: 14px 16px;
+  color: #755d40;
+  font-size: 0.84rem;
+}
+.degradedNotice span { color: #8a7760; }
+.primaryActionCard {
+  background: linear-gradient(145deg, #fff 0%, #f5efe1 100%);
+}
+.inlineButton {
+  border: 0;
+  background: transparent;
+  color: #66563d;
+  padding: 8px 0 0;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+.actionButton {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 6px;
+  border: 0;
+  border-radius: 999px;
+  background: #282c25;
+  color: #fff;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+}
+.sectionHeading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 18px;
+  padding: 22px 4px 10px;
+}
+.sectionHeading h2 {
+  margin: 8px 0 0;
+  font-size: clamp(2.1rem, 5vw, 4rem);
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+.emptyPanel,
+.surfaceLoading {
+  display: grid;
+  gap: 8px;
+  border: 1px dashed #c8c3b8;
+  border-radius: 22px;
+  background: rgba(255,255,255,0.52);
+  padding: clamp(24px, 5vw, 42px);
+  color: #777a72;
+}
+.emptyPanel strong { color: #30332d; font-size: 1.15rem; }
+.surfaceLoading {
+  min-height: 260px;
+  place-content: center;
+  justify-items: center;
+}
+.journeyGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.journeyCard {
+  min-height: 220px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  border: 1px solid rgba(32,35,30,0.08);
+  border-radius: 24px;
+  background: rgba(255,255,255,0.74);
+  padding: clamp(22px, 4vw, 30px);
+}
+.journeyCard h3 {
+  margin: 8px 0 0;
+  font-size: clamp(1.6rem, 3vw, 2.3rem);
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+}
+.journeyCard small { margin-top: auto; color: #8a8d84; }
+.journeyMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: #8a7658;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.milestoneLabel { margin: 0; color: #5f625b; }
+.countRow { display: flex; align-items: baseline; gap: 7px; }
+.countRow strong { font-size: 2rem; letter-spacing: -0.05em; }
+.countRow span { color: #777a72; font-size: 0.82rem; }
+
+.unsupportedPanel {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(32,35,30,0.08);
+  border-radius: 20px;
+  background: rgba(244,241,233,0.72);
+  padding: 20px;
+}
+.unsupportedPanel > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(32,35,30,0.07);
+}
+.unsupportedPanel span { color: #85877f; font-size: 0.82rem; }
+.exploreFeature {
+  min-height: 280px;
+  display: grid;
+  align-content: end;
+  gap: 9px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(32,35,30,0.08);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 78% 20%, rgba(224,199,149,0.6), transparent 20rem),
+    linear-gradient(145deg, #fff 0%, #ede6d8 100%);
+  padding: clamp(26px, 5vw, 46px);
+  color: #242720;
+  text-decoration: none;
+}
+.exploreFeature > span { color: #8b7655; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.13em; }
+.exploreFeature strong { font-size: clamp(2rem, 5vw, 3.6rem); letter-spacing: -0.045em; line-height: 1; }
+.exploreFeature p { max-width: 620px; margin: 0; color: #6f726a; line-height: 1.6; }
+.exploreFeature b { margin-top: 6px; font-size: 0.88rem; }
+
+@media (max-width: 720px) {
+  .accountActions > span { display: none; }
+  .destinationNav { width: 100%; box-sizing: border-box; }
+  .destinationButton { flex: 1 0 auto; }
+  .degradedNotice { align-items: flex-start; flex-direction: column; }
+  .sectionHeading { align-items: flex-start; flex-direction: column; }
+  .journeyGrid { grid-template-columns: 1fr; }
+  .journeyCard { min-height: 190px; }
+  .unsupportedPanel > div { flex-direction: column; gap: 4px; }
+  .exploreFeature { min-height: 320px; }
+}

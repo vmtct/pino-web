@@ -21,7 +21,7 @@ const PIN_CHANGE_COOKIE = "__Host-piner_pin_change";
 const COOKIE_ATTRIBUTES = "Path=/; HttpOnly; Secure; SameSite=Lax";
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
-const ROUTES: Readonly<Record<string, RouteContract>> = Object.freeze({
+const STATIC_ROUTES: Readonly<Record<string, RouteContract>> = Object.freeze({
   "/api/piner/auth/login": {
     method: "POST",
     upstreamPath: "/v1/parent-auth/pin/login",
@@ -58,6 +58,22 @@ const ROUTES: Readonly<Record<string, RouteContract>> = Object.freeze({
     body: "none",
   },
 });
+
+function routeFor(pathname: string): RouteContract | null {
+  const exact = STATIC_ROUTES[pathname];
+  if (exact) return exact;
+
+  const projection = /^\/api\/piner\/students\/([^/]+)\/(journey|home)$/.exec(pathname);
+  if (!projection) return null;
+  const [, studentId, resource] = projection;
+  return {
+    method: "GET",
+    upstreamPath: `/v1/member/students/${studentId}/${resource}`,
+    auth: "session",
+    result: "none",
+    body: "none",
+  };
+}
 
 const json = (body: unknown, status: number, headers = new Headers()) => {
   headers.set("Content-Type", "application/json");
@@ -168,7 +184,7 @@ async function translateAuthSuccess(response: Response, result: Exclude<AuthResu
  */
 export async function proxyPinerMemberRequest(request: Request, env: PinerMemberCoreEnv): Promise<Response> {
   const url = new URL(request.url);
-  const contract = ROUTES[url.pathname];
+  const contract = routeFor(url.pathname);
 
   if (!contract) {
     return json({ error: { code: "PINER_OPERATION_NOT_FOUND", message: "Piner operation not found" } }, 404);
