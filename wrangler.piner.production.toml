@@ -1,16 +1,20 @@
-name = "pino-web-piner-f0-preview"
+name = "piner"
 compatibility_date = "2026-08-10"
 main = "worker-piner.ts"
-workers_dev = true
+workers_dev = false
 keep_vars = true
 
 [vars]
-ENVIRONMENT = "preview"
+ENVIRONMENT = "production"
 
 [[services]]
 binding = "PINO_MEMBER_CORE"
-service = "pino-core-staging"
+service = "pino-core"
 entrypoint = "ParentMemberControlPlane"
+
+[[routes]]
+pattern = "piner.pinohouse.art"
+custom_domain = true
 
 [assets]
 directory = "./out"

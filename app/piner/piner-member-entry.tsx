@@ -579,7 +579,7 @@ function ExploreSurface({ student }: { student: PinerStudentSummary }) {
   return (
     <div className={styles.surfaceStack}>
       <section className={styles.sectionHeading}><div><p className={styles.eyebrow}>KHÁM PHÁ</p><h2>Một lý do để {student.displayName} quay lại House.</h2></div></section>
-      <a className={styles.exploreFeature} href="/open-studio">
+      <a className={styles.exploreFeature} href="https://pinohouse.art/open-studio">
         <span>OPEN STUDIO</span><strong>Xem hoạt động đang mở</strong><p>Eligibility, Pass, capacity và admission vẫn do Core quyết định ở owning flow.</p><b>Khám phá →</b>
       </a>
     </div>
