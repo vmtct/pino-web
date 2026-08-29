@@ -34,6 +34,7 @@ export default function PinerMemberEntry() {
   const [students, setStudents] = useState<PinerStudentSummary[]>([]);
   const [activeStudentId, setActiveStudentId] = useState("");
   const [destination, setDestination] = useState<Destination>("home");
+  const [studentPickerOpen, setStudentPickerOpen] = useState(false);
   const [error, setError] = useState("");
   const [home, setHome] = useState<MemberHomeProjection | null>(null);
   const [journey, setJourney] = useState<MemberJourneyProjection | null>(null);
@@ -279,11 +280,12 @@ export default function PinerMemberEntry() {
     setProjectionLoading(false);
     setActionBusy(false);
     setActionError("");
+    setStudentPickerOpen(false);
     actionReplayRef.current = null;
   }
 
   function selectStudent(studentId: string) {
-    if (studentId === activeStudentId) return;
+    if (studentId === activeStudentId) { setStudentPickerOpen(false); return; }
     projectionAbort.current?.abort();
     projectionVersion.current += 1;
     actionReplayRef.current = null;
@@ -295,6 +297,7 @@ export default function PinerMemberEntry() {
     setProjectionLoading(true);
     setDestination("home");
     setActiveStudentId(studentId);
+    setStudentPickerOpen(false);
   }
 
   if (view === "loading") return <Loading />;
@@ -303,86 +306,104 @@ export default function PinerMemberEntry() {
   if (view === "unavailable") return <Unavailable message={error} onRetry={() => void restoreSession()} />;
 
   return (
-    <main className={styles.page}>
-      <header className={styles.topbar}>
-        <a className={styles.brand} href="/" aria-label="PINO House">PINO<span>•</span></a>
-        <div className={styles.accountActions}>
-          <span>{session?.parent.displayName || "Gia đình PINO"}</span>
-          <button className={styles.textButton} type="button" onClick={() => void logout()}>Đăng xuất</button>
-        </div>
-      </header>
+    <main className={styles.prototype}>
+      <section className={styles.deviceStage}>
+        <div className={styles.device}>
+          <header className={styles.appHeader}>
+            <button type="button" className={styles.studentButton} onClick={() => setStudentPickerOpen(true)} aria-label="Đổi Piner">
+              <span className={styles.avatar}>{initials(activeStudent?.displayName || "P")}</span>
+              <span className={styles.studentMeta}>
+                <strong>{activeStudent?.displayName || "Piner"}</strong>
+                <small>{home?.journey?.pathDisplayName || "Piner Space"}</small>
+              </span>
+              <span className={styles.chevron}>⌄</span>
+            </button>
+            <span className={styles.wordmark}>PINO</span>
+          </header>
 
-      <section className={styles.workspace}>
-        <div className={styles.intro}>
-          <p className={styles.eyebrow}>PINER SPACE</p>
-          <h1>Không gian của {activeStudent?.displayName || "con"}.</h1>
-          <p>Trang chủ và Hành trình được đọc trực tiếp từ Core cho đúng Piner đang chọn. Chuyển Piner sẽ thay toàn bộ learner context cùng lúc.</p>
-        </div>
+          <div className={styles.screen}>
+            {activeStudent ? (
+              <section className={styles.surface} aria-live="polite">
+                {destination === "home" ? (
+                  <HomeSurface
+                    student={activeStudent}
+                    home={visibleHome}
+                    loading={projectionLoading}
+                    error={homeError}
+                    onDestination={setDestination}
+                    onOpenStudioAdmission={admitOwnerOpenStudio}
+                    actionBusy={actionBusy}
+                    actionError={actionError}
+                  />
+                ) : null}
+                {destination === "journey" ? (
+                  <JourneySurface student={activeStudent} journey={visibleJourney} loading={projectionLoading} error={journeyError} />
+                ) : null}
+                {destination === "collection" ? <CollectionSurface student={activeStudent} /> : null}
+                {destination === "explore" ? (
+                  <ExploreSurface
+                    student={activeStudent}
+                    home={visibleHome}
+                    onOpenStudioAdmission={admitOwnerOpenStudio}
+                    actionBusy={actionBusy}
+                    actionError={actionError}
+                  />
+                ) : null}
+              </section>
+            ) : (
+              <div className={styles.emptyState}>
+                <strong>Chưa có Piner được liên kết.</strong>
+                <span>Vui lòng liên hệ PINO House để kiểm tra hồ sơ gia đình.</span>
+              </div>
+            )}
+          </div>
 
-        <section className={styles.studentStrip} aria-label="Chọn Piner">
-          {students.length === 0 ? (
-            <div className={styles.emptyState}>
-              <strong>Chưa có Piner được liên kết.</strong>
-              <span>Piner không suy diễn learner từ fixture, Notion hay nguồn legacy để lấp chỗ trống.</span>
+          <nav className={styles.bottomNav} aria-label="Không gian Piner">
+            <DestinationButton icon="⌂" active={destination === "home"} onClick={() => setDestination("home")}>Trang chủ</DestinationButton>
+            <DestinationButton icon="◌" active={destination === "journey"} onClick={() => setDestination("journey")}>Hành trình</DestinationButton>
+            <DestinationButton icon="✦" active={destination === "collection"} onClick={() => setDestination("collection")}>Thành quả</DestinationButton>
+            <DestinationButton icon="◇" active={destination === "explore"} onClick={() => setDestination("explore")}>Khám phá</DestinationButton>
+          </nav>
+          {studentPickerOpen ? (
+            <div className={styles.overlayBackdrop} onMouseDown={() => setStudentPickerOpen(false)}>
+              <div className={styles.sheet} onMouseDown={(event) => event.stopPropagation()}>
+                <div className={styles.sheetHandle} />
+                <div className={styles.sheetTitleRow}>
+                  <div><span className={styles.eyebrow}>GIA ĐÌNH PINO</span><h3>Chọn Piner</h3></div>
+                  <button type="button" onClick={() => setStudentPickerOpen(false)}>×</button>
+                </div>
+                <div className={styles.studentList}>
+                  {students.map((student) => {
+                    const selected = student.id === activeStudent?.id;
+                    return (
+                      <button type="button" key={student.id} onClick={() => selectStudent(student.id)} aria-pressed={selected}>
+                        <span className={styles.avatar}>{initials(student.displayName)}</span>
+                        <span><strong>{student.displayName}</strong><small>{selected ? "Đang xem" : "Chuyển sang hồ sơ này"}</small></span>
+                        <em>{selected ? "✓" : "→"}</em>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className={styles.householdActions}>
+                  <button type="button" onClick={() => void logout()}><span>{session?.parent.displayName || "Gia đình PINO"}</span><strong>Đăng xuất →</strong></button>
+                </div>
+              </div>
             </div>
-          ) : students.map((student) => {
-            const selected = student.id === activeStudent?.id;
-            return (
-              <button
-                type="button"
-                key={student.id}
-                className={`${styles.studentCard} ${selected ? styles.studentCardActive : ""}`}
-                aria-pressed={selected}
-                onClick={() => selectStudent(student.id)}
-              >                <span className={styles.avatar}>{initials(student.displayName)}</span>
-                <span><strong>{student.displayName}</strong><small>{selected ? "Piner đang xem" : "Chọn Piner"}</small></span>
-              </button>
-            );
-          })}
-        </section>
-
-        {activeStudent ? (
-          <>
-            <nav className={styles.destinationNav} aria-label="Không gian Piner">
-              <DestinationButton active={destination === "home"} onClick={() => setDestination("home")}>Trang chủ</DestinationButton>
-              <DestinationButton active={destination === "journey"} onClick={() => setDestination("journey")}>Hành trình</DestinationButton>
-              <DestinationButton active={destination === "collection"} onClick={() => setDestination("collection")}>Thành quả</DestinationButton>
-              <DestinationButton active={destination === "explore"} onClick={() => setDestination("explore")}>Khám phá</DestinationButton>
-            </nav>
-
-            <section className={styles.surface} aria-live="polite">
-              {destination === "home" ? (
-                <HomeSurface
-                  student={activeStudent}
-                  home={visibleHome}
-                  loading={projectionLoading}
-                  error={homeError}
-                  onDestination={setDestination}
-                  onOpenStudioAdmission={admitOwnerOpenStudio}
-                  actionBusy={actionBusy}
-                  actionError={actionError}
-                />
-              ) : null}
-              {destination === "journey" ? (
-                <JourneySurface student={activeStudent} journey={visibleJourney} loading={projectionLoading} error={journeyError} />
-              ) : null}
-              {destination === "collection" ? <CollectionSurface student={activeStudent} /> : null}
-              {destination === "explore" ? <ExploreSurface student={activeStudent} /> : null}
-            </section>
-          </>
-        ) : null}
+          ) : null}
+        </div>
       </section>
     </main>
   );
 }
 
-function DestinationButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
+function DestinationButton({ icon, active, onClick, children }: { icon: string; active: boolean; onClick: () => void; children: ReactNode }) {
   return (
-    <button type="button" className={`${styles.destinationButton} ${active ? styles.destinationButtonActive : ""}`} onClick={onClick} aria-pressed={active}>
-      {children}
+    <button type="button" className={active ? styles.navActive : ""} onClick={onClick} aria-pressed={active}>
+      <span>{icon}</span><small>{children}</small>
     </button>
   );
 }
+
 
 function HomeSurface({
   student,
@@ -403,54 +424,44 @@ function HomeSurface({
   actionBusy: boolean;
   actionError: string;
 }) {
-  if (loading && !home) return <SurfaceLoading label="Đang đọc Trang chủ từ Core…" />;
-  if (!home) return <SurfaceError title="Trang chủ chưa thể tải." message={error || "Core chưa trả về Trang chủ hợp lệ cho Piner này."} />;
+  if (loading && !home) return <SurfaceLoading label="Đang mở không gian của con…" />;
+  if (!home) return <SurfaceError title="Trang chủ chưa thể tải." message={error || "Piner chưa nhận được dữ liệu mới nhất."} />;
+
+  const action = home.primaryAction;
+  const copy = action ? primaryActionCopy(action, home) : { title: "Hôm nay chưa có việc cần ưu tiên.", note: "Con có thể quay lại bất cứ lúc nào để tiếp tục hành trình." };
+  const eyebrow = action?.kind === "PHYSICAL_TOUCHPOINT" ? "SẮP ĐẾN PINO" : action?.kind === "EXPLORE_RETURN" ? "KHÁM PHÁ" : action?.kind === "CONTINUE_JOURNEY" ? "TIẾP TỤC HÀNH TRÌNH" : "PINER SPACE";
 
   return (
-    <div className={styles.surfaceStack}>
-      <section className={styles.heroCard}>
-        <div>
-          <p className={styles.eyebrow}>TRANG CHỦ · {home.state}</p>
-          <h2>{student.displayName}</h2>
-          <p>{home.state === "DEGRADED" ? "Một nguồn ưu tiên đang tạm unavailable, nên Piner giữ trạng thái an toàn thay vì tự hạ priority." : "Core đã chọn đúng một next action từ learner context hiện tại."}</p>
-        </div>
-        <span className={home.state === "DEGRADED" ? styles.degradedBadge : styles.canonicalBadge}>{home.resolverVersion}</span>
+    <div className={styles.stack}>
+      <section className={`${styles.heroCard} ${home.state === "DEGRADED" ? styles.heroMuted : ""}`}>
+        <span className={styles.eyebrow}>{eyebrow}</span>
+        <h2>{copy.title}</h2>
+        <p>{copy.note}</p>
+        {action?.kind === "CONTINUE_JOURNEY" ? <button className={styles.primaryButton} type="button" onClick={() => onDestination("journey")}>Tiếp tục luyện <span>→</span></button> : null}
+        {action?.kind === "EXPLORE_RETURN" && action.target.kind === "OPEN_STUDIO" ? <button className={styles.primaryButton} type="button" disabled={actionBusy} onClick={() => void onOpenStudioAdmission(action)}>{actionBusy ? "Đang giữ chỗ…" : "Giữ chỗ Open Studio →"}</button> : null}
+        {action?.kind === "PHYSICAL_TOUCHPOINT" ? <button className={styles.primaryButton} type="button" onClick={() => onDestination("home")}>Xem buổi hôm nay <span>→</span></button> : null}
+        {actionError ? <div className={styles.heroError}>{actionError}</div> : null}
       </section>
-      {home.state === "DEGRADED" ? (
-        <div className={styles.degradedNotice}>
-          <strong>Trang chủ đang degraded.</strong>
-          <span>Không có CTA thấp-priority nào được frontend tự dựng thay thế.</span>
-        </div>
+      {home.journey ? (
+        <section className={styles.sectionBlock}>
+          <div className={styles.sectionHeading}><div><span className={styles.eyebrow}>TỔNG QUAN HÀNH TRÌNH</span><h3>Con đang ở đâu?</h3></div></div>
+          <button type="button" className={styles.glanceCard} onClick={() => onDestination("journey")}>
+            <span className={styles.pathMark}>♬</span>
+            <span className={styles.glanceCopy}><strong>{home.journey.focusLabel}</strong><small>{home.journey.pathDisplayName}{home.journey.currentMilestoneLabel ? ` · ${home.journey.currentMilestoneLabel}` : ""}</small></span>
+            <span className={styles.arrow}>→</span>
+          </button>
+        </section>
       ) : null}
 
-      <div className={styles.homeGrid}>
-        <PrimaryActionCard action={home.primaryAction} home={home} onDestination={onDestination} onOpenStudioAdmission={onOpenStudioAdmission} actionBusy={actionBusy} actionError={actionError} />
-        <article className={styles.surfaceCard}>
-          <p className={styles.eyebrow}>ĐIỂM HẸN TIẾP THEO</p>
-          {home.nextTouchpoint ? (
-            <>
-              <h3>{formatDateTime(home.nextTouchpoint.scheduledStartsAt)}</h3>
-              <p>{home.nextTouchpoint.commitment} · kết thúc {formatTime(home.nextTouchpoint.scheduledEndsAt)}</p>
-              <span className={styles.pending}>Session từ Core</span>
-            </>
-          ) : (
-            <><h3>Chưa có điểm hẹn.</h3><p>Không có Session nào được frontend suy diễn từ lịch hoặc fixture.</p></>
-          )}
-        </article>
-
-        <article className={styles.surfaceCard}>
-          <p className={styles.eyebrow}>HÀNH TRÌNH ĐANG MỞ</p>
-          {home.journey ? (
-            <>
-              <h3>{home.journey.focusLabel}</h3>
-              <p>{home.journey.pathDisplayName}{home.journey.currentMilestoneLabel ? ` · ${home.journey.currentMilestoneLabel}` : ""}</p>
-              <button className={styles.inlineButton} type="button" onClick={() => onDestination("journey")}>Xem Hành trình →</button>
-            </>
-          ) : (
-            <><h3>Chưa có hành trình active.</h3><p>Đây là canonical empty state, không phải permission để tự tính level.</p></>
-          )}
-        </article>
-      </div>
+      <section className={styles.returnCard}>
+        <span className={styles.returnIcon}>⌂</span>
+        <div>
+          <span className={styles.eyebrow}>QUAY LẠI PINO</span>
+          <h3>{home.nextTouchpoint ? formatDateTime(home.nextTouchpoint.scheduledStartsAt) : "Khám phá một buổi phù hợp"}</h3>
+          <p>{home.nextTouchpoint ? `Kết thúc lúc ${formatTime(home.nextTouchpoint.scheduledEndsAt)}` : "Open Studio và những trải nghiệm mới đang chờ con."}</p>
+        </div>
+        <button type="button" className={styles.circleButton} onClick={() => onDestination(home.nextTouchpoint ? "home" : "explore")}>→</button>
+      </section>
     </div>
   );
 }
@@ -506,57 +517,67 @@ function PrimaryActionCard({
 function primaryActionCopy(action: HomePrimaryAction, home: MemberHomeProjection): { title: string; note: string } {
   switch (action.kind) {
     case "CONTINUE_JOURNEY":
-      return { title: home.journey?.focusLabel || "Tiếp tục Hành trình", note: home.journey?.currentMilestoneLabel || "Hành trình hiện tại đã sẵn sàng." };
+      return { title: home.journey?.focusLabel || "Tiếp tục Hành trình", note: home.journey?.currentMilestoneLabel || "Bài đang học đã sẵn sàng để con tiếp tục." };
     case "PHYSICAL_TOUCHPOINT":
-      return { title: "Buổi học sắp tới", note: home.nextTouchpoint ? formatDateTime(home.nextTouchpoint.scheduledStartsAt) : "Core đã xác định một physical touchpoint." };
+      return { title: "Buổi học sắp tới", note: home.nextTouchpoint ? formatDateTime(home.nextTouchpoint.scheduledStartsAt) : "Một điểm hẹn tại PINO đang đến gần." };
     case "EXPLORE_RETURN":
-      return { title: "Quay lại Open Studio", note: "Core đã chọn một cơ hội Khám phá phù hợp để quay lại House." };
+      return { title: "Một buổi Khám Phá đang mở", note: "Chọn một trải nghiệm Open Studio phù hợp để quay lại PINO." };
     case "VIEW_RETAINED_VALUE":
-      return { title: "Có nội dung đã giữ lại", note: "Target thuộc member content library; Piner không biến nó thành Collection giả." };
+      return { title: "Những gì con đã làm vẫn ở đây", note: "Mở lại nội dung và thành quả đã được giữ trong Hành trình." };
     case "VIEW_FRESH_OUTCOME":
-      return { title: "Có thành quả mới", note: "Outcome target được Core sở hữu; F0 không tự tạo outcome từ activity." };
+      return { title: "Có thành quả mới", note: "Một điều mới vừa được thêm vào không gian của con." };
     case "RECOVERY":
-      return { title: "Cần cập nhật ngữ cảnh", note: "Core yêu cầu recovery trước khi tiếp tục learner flow." };
+      return { title: "Piner đang đồng bộ lại", note: "Một phần thông tin cần được cập nhật trước khi tiếp tục." };
   }
 }
-
 function JourneySurface({ student, journey, loading, error }: { student: PinerStudentSummary; journey: MemberJourneyProjection | null; loading: boolean; error: string }) {
-  if (loading && !journey) return <SurfaceLoading label="Đang đọc Hành trình từ Core…" />;
-  if (!journey) return <SurfaceError title="Hành trình chưa thể tải." message={error || "Core chưa trả về Hành trình hợp lệ cho Piner này."} />;
+  if (loading && !journey) return <SurfaceLoading label="Đang mở Hành trình…" />;
+  if (!journey) return <SurfaceError title="Hành trình chưa thể tải." message={error || "Piner chưa nhận được Hành trình mới nhất."} />;
 
   const unsupported = journey.paths.filter((path) => path.support === "UNSUPPORTED");
   return (
-    <div className={styles.surfaceStack}>
-      <section className={styles.sectionHeading}>
-        <div><p className={styles.eyebrow}>HÀNH TRÌNH · {journey.state}</p><h2>{student.displayName}</h2></div>
-        <span className={styles.canonicalBadge}>Path-native</span>
-      </section>
+    <div className={styles.stack}>
+      <div className={styles.pageTitle}>
+        <span className={styles.eyebrow}>HÀNH TRÌNH</span>
+        <h2>Hành trình của {student.displayName}</h2>
+        <p>Mỗi chương trình giữ một mạch tiến bộ riêng của con.</p>
+      </div>
 
       {journey.state === "NO_ACTIVE_JOURNEY" ? (
-        <div className={styles.emptyPanel}><strong>Chưa có Hành trình active.</strong><span>Piner không dựng level từ Attendance hay Evidence.</span></div>
-      ) : null}
-      {journey.state === "NO_SUPPORTED_PATH" ? (
-        <div className={styles.emptyPanel}><strong>Path hiện tại chưa có adapter Hành trình.</strong><span>Trạng thái unsupported được giữ explicit thay vì ép vào grammar PianoHouse.</span></div>
-      ) : null}
-
-      {journey.journeys.length > 0 ? (
-        <div className={styles.journeyGrid}>
-          {journey.journeys.map((item) => (
-            <article className={styles.journeyCard} key={item.journeyId}>
-              <div className={styles.journeyMeta}><span>{item.path.displayName}</span><span>{item.grammar}</span></div>
-              <h3>{item.focus.label}</h3>
-              <p className={styles.milestoneLabel}>{item.progress.currentMilestone?.label || "Chưa có milestone hiện tại"}</p>
-              <div className={styles.countRow}><strong>{item.progress.achievedMilestoneCount}</strong><span>/ {item.progress.totalMilestoneCount} cột mốc đã được Core ghi nhận</span></div>
-              {item.lastRecognizedAt ? <small>Ghi nhận gần nhất: {formatDateTime(item.lastRecognizedAt)}</small> : null}
-            </article>
-          ))}
-        </div>
+        <section className={styles.aspirationCard}>
+          <span className={styles.eyebrow}>BẮT ĐẦU HÀNH TRÌNH</span>
+          <h3>Hành trình sẽ hiện khi con bắt đầu một chương trình tại PINO.</h3>
+          <p>Trong lúc này, Khám phá vẫn luôn mở để gia đình tìm một trải nghiệm phù hợp.</p>
+        </section>
       ) : null}
 
+      {journey.journeys.map((item) => {
+        const total = Math.max(1, Math.min(item.progress.totalMilestoneCount, 10));
+        const achieved = Math.min(item.progress.achievedMilestoneCount, total);
+        return (
+          <section className={styles.journeyHero} key={item.journeyId}>
+            <span className={styles.eyebrow}>{item.path.displayName}</span>
+            <div className={styles.journeyHeroRow}>
+              <div><h3>{item.focus.label}</h3><p>{item.progress.currentMilestone?.label || "Đang tiếp tục theo nhịp của con"}</p></div>
+              <span className={styles.bigGlyph}>♬</span>
+            </div>
+            <div className={styles.levelLadder} aria-label={`${achieved} trên ${total} cột mốc`}>
+              {Array.from({ length: total }, (_, index) => {
+                const level = index + 1;
+                const done = level <= achieved;
+                const current = level === Math.min(achieved + 1, total);
+                return <div key={level} className={`${styles.levelNode} ${done ? styles.levelDone : ""} ${current ? styles.levelCurrent : ""}`}><strong>L{level}</strong><small>{done ? "✓" : current ? "Hiện tại" : ""}</small></div>;
+              })}
+            </div>
+            {item.lastRecognizedAt ? <p className={styles.footnote}>Ghi nhận gần nhất · {formatDateTime(item.lastRecognizedAt)}</p> : null}
+          </section>
+        );
+      })}
       {unsupported.length > 0 ? (
-        <section className={styles.unsupportedPanel}>
-          <p className={styles.eyebrow}>PATH CHƯA HỖ TRỢ</p>
-          {unsupported.map((path) => <div key={path.path.id}><strong>{path.path.displayName}</strong><span>{path.unsupportedReason || "Adapter chưa được triển khai"}</span></div>)}
+        <section className={styles.noticeCard}>
+          <span className={styles.eyebrow}>SẮP MỞ</span>
+          <h3>Một chương trình đang được nối vào Piner Space.</h3>
+          <p>{unsupported.map((path) => path.path.displayName).join(" · ")}</p>
         </section>
       ) : null}
     </div>
@@ -565,23 +586,53 @@ function JourneySurface({ student, journey, loading, error }: { student: PinerSt
 
 function CollectionSurface({ student }: { student: PinerStudentSummary }) {
   return (
-    <div className={styles.surfaceStack}>
-      <section className={styles.sectionHeading}><div><p className={styles.eyebrow}>THÀNH QUẢ</p><h2>{student.displayName}</h2></div><span className={styles.pending}>Canonical-empty F0</span></section>
-      <div className={styles.emptyPanel}>
-        <strong>Chưa có Collection contract để hiển thị.</strong>
-        <span>Piner không biến raw Evidence, Attendance, milestone hay upload thành “thành quả” giả.</span>
+    <div className={styles.stack}>
+      <div className={styles.pageTitle}>
+        <span className={styles.eyebrow}>THÀNH QUẢ</span>
+        <h2>Những điều {student.displayName} đã làm.</h2>
+        <p>Tác phẩm, bản ghi và cột mốc được giữ lại theo thời gian.</p>
       </div>
+      <section className={styles.collectionEmpty}>
+        <span className={styles.collectionGlyph}>✦</span>
+        <strong>Thành quả đầu tiên sẽ xuất hiện ở đây.</strong>
+        <p>Khi PINO ghi nhận một tác phẩm, bản ghi hoặc cột mốc, gia đình sẽ có thể mở lại từ Piner Space.</p>
+      </section>
+      <section className={styles.collectionDoctrine}>
+        <span className={styles.eyebrow}>LUÔN THUỘC VỀ CON</span>
+        <h3>Quyền truy cập có thể kết thúc. Thành quả vẫn còn.</h3>
+      </section>
     </div>
   );
 }
 
-function ExploreSurface({ student }: { student: PinerStudentSummary }) {
+function ExploreSurface({ student, home, onOpenStudioAdmission, actionBusy, actionError }: {
+  student: PinerStudentSummary;
+  home: MemberHomeProjection | null;
+  onOpenStudioAdmission: (action: HomePrimaryAction) => Promise<void>;
+  actionBusy: boolean;
+  actionError: string;
+}) {
+  const action = home?.primaryAction;
+  const bookable = action?.kind === "EXPLORE_RETURN" && action.target.kind === "OPEN_STUDIO";
   return (
-    <div className={styles.surfaceStack}>
-      <section className={styles.sectionHeading}><div><p className={styles.eyebrow}>KHÁM PHÁ</p><h2>Một lý do để {student.displayName} quay lại House.</h2></div></section>
-      <a className={styles.exploreFeature} href="https://pinohouse.art/open-studio">
-        <span>OPEN STUDIO</span><strong>Xem hoạt động đang mở</strong><p>Eligibility, Pass, capacity và admission vẫn do Core quyết định ở owning flow.</p><b>Khám phá →</b>
-      </a>
+    <div className={styles.stack}>
+      <div className={styles.pageTitle}>
+        <span className={styles.eyebrow}>KHÁM PHÁ</span>
+        <h2>Một lý do để {student.displayName} quay lại PINO.</h2>
+        <p>Open Studio và những trải nghiệm ngoài Hành trình chính được gom tại đây.</p>
+      </div>
+      <section className={`${styles.eligibilityCard} ${bookable ? "" : styles.eligibilityBlocked}`}>
+        <span className={styles.eyebrow}>{bookable ? "ĐANG KHẢ DỤNG" : "OPEN STUDIO"}</span>
+        <h3>{bookable ? "Một buổi Khám Phá đang chờ con." : "Chưa có buổi mới phù hợp lúc này."}</h3>
+        <p>{bookable ? "Piner đã kiểm tra quyền tham gia hiện tại của hồ sơ này." : "Khi có hoạt động phù hợp, Piner sẽ đưa nó lên đây."}</p>
+        {bookable ? <button className={styles.primaryButton} type="button" disabled={actionBusy} onClick={() => void onOpenStudioAdmission(action)}>{actionBusy ? "Đang giữ chỗ…" : "Đăng ký buổi này →"}</button> : null}
+        {actionError ? <div className={styles.error}>{actionError}</div> : null}
+      </section>
+      <section className={styles.premiumDiscoveryCard}>
+        <span className={styles.eyebrow}>KHÁM PHÁ THÊM</span>
+        <h3>Những lần ghé PINO có thể nối thành một Hành trình dài hạn.</h3>
+        <p>Gia đình vẫn có thể bắt đầu từ một buổi Khám Phá và tiếp tục khi tìm thấy chương trình phù hợp.</p>
+      </section>
     </div>
   );
 }
