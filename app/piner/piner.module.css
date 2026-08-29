@@ -501,3 +501,24 @@
   .form { scroll-margin-bottom: 35dvh; }
   .securityNote { max-width: 34rem; }
 }
+
+/* Canonical PINO sigil inside Piner. */
+.headerLogo {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: block;
+  object-fit: contain;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  line-height: 0;
+}
+.authLogo {
+  width: 52px;
+  height: 52px;
+  display: block;
+  object-fit: contain;
+}

@@ -29,6 +29,7 @@ type ProjectionResult<T> =
   | { kind: "error"; message: string };
 
 const PINER_ICON_BASE = "https://assets.pinohouse.art/site/shared/piner-space-icon-";
+const PINO_CANONICAL_LOGO = "https://assets.pinohouse.art/core/Pino%20Sigil.png";
 
 function PinerIcon({ name, className }: { name: string; className?: string }) {
   return <img className={className} src={`${PINER_ICON_BASE}${name}.svg`} alt="" aria-hidden="true" />;
@@ -338,7 +339,7 @@ export default function PinerMemberEntry() {
               </span>
               <span className={styles.chevron}><PinerIcon name="chevron-down" /></span>
             </button>
-            <span className={styles.wordmark}>PINO</span>
+            <img className={styles.headerLogo} src={PINO_CANONICAL_LOGO} alt="PINO" />
           </header>
 
           <div className={styles.screen}>
@@ -716,7 +717,7 @@ function ChangePinCard({ onSubmit, error }: { onSubmit: (pin: string) => Promise
 }
 
 function AuthFrame({ eyebrow, title, note, children }: { eyebrow: string; title: string; note: string; children: ReactNode }) {
-  return <main className={styles.authPage}><section className={styles.authCard}><a className={styles.brand} href="/">PINO<span>•</span></a><div><p className={styles.eyebrow}>{eyebrow}</p><h1>{title}</h1><p>{note}</p></div>{children}<small className={styles.securityNote}>PIN của gia đình chỉ được dùng để xác thực đăng nhập và không được lưu trong trình duyệt.</small></section></main>;
+  return <main className={styles.authPage}><section className={styles.authCard}><a className={styles.brand} href="/" aria-label="PINO"><img className={styles.authLogo} src={PINO_CANONICAL_LOGO} alt="PINO" /></a><div><p className={styles.eyebrow}>{eyebrow}</p><h1>{title}</h1><p>{note}</p></div>{children}<small className={styles.securityNote}>PIN của gia đình chỉ được dùng để xác thực đăng nhập và không được lưu trong trình duyệt.</small></section></main>;
 }
 
 function Loading() {
@@ -724,7 +725,7 @@ function Loading() {
 }
 
 function Unavailable({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return <main className={styles.authPage}><section className={styles.authCard}><a className={styles.brand} href="/">PINO<span>•</span></a><div><p className={styles.eyebrow}>PINER SPACE</p><h1>Tạm thời chưa sẵn sàng.</h1><p>{message}</p></div><button className={styles.primaryButton} onClick={onRetry}>Thử lại</button></section></main>;
+  return <main className={styles.authPage}><section className={styles.authCard}><a className={styles.brand} href="/" aria-label="PINO"><img className={styles.authLogo} src={PINO_CANONICAL_LOGO} alt="PINO" /></a><div><p className={styles.eyebrow}>PINER SPACE</p><h1>Tạm thời chưa sẵn sàng.</h1><p>{message}</p></div><button className={styles.primaryButton} onClick={onRetry}>Thử lại</button></section></main>;
 }
 
 async function readHomeProjection(studentId: string, signal: AbortSignal): Promise<ProjectionResult<MemberHomeProjection>> {
