@@ -11,11 +11,10 @@ function envelope(data: unknown) {
   return { status: 200, contentType: 'application/json', body: JSON.stringify({ data }) };
 }
 
-test('OWNER Open Studio action refetches canonical Home before UI changes', async ({ page }) => {
-  let admitted = false;
+test('OWNER Open Studio action reuses its idempotency key until canonical Home changes', async ({ page }) => {
   let homeReads = 0;
   let admissionCalls = 0;
-  let admissionKey = '';
+  const admissionKeys: string[] = [];
   let admissionBody: unknown;
 
   await page.route('**/api/piner/session', (route) => route.fulfill(envelope({
@@ -32,12 +31,13 @@ test('OWNER Open Studio action refetches canonical Home before UI changes', asyn
     paths: [], journeys: [], asOf: '2026-08-29T06:00:00.000Z',
   })));
 
-  await page.route(`**/api/piner/students/${studentId}/home`, (route) => {
+  await page.route(`**/api/piner/students/${studentId}/home`, async (route) => {
     homeReads += 1;
+    const resolved = admissionCalls >= 2;
     return route.fulfill(envelope({
-      state: admitted ? 'NEUTRAL' : 'READY',
+      state: resolved ? 'NEUTRAL' : 'READY',
       student: { id: studentId, displayName: 'Piner A' },
-      primaryAction: admitted ? null : {
+      primaryAction: resolved ? null : {
         kind: 'EXPLORE_RETURN', reasonCode: 'OPEN_STUDIO_RETURN', effectiveAt: '2026-08-29T06:00:00.000Z',
         target: { kind: 'OPEN_STUDIO', passId, listingId, sessionId, pathProgramId: '018f7f5a-4321-7abc-8def-777777777777' },
       },
@@ -48,9 +48,8 @@ test('OWNER Open Studio action refetches canonical Home before UI changes', asyn
 
   await page.route(`**/api/piner/students/${studentId}/open-studio/admissions`, async (route) => {
     admissionCalls += 1;
-    admissionKey = route.request().headers()['idempotency-key'] || '';
+    admissionKeys.push(route.request().headers()['idempotency-key'] || '');
     admissionBody = route.request().postDataJSON();
-    admitted = true;
     await route.fulfill({
       status: 201, contentType: 'application/json', body: JSON.stringify({ data: {
         claimId: '018f7f5a-4321-7abc-8def-888888888888',
@@ -64,10 +63,15 @@ test('OWNER Open Studio action refetches canonical Home before UI changes', asyn
   await expect(page.getByRole('button', { name: 'Giữ chỗ Open Studio →' })).toBeVisible();
   expect(homeReads).toBe(1);
 
-  await page.getByRole('button', { name: 'Giữ chỗ Open Studio →' }).click();
+  const actionButton = page.getByRole('button', { name: 'Giữ chỗ Open Studio →' });
+  await actionButton.click();
+  await expect.poll(() => admissionCalls).toBe(1);
+  await expect(actionButton).toBeEnabled();
+  await actionButton.click();
+  await expect.poll(() => admissionCalls).toBe(2);
   await expect(page.getByText('Không có việc cần ưu tiên lúc này.')).toBeVisible();
   expect(homeReads).toBeGreaterThanOrEqual(2);
-  expect(admissionCalls).toBe(1);
-  expect(admissionKey).toBeTruthy();
+  expect(new Set(admissionKeys).size).toBe(1);
+  expect(admissionKeys[0]).toBeTruthy();
   expect(admissionBody).toEqual({ passId, listingId, participantMode: 'OWNER' });
 });

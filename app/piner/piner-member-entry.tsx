@@ -242,7 +242,6 @@ export default function PinerMemberEntry() {
       }
       const envelope = await response.json() as ApiEnvelope<unknown>;
       const admitted = parseOwnerOpenStudioAdmission(envelope.data, target.listingId, target.sessionId);
-      actionReplayRef.current = null;
       if (!admitted) {
         setActionError("Open Studio đã phản hồi nhưng dữ liệu chưa hợp lệ. Piner đang đồng bộ lại từ Core.");
       }
