@@ -403,3 +403,30 @@
   .screen { padding: 15px 13px 126px; }
   .heroCard { padding: 20px 17px; }
 }
+
+/* Canonical Piner Space SVG iconography from prototype freeze. */
+.chevron, .navIcon, .pathMark, .arrow, .returnIcon, .bigGlyph, .collectionGlyph,
+.circleButton, .studentStateIcon, .buttonIcon, .levelState, .iconButton {
+  display: inline-grid;
+  place-items: center;
+}
+.chevron img { width: 12px; height: 12px; display: block; }
+.navIcon { width: 20px; height: 20px; }
+.navIcon img { width: 20px; height: 20px; display: block; }
+.pathMark img { width: 22px; height: 22px; display: block; }
+.arrow img { width: 16px; height: 16px; display: block; }
+.returnIcon img { width: 24px; height: 24px; display: block; }
+.circleButton img { width: 16px; height: 16px; display: block; }
+.bigGlyph img { width: 30px; height: 30px; display: block; }
+.collectionGlyph img { width: 30px; height: 30px; display: block; }
+.studentStateIcon { width: 18px; height: 18px; }
+.studentStateIcon img { width: 16px; height: 16px; display: block; }
+.buttonIcon { width: 16px; height: 16px; margin-left: 4px; vertical-align: middle; }
+.buttonIcon img { width: 15px; height: 15px; display: block; }
+.levelState { min-height: 14px; display: grid !important; place-items: center; }
+.levelState img { width: 13px; height: 13px; display: block; }
+.iconButton { width: 32px; height: 32px; border: 0; border-radius: 999px; background: transparent; cursor: pointer; }
+.iconButton img { width: 16px; height: 16px; display: block; }
+.householdActions strong { display: inline-flex; align-items: center; gap: 5px; }
+.householdActions strong img { width: 14px; height: 14px; display: block; }
+.primaryButton { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
