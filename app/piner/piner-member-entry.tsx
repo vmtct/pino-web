@@ -145,14 +145,14 @@ export default function PinerMemberEntry() {
       const canonicalSession = parseParentSession(envelope.data);
       if (!canonicalSession) throw new Error("Invalid member session payload");
       setSession(canonicalSession);
-      await loadStudents();
+      await loadStudents(canonicalSession.session.selectedStudentId);
     } catch {
       setView("unavailable");
       setError("Piner tạm thời chưa sẵn sàng. Vui lòng thử lại sau.");
     }
   }
 
-  async function loadStudents() {
+  async function loadStudents(preferredStudentId?: string) {
     const response = await fetch("/api/piner/students", { cache: "no-store" });
     if (response.status === 401) {
       clearMemberContext();
@@ -164,7 +164,10 @@ export default function PinerMemberEntry() {
     const canonicalStudents = parseStudentList(envelope.data);
     if (!canonicalStudents) throw new Error("Invalid Student list payload");
     setStudents(canonicalStudents);
-    setActiveStudentId(canonicalStudents[0]?.id ?? "");
+    const preferred = preferredStudentId && canonicalStudents.some((student) => student.id === preferredStudentId)
+      ? preferredStudentId
+      : canonicalStudents[0]?.id ?? "";
+    setActiveStudentId(preferred);
     setDestination("home");
     setView("ready");
   }

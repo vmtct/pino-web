@@ -49,3 +49,49 @@ test("does not expose legacy pino-web APIs on the Piner host", async () => {
   assert.equal(response.headers.get("cache-control"), "no-store");
   assert.deepEqual(assetUrls, []);
 });
+
+test("redeems a Toppi handoff into an HttpOnly Piner session and redirects to a clean URL", async () => {
+  const handoffToken = "h".repeat(43);
+  const sessionToken = "s".repeat(43);
+  const seen: string[] = [];
+  const env = {
+    ASSETS: { async fetch() { return new Response("asset"); } },
+    PINO_PINER_HANDOFF: {
+      async redeemPinerHandoff(request: { token: string }) {
+        seen.push(request.token);
+        return {
+          token: sessionToken,
+          expiresAt: "2026-11-27T12:00:00.000Z",
+          parentUserId: "018f7f5a-4321-7abc-8def-111111111111",
+          selectedStudentId: "018f7f5a-4321-7abc-8def-222222222222",
+        };
+      },
+    },
+  };
+  const response = await pinerWorker.fetch(new Request(`https://piner.pinohouse.art/handoff/${handoffToken}`), env);
+  assert.equal(response.status, 303);
+  assert.equal(response.headers.get("location"), "/piner");
+  assert.equal(response.headers.get("referrer-policy"), "no-referrer");
+  const cookies = response.headers.get("set-cookie") ?? "";
+  assert.match(cookies, /__Host-piner_session=s{43}/);
+  assert.match(cookies, /HttpOnly/);
+  assert.match(cookies, /Secure/);
+  assert.match(cookies, /SameSite=Lax/);
+  assert.match(cookies, /__Host-piner_pin_change=; Max-Age=0/);
+  assert.deepEqual(seen, [handoffToken]);
+  assert.doesNotMatch(response.headers.get("location") ?? "", /handoff|h{43}/);
+  assert.equal(await response.text(), "");
+});
+
+test("fails closed for missing or invalid Piner handoff authority", async () => {
+  const token = "h".repeat(43);
+  const base = { ASSETS: { async fetch() { return new Response("asset"); } } };
+  const missing = await pinerWorker.fetch(new Request(`https://piner.pinohouse.art/handoff/${token}`), base);
+  assert.equal(missing.status, 503);
+  const invalid = await pinerWorker.fetch(new Request(`https://piner.pinohouse.art/handoff/${token}`), {
+    ...base,
+    PINO_PINER_HANDOFF: { async redeemPinerHandoff() { throw new Error("replayed"); } },
+  });
+  assert.equal(invalid.status, 401);
+  assert.deepEqual(await invalid.json(), { error: { code: "PINER_HANDOFF_INVALID", message: "Piner handoff is invalid or expired" } });
+});

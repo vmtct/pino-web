@@ -100,3 +100,20 @@ test("validates member session, Student list, and OWNER admission envelopes", as
   }, listingId, sessionTarget));
   assert.equal(parseOwnerOpenStudioAdmission({ claimId: "bad" }, listingId, sessionTarget), null);
 });
+test("preserves an optional handoff-selected Student only when it is canonical", async () => {
+  const { parseParentSession } = await import("../lib/piner-member-projections.ts");
+  const parentId = "018f7f5a-4321-7abc-8def-111111111111";
+  const sessionId = "018f7f5a-4321-7abc-8def-222222222222";
+  const selectedStudentId = "018f7f5a-4321-7abc-8def-333333333333";
+  const base = {
+    principalType: "PARENT_USER",
+    parent: { id: parentId, displayName: "Gia đình A" },
+    session: {
+      id: sessionId,
+      issuedAt: "2026-08-29T06:00:00.000Z",
+      expiresAt: "2026-11-29T06:00:00.000Z",
+    },
+  } as const;
+  assert.equal(parseParentSession({ ...base, session: { ...base.session, selectedStudentId } })?.session.selectedStudentId, selectedStudentId);
+  assert.equal(parseParentSession({ ...base, session: { ...base.session, selectedStudentId: "not-canonical" } }), null);
+});

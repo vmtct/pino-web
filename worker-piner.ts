@@ -1,4 +1,5 @@
 import { proxyPinerMemberRequest, type ParentMemberCoreBinding } from "./lib/piner-member-core-adapter.ts";
+import { redeemPinerHandoffRequest, type PinerHandoffCoreBinding } from "./lib/piner-handoff-adapter.ts";
 import { WORKER_BUILD_INFO } from "./worker-build-info.ts";
 
 interface PinerAssetsBinding {
@@ -7,6 +8,7 @@ interface PinerAssetsBinding {
 
 interface PinerEnv {
   PINO_MEMBER_CORE?: ParentMemberCoreBinding;
+  PINO_PINER_HANDOFF?: PinerHandoffCoreBinding;
   ASSETS: PinerAssetsBinding;
 }
 
@@ -28,6 +30,9 @@ function assetRequest(request: Request, pathname: string): Request {
 const handler = {
   async fetch(request: Request, env: PinerEnv): Promise<Response> {
     const url = new URL(request.url);
+
+    const handoff = await redeemPinerHandoffRequest(request, env);
+    if (handoff) return handoff;
 
     if (request.method === "GET" && url.pathname === "/build-info.json") {
       return noStoreJson(WORKER_BUILD_INFO);

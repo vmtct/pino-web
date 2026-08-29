@@ -2,7 +2,7 @@ export type PinerStudentSummary = { id: string; displayName: string };
 export type PinerParentSession = {
   principalType: "PARENT_USER";
   parent: { id: string; displayName: string };
-  session: { id: string; issuedAt: string; expiresAt: string };
+  session: { id: string; issuedAt: string; expiresAt: string; selectedStudentId?: string };
 };
 
 export type JourneyState = "READY" | "NO_ACTIVE_JOURNEY" | "NO_SUPPORTED_PATH";
@@ -121,6 +121,7 @@ export function parseParentSession(value: unknown): PinerParentSession | null {
   if (!isRecord(value.parent) || !canonicalId(value.parent.id) || !nonEmptyString(value.parent.displayName)) return null;
   if (!isRecord(value.session) || !canonicalId(value.session.id)) return null;
   if (!isTimestamp(value.session.issuedAt) || !isTimestamp(value.session.expiresAt)) return null;
+  if (value.session.selectedStudentId !== undefined && !canonicalId(value.session.selectedStudentId)) return null;
   if (Date.parse(value.session.expiresAt) <= Date.parse(value.session.issuedAt)) return null;
   return value as PinerParentSession;
 }
