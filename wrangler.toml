@@ -1,53 +1,18 @@
 name = "pino-web"
 compatibility_date = "2026-08-10"
-main = "worker-entry.ts"
-keep_vars = true
-# `routes` makes Wrangler infer workers_dev=false. Keep the service hostname
-# available during incremental cutover because CI and existing API consumers
-# still use pino-web.minhtri-van42.workers.dev.
+main = "worker-piner.ts"
 workers_dev = true
+keep_vars = true
 
-# Incremental production cutover: Artchitect and Little Piner are served by
-# pino-web while the remaining pinohouse.art pages continue to resolve to
-# Webflow. Next static assets are routed separately because exported pages
-# reference /_next/*.
-routes = [
-  { pattern = "pinohouse.art/artchitect*", zone_name = "pinohouse.art" },
-  { pattern = "www.pinohouse.art/artchitect*", zone_name = "pinohouse.art" },
-  { pattern = "pinohouse.art/little-piner*", zone_name = "pinohouse.art" },
-  { pattern = "www.pinohouse.art/little-piner*", zone_name = "pinohouse.art" },
-  { pattern = "pinohouse.art/_next/static/*", zone_name = "pinohouse.art" },
-  { pattern = "www.pinohouse.art/_next/static/*", zone_name = "pinohouse.art" }
-]
-
-# Environment controls whether Notion Mock Data is exposed.
-# Production hides mock fixtures; preview keeps them visible for testing.
 [vars]
-ENVIRONMENT = "production"
-PINO_CORE_BASE_URL = "https://pino-core-dev.minhtri-van42.workers.dev"
-# Keep false while production pino-web reads from pino-core-dev. Change only after
-# an explicitly approved production pino-core cutover.
-PINO_CORE_REGISTRATION_ENABLED = "false"
-NOTION_PARENT_DATA_SOURCE_ID = "30e8156e-326f-81e4-9910-000b14c9637f"
-NOTION_STUDENT_DATA_SOURCE_ID = "30e8156e-326f-81a3-8485-000b921040ad"
-NOTION_OS_PASS_DATA_SOURCE_ID = "fe2dad4b-d701-4296-b4ae-06333876a776"
-NOTION_OS_BOOKING_DATA_SOURCE_ID = "3b78156e-326f-807a-8899-000b0502ad78"
-NOTION_OS_SESSION_DATA_SOURCE_ID = "3b78156e-326f-809d-a3a2-000bb7c23760"
-NOTION_OS_SESSION_DATABASE_ID = "3b78156e-326f-800f-93c5-c78f82351bf1"
-NOTION_RUNNING_CLASS_DATA_SOURCE_ID = "3b78156e-326f-80dc-bb5f-000b1d24d851"
-NOTION_PATH_PROGRAM_DATA_SOURCE_ID = "3878156e-326f-805f-a58a-000b6b0ee348"
-NOTION_SYLLABUS_DATA_SOURCE_ID = "3168156e-326f-80f3-abf6-000b79aa7614"
-NOTION_WEB_CONFIG_DATA_SOURCE_ID = "b244894f-b69a-4874-aa0d-0c4b0326af0a"
-OS_NOTIFY_TO = "pinostaff2024@gmail.com"
-
-[[send_email]]
-name = "EMAIL"
-remote = true
-
-[env.preview.vars]
 ENVIRONMENT = "preview"
+
+[[services]]
+binding = "PINO_MEMBER_CORE"
+service = "pino-core-staging"
+entrypoint = "ParentMemberControlPlane"
 
 [assets]
 directory = "./out"
 binding = "ASSETS"
-run_worker_first = ["/api/*", "/build-info.json"]
+run_worker_first = true
