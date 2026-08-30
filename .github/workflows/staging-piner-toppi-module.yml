@@ -1,0 +1,76 @@
+name: Staging Piner Toppi Module
+
+on:
+  push:
+    branches:
+      - feat/piner-toppi-module-v1-20260830
+
+concurrency:
+  group: pino-web-staging-piner-toppi-module
+  cancel-in-progress: true
+
+jobs:
+  deploy-and-verify:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - name: Typecheck excluding known main baseline debt
+        shell: bash
+        run: |
+          cat > .tmp-tsconfig.json <<'JSON'
+          {
+            "extends": "./tsconfig.json",
+            "compilerOptions": { "incremental": false },
+            "exclude": ["node_modules", "e2e/member-booking.spec.ts"]
+          }
+          JSON
+          npx tsc -p .tmp-tsconfig.json --noEmit
+      - name: Run Piner member contract tests
+        run: >-
+          node --test --experimental-strip-types
+          test/piner-member-core-adapter.test.ts
+          test/piner-member-projections.test.ts
+          test/piner-toppi-adapter.test.ts
+          test/piner-toppi-projection.test.ts
+          test/piner-worker.test.ts
+      - name: Production compile excluding known main baseline debt
+        shell: bash
+        run: |
+          cp next.config.ts /tmp/next.config.ts
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const path = 'next.config.ts';
+          const source = readFileSync(path, 'utf8');
+          const anchor = '  output: "export",';
+          if (!source.includes(anchor)) throw new Error('next config anchor missing');
+          writeFileSync(path, source.replace(anchor, `${anchor}\n  typescript: { ignoreBuildErrors: true },`));
+          NODE
+          npm run build
+          cp /tmp/next.config.ts next.config.ts
+          git diff --exit-code -- next.config.ts
+      - name: Require staging Cloudflare credentials
+        shell: bash
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+      - name: Deploy Piner preview
+        run: npx wrangler deploy --config wrangler.piner-preview.toml
+      - name: Verify exact preview deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://pino-web-piner-f0-preview.minhtri-van42.workers.dev"
+          curl -fsS "$base/build-info.json" -o /tmp/build-info.json
+          deployed=$(node -e "const fs=require('fs'); console.log(JSON.parse(fs.readFileSync('/tmp/build-info.json','utf8')).commit)")
+          echo "Piner preview commit: $deployed"
+          test "$deployed" = "$GITHUB_SHA"
+          status=$(curl -sS -o /tmp/toppi-unauth.json -w "%{http_code}" "$base/api/piner/students/019d2000-0001-7000-8000-000000000001/toppi")
+          echo "Unauthenticated Toppi BFF -> $status"
+          test "$status" = "401"
