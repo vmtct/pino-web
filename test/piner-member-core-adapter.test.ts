@@ -260,3 +260,52 @@ test("forwards bounded OWNER Open Studio admission through the private member bi
   assert.equal(seen.headers.get("idempotency-key"), "piner-owner-admission-1");
   assert.deepEqual(await seen.json(), body);
 });
+test("forwards Piner Open Studio Explore read through the private member binding", async () => {
+  let seen: Request | undefined;
+  const binding: ParentMemberCoreBinding = {
+    async fetch(request) {
+      seen = request;
+      return jsonResponse({ data: { opportunities: [], reservations: [] } });
+    },
+  };
+  const studentId = "018f7f5a-4321-7abc-8def-1234567890ab";
+  const response = await proxyPinerMemberRequest(
+    new Request(`https://pinohouse.art/api/piner/students/${studentId}/open-studio`, {
+      headers: { cookie: `__Host-piner_session=${SESSION_TOKEN}`, authorization: `Bearer ${SPOOFED_TOKEN}` },
+    }),
+    { PINO_MEMBER_CORE: binding },
+  );
+
+  assert.equal(response.status, 200);
+  assert.ok(seen);
+  assert.equal(seen.url, `https://pino-member-core.internal/v1/member/students/${studentId}/open-studio`);
+  assert.equal(seen.headers.get("authorization"), `Bearer ${SESSION_TOKEN}`);
+});
+
+test("forwards OWNER Open Studio cancellation with session authority and idempotency", async () => {
+  let seen: Request | undefined;
+  const binding: ParentMemberCoreBinding = {
+    async fetch(request) {
+      seen = request;
+      return jsonResponse({ data: { claimStatus: "RELEASED" } });
+    },
+  };
+  const studentId = "018f7f5a-4321-7abc-8def-1234567890ab";
+  const claimId = "018f7f5a-4321-7abc-8def-333333333333";
+  const body = { reason: "Parent cancelled Open Studio reservation from Piner" };
+  const response = await proxyPinerMemberRequest(new Request(
+    `https://pinohouse.art/api/piner/students/${studentId}/open-studio/claims/${claimId}/cancel`, {
+      method: "POST",
+      headers: { cookie: `__Host-piner_session=${SESSION_TOKEN}`, "content-type": "application/json", "idempotency-key": "cancel-1" },
+      body: JSON.stringify(body),
+    }),
+    { PINO_MEMBER_CORE: binding },
+  );
+
+  assert.equal(response.status, 200);
+  assert.ok(seen);
+  assert.equal(seen.url, `https://pino-member-core.internal/v1/member/students/${studentId}/open-studio/claims/${claimId}/cancel`);
+  assert.equal(seen.headers.get("authorization"), `Bearer ${SESSION_TOKEN}`);
+  assert.equal(seen.headers.get("idempotency-key"), "cancel-1");
+  assert.deepEqual(await seen.json(), body);
+});

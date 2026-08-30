@@ -63,6 +63,17 @@ function routeFor(pathname: string): RouteContract | null {
   const exact = STATIC_ROUTES[pathname];
   if (exact) return exact;
 
+  const explore = /^\/api\/piner\/students\/([^/]+)\/open-studio$/.exec(pathname);
+  if (explore) {
+    return {
+      method: "GET",
+      upstreamPath: `/v1/member/students/${explore[1]}/open-studio`,
+      auth: "session",
+      result: "none",
+      body: "none",
+    };
+  }
+
   const admission = /^\/api\/piner\/students\/([^/]+)\/open-studio\/admissions$/.exec(pathname);
   if (admission) {
     return {
@@ -73,6 +84,18 @@ function routeFor(pathname: string): RouteContract | null {
       body: "forward",
     };
   }
+
+  const cancellation = /^\/api\/piner\/students\/([^/]+)\/open-studio\/claims\/([^/]+)\/cancel$/.exec(pathname);
+  if (cancellation) {
+    return {
+      method: "POST",
+      upstreamPath: `/v1/member/students/${cancellation[1]}/open-studio/claims/${cancellation[2]}/cancel`,
+      auth: "session",
+      result: "none",
+      body: "forward",
+    };
+  }
+
   const projection = /^\/api\/piner\/students\/([^/]+)\/(journey|home)$/.exec(pathname);
   if (!projection) return null;
   const [, studentId, resource] = projection;
