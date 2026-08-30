@@ -17,6 +17,10 @@ import type {
   PinerParentSession,
   PinerStudentSummary,
 } from "../../lib/piner-member-projections";
+import { parseToppiProjection } from "../../lib/piner-toppi-projection";
+import type { ToppiMemberProjection, ToppiProgramProgress } from "../../lib/piner-toppi-projection";
+import { parseToppiPracticeCompletion, parseToppiPracticeProjection } from "../../lib/piner-toppi-practice-projection";
+import type { ToppiPracticeProjection, ToppiPracticeSet } from "../../lib/piner-toppi-practice-projection";
 import styles from "./piner.module.css";
 
 type ViewState = "loading" | "signed-out" | "change-pin" | "ready" | "unavailable";
@@ -27,6 +31,10 @@ type ProjectionResult<T> =
   | { kind: "auth" }
   | { kind: "aborted" }
   | { kind: "error"; message: string };
+type OptionalProjectionResult<T> = ProjectionResult<T> | { kind: "absent" };
+type PracticeSubmissionInput =
+  | { kind: "SPEAKING"; audio: Blob }
+  | { kind: "WORKSHEET"; textResponse: string };
 
 const PINER_ICON_BASE = "https://assets.pinohouse.art/site/shared/piner-space-icon-";
 const PINO_CANONICAL_LOGO = "https://assets.pinohouse.art/core/Pino%20Sigil.png";
@@ -59,6 +67,15 @@ export default function PinerMemberEntry() {
   const [error, setError] = useState("");
   const [home, setHome] = useState<MemberHomeProjection | null>(null);
   const [journey, setJourney] = useState<MemberJourneyProjection | null>(null);
+  const [toppi, setToppi] = useState<ToppiMemberProjection | null>(null);
+  const [toppiError, setToppiError] = useState("");
+  const [toppiLoading, setToppiLoading] = useState(false);
+  const [toppiOpen, setToppiOpen] = useState(false);
+  const [toppiPractice, setToppiPractice] = useState<ToppiPracticeProjection | null>(null);
+  const [toppiPracticeError, setToppiPracticeError] = useState("");
+  const [toppiPracticeLoading, setToppiPracticeLoading] = useState(false);
+  const [toppiPracticeBusy, setToppiPracticeBusy] = useState(false);
+  const [toppiPracticeNotice, setToppiPracticeNotice] = useState("");
   const [homeError, setHomeError] = useState("");
   const [journeyError, setJourneyError] = useState("");
   const [projectionLoading, setProjectionLoading] = useState(false);
@@ -81,6 +98,8 @@ export default function PinerMemberEntry() {
   );
   const visibleHome = home?.student.id === activeStudentId ? home : null;
   const visibleJourney = journey?.student.id === activeStudentId ? journey : null;
+  const visibleToppi = toppi?.student.id === activeStudentId ? toppi : null;
+  const visibleToppiPractice = toppiPractice?.student.id === activeStudentId ? toppiPractice : null;
 
   useEffect(() => {
     if (view !== "ready" || !activeStudentId) return;
@@ -93,8 +112,33 @@ export default function PinerMemberEntry() {
     setProjectionLoading(true);
     setHome(null);
     setJourney(null);
+    setToppi(null);
+    setToppiError("");
+    setToppiLoading(true);
+    setToppiOpen(false);
+    setToppiPractice(null);
+    setToppiPracticeError("");
+    setToppiPracticeLoading(true);
+    setToppiPracticeNotice("");
     setHomeError("");
     setJourneyError("");
+
+    void readToppiProjection(requestedStudentId, controller.signal).then((result) => {
+      if (controller.signal.aborted || version !== projectionVersion.current) return;
+      if (result.kind === "auth") { clearMemberContext(); setView("signed-out"); return; }
+      applyToppiResult(result, requestedStudentId, version);
+      setToppiLoading(false);
+    });
+    void readToppiPracticeProjection(requestedStudentId, controller.signal).then((result) => {
+      if (controller.signal.aborted || version !== projectionVersion.current) return;
+      if (result.kind === "auth") { clearMemberContext(); setView("signed-out"); return; }
+      if (result.kind === "error") { setToppiPracticeError(result.message); setToppiPractice(null); }
+      if (result.kind === "ok" && projectionResponseIsCurrent(requestedStudentId, result.data.student.id, activeStudentRef.current, version, projectionVersion.current)) {
+        setToppiPractice(result.data);
+        setToppiPracticeError("");
+      }
+      setToppiPracticeLoading(false);
+    });
 
     void Promise.all([
       readHomeProjection(requestedStudentId, controller.signal),
@@ -146,6 +190,15 @@ export default function PinerMemberEntry() {
       projectionVersion.current,
     )) return;
     setJourney(result.data);
+  }
+
+  function applyToppiResult(result: OptionalProjectionResult<ToppiMemberProjection>, studentId: string, version: number) {
+    if (result.kind === "aborted" || result.kind === "auth") return;
+    if (result.kind === "absent") { setToppi(null); setToppiError(""); return; }
+    if (result.kind === "error") { setToppi(null); setToppiError(result.message); return; }
+    if (!projectionResponseIsCurrent(studentId, result.data.student.id, activeStudentRef.current, version, projectionVersion.current)) return;
+    setToppi(result.data);
+    setToppiError("");
   }
 
   async function restoreSession() {
@@ -274,6 +327,52 @@ export default function PinerMemberEntry() {
       setActionBusy(false);
     }
   }
+  async function completeToppiPractice(practiceSetId: string, optionId: string, submission: PracticeSubmissionInput) {
+    const studentId = activeStudentRef.current;
+    if (!studentId || toppiPracticeBusy) return;
+    setToppiPracticeBusy(true);
+    setToppiPracticeError("");
+    setToppiPracticeNotice("");
+    try {
+      const headers = new Headers({ "Idempotency-Key": crypto.randomUUID() });
+      let body: BodyInit;
+      if (submission.kind === "SPEAKING") {
+        const form = new FormData();
+        form.set("practiceSetId", practiceSetId);
+        form.set("optionId", optionId);
+        form.set("kind", "SPEAKING");
+        const extension = submission.audio.type.includes("mp4") ? "m4a" : submission.audio.type.includes("ogg") ? "ogg" : "webm";
+        form.set("audio", submission.audio, `toppi-practice.${extension}`);
+        body = form;
+      } else {
+        headers.set("Content-Type", "application/json");
+        body = JSON.stringify({ practiceSetId, optionId, kind: "WORKSHEET", textResponse: submission.textResponse });
+      }
+      const response = await fetch(`/api/piner/students/${studentId}/toppi/practice/completions`, {
+        method: "POST",
+        headers,
+        body,
+      });
+      if (response.status === 401) { clearMemberContext(); setView("signed-out"); return; }
+      if (!response.ok) { setToppiPracticeError(await apiMessage(response, "Chưa thể hoàn thành bài luyện tập.")); return; }
+      const parsed = parseToppiPracticeCompletion(await response.json());
+      if (!parsed) { setToppiPracticeError("Toppi đã phản hồi nhưng completion chưa hợp lệ."); return; }
+      if (activeStudentRef.current !== studentId) return;
+      setToppiPractice((current) => updatePracticeCompletion(current, parsed));
+      setToppiPracticeNotice(`Hoàn thành · +${parsed.reward.amount} ${parsed.reward.code}`);
+      const refresh = new AbortController();
+      void readToppiPracticeProjection(studentId, refresh.signal).then((result) => {
+        if (activeStudentRef.current !== studentId) return;
+        if (result.kind === "auth") { clearMemberContext(); setView("signed-out"); return; }
+        if (result.kind === "ok") { setToppiPractice(result.data); setToppiPracticeError(""); }
+      });
+    } catch {
+      setToppiPracticeError("Chưa thể hoàn thành bài luyện tập. Vui lòng thử lại.");
+    } finally {
+      setToppiPracticeBusy(false);
+    }
+  }
+
   async function logout() {
     setError("");
     const response = await fetch("/api/piner/logout", {
@@ -296,6 +395,15 @@ export default function PinerMemberEntry() {
     setActiveStudentId("");
     setHome(null);
     setJourney(null);
+    setToppi(null);
+    setToppiError("");
+    setToppiLoading(false);
+    setToppiOpen(false);
+    setToppiPractice(null);
+    setToppiPracticeError("");
+    setToppiPracticeLoading(false);
+    setToppiPracticeBusy(false);
+    setToppiPracticeNotice("");
     setHomeError("");
     setJourneyError("");
     setProjectionLoading(false);
@@ -313,6 +421,15 @@ export default function PinerMemberEntry() {
     setActionError("");
     setHome(null);
     setJourney(null);
+    setToppi(null);
+    setToppiError("");
+    setToppiLoading(true);
+    setToppiOpen(false);
+    setToppiPractice(null);
+    setToppiPracticeError("");
+    setToppiPracticeLoading(true);
+    setToppiPracticeBusy(false);
+    setToppiPracticeNotice("");
     setHomeError("");
     setJourneyError("");
     setProjectionLoading(true);
@@ -358,7 +475,7 @@ export default function PinerMemberEntry() {
                   />
                 ) : null}
                 {destination === "journey" ? (
-                  <JourneySurface student={activeStudent} journey={visibleJourney} loading={projectionLoading} error={journeyError} />
+                <JourneySurface student={activeStudent} journey={visibleJourney} loading={projectionLoading} error={journeyError} toppi={visibleToppi} toppiLoading={toppiLoading} toppiError={toppiError} toppiOpen={toppiOpen} onOpenToppi={() => setToppiOpen(true)} onCloseToppi={() => setToppiOpen(false)} practice={visibleToppiPractice} practiceLoading={toppiPracticeLoading} practiceError={toppiPracticeError} practiceBusy={toppiPracticeBusy} practiceNotice={toppiPracticeNotice} onCompletePractice={completeToppiPractice} />
                 ) : null}
                 {destination === "collection" ? <CollectionSurface student={activeStudent} /> : null}
                 {destination === "explore" ? (
@@ -551,7 +668,27 @@ function primaryActionCopy(action: HomePrimaryAction, home: MemberHomeProjection
       return { title: "Piner đang đồng bộ lại", note: "Một phần thông tin cần được cập nhật trước khi tiếp tục." };
   }
 }
-function JourneySurface({ student, journey, loading, error }: { student: PinerStudentSummary; journey: MemberJourneyProjection | null; loading: boolean; error: string }) {
+function JourneySurface({ student, journey, loading, error, toppi, toppiLoading, toppiError, toppiOpen, onOpenToppi, onCloseToppi, practice, practiceLoading, practiceError, practiceBusy, practiceNotice, onCompletePractice }: {
+  student: PinerStudentSummary;
+  journey: MemberJourneyProjection | null;
+  loading: boolean;
+  error: string;
+  toppi: ToppiMemberProjection | null;
+  toppiLoading: boolean;
+  toppiError: string;
+  toppiOpen: boolean;
+  onOpenToppi: () => void;
+  onCloseToppi: () => void;
+  practice: ToppiPracticeProjection | null;
+  practiceLoading: boolean;
+  practiceError: string;
+  practiceBusy: boolean;
+  practiceNotice: string;
+  onCompletePractice: (practiceSetId: string, optionId: string, submission: PracticeSubmissionInput) => Promise<void>;
+}) {
+  if (toppiOpen && toppi && toppi.programs.length > 0) {
+    return <ToppiDetailSurface student={student} toppi={toppi} practice={practice} practiceLoading={practiceLoading} practiceError={practiceError} practiceBusy={practiceBusy} practiceNotice={practiceNotice} onCompletePractice={onCompletePractice} onBack={onCloseToppi} />;
+  }
   if (loading && !journey) return <SurfaceLoading label="Đang mở Hành trình…" />;
   if (!journey) return <SurfaceError title="Hành trình chưa thể tải." message={error || "Piner chưa nhận được Hành trình mới nhất."} />;
 
@@ -594,6 +731,9 @@ function JourneySurface({ student, journey, loading, error }: { student: PinerSt
           </section>
         );
       })}
+      {toppiLoading ? <div className={styles.toppiModuleLoading}><span className={styles.loader} /><span>Đang đọc Toppi…</span></div> : null}
+      {!toppiLoading && toppiError ? <div className={styles.toppiModuleNotice}><strong>Toppi tạm thời chưa sẵn sàng.</strong><span>Hành trình PINO vẫn hoạt động bình thường.</span></div> : null}
+      {!toppiLoading && toppi && toppi.programs.length > 0 ? <ToppiModuleCard program={toppi.programs[0]} onOpen={onOpenToppi} /> : null}
       {unsupported.length > 0 ? (
         <section className={styles.noticeCard}>
           <span className={styles.eyebrow}>SẮP MỞ</span>
@@ -603,6 +743,203 @@ function JourneySurface({ student, journey, loading, error }: { student: PinerSt
       ) : null}
     </div>
   );
+}
+
+function ToppiModuleCard({ program, onOpen }: { program: ToppiProgramProgress; onOpen: () => void }) {
+  return (
+    <article className={styles.toppiModuleCard}>
+      <div className={styles.toppiModuleHead}>
+        <div><p className={styles.eyebrow}>TOPPI ENGLISH</p><h3>{program.program.name}</h3><p>{program.class_lens.name} · {program.stage.name}</p></div>
+        <span className={styles.toppiLevelBadge}>Level {program.level.number}</span>
+      </div>
+      <div className={styles.toppiModuleStats}>
+        <span><strong>{program.evidence_summary.published_count}</strong> minh chứng</span>
+        <span><strong>{program.assessment_summary.published_count}</strong> lần đánh giá</span>
+      </div>
+      <button className={styles.actionButton} type="button" onClick={onOpen}>Mở Toppi →</button>
+    </article>
+  );
+}
+function ToppiDetailSurface({ student, toppi, practice, practiceLoading, practiceError, practiceBusy, practiceNotice, onCompletePractice, onBack }: {
+  student: PinerStudentSummary;
+  toppi: ToppiMemberProjection;
+  practice: ToppiPracticeProjection | null;
+  practiceLoading: boolean;
+  practiceError: string;
+  practiceBusy: boolean;
+  practiceNotice: string;
+  onCompletePractice: (practiceSetId: string, optionId: string, submission: PracticeSubmissionInput) => Promise<void>;
+  onBack: () => void;
+}) {
+  return (
+    <div className={styles.surfaceStack}>
+      <button className={styles.toppiBackButton} type="button" onClick={onBack}>← Hành trình</button>
+      <section className={styles.sectionHeading}>
+        <div><p className={styles.eyebrow}>TOPPI · {student.displayName}</p><h2>Toppi English</h2></div>
+      </section>
+      {toppi.programs.map((program) => (
+        <article className={styles.toppiDetailCard} key={program.enrollment_id}>
+          <div className={styles.toppiDetailHeader}>
+            <div><p className={styles.eyebrow}>{program.class_lens.name}</p><h3>{program.program.name}</h3><p>{program.stage.name}</p></div>
+            <span className={styles.toppiLevelBadge}>Level {program.level.number}</span>
+          </div>
+          <div className={styles.toppiNextStep}>
+            <span>Hiện tại</span><strong>{program.level.name}</strong>
+            <span>Tiếp theo</span><strong>{program.next_level?.name || "Đã ở Level cuối"}</strong>
+          </div>
+          <div className={styles.toppiStatGrid}>
+            <div><strong>{program.evidence_summary.published_count}</strong><span>Minh chứng</span></div>
+            <div><strong>{program.assessment_summary.published_count}</strong><span>Lần đánh giá</span></div>
+          </div>
+          <section className={styles.toppiCompetencies}>
+            <div><p className={styles.eyebrow}>NĂNG LỰC HIỆN TẠI</p></div>
+            {program.competencies.length > 0 ? (
+              <div className={styles.toppiCompetencyList}>
+                {program.competencies.map((item) => (
+                  <div className={styles.toppiCompetencyRow} key={item.code}>
+                    <span><strong>{item.name}</strong><small>Cập nhật {formatDateTime(item.assessed_at)}</small></span>
+                    <b>{competencyStateLabel(item.state)}</b>
+                  </div>
+                ))}
+              </div>
+            ) : <div className={styles.toppiEmpty}>Chưa có lần đánh giá được công bố cho Level này.</div>}
+          </section>
+        </article>
+      ))}
+      <ToppiPracticePanel practice={practice} loading={practiceLoading} error={practiceError} busy={practiceBusy} notice={practiceNotice} onComplete={onCompletePractice} />
+    </div>
+  );
+}
+
+function ToppiPracticePanel({ practice, loading, error, busy, notice, onComplete }: {
+  practice: ToppiPracticeProjection | null;
+  loading: boolean;
+  error: string;
+  busy: boolean;
+  notice: string;
+  onComplete: (practiceSetId: string, optionId: string, submission: PracticeSubmissionInput) => Promise<void>;
+}) {
+  const set = practice?.sets[0] ?? null;
+  const option = set?.options[0] ?? null;
+  const [worksheetText, setWorksheetText] = useState("");
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioUrl, setAudioUrl] = useState("");
+  const [recording, setRecording] = useState(false);
+  const [recordError, setRecordError] = useState("");
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+
+  useEffect(() => {
+    setWorksheetText("");
+    setAudioBlob(null);
+    setRecordError("");
+    recorderRef.current?.state === "recording" && recorderRef.current.stop();
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+  }, [set?.id, option?.id]);
+  useEffect(() => {
+    if (!audioBlob) { setAudioUrl(""); return; }
+    const url = URL.createObjectURL(audioBlob);
+    setAudioUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [audioBlob]);
+
+  useEffect(() => () => {
+    recorderRef.current?.state === "recording" && recorderRef.current.stop();
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+  }, []);
+
+  async function startRecording() {
+    setRecordError("");
+    setAudioBlob(null);
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      setRecordError("Thiết bị này chưa hỗ trợ thu âm trong trình duyệt.");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
+      const mimeType = candidates.find((type) => MediaRecorder.isTypeSupported(type));
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      chunksRef.current = [];
+      recorder.ondataavailable = (event) => { if (event.data.size > 0) chunksRef.current.push(event.data); };
+      recorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || chunksRef.current[0]?.type || "audio/webm" });
+        setAudioBlob(blob.size > 0 ? blob : null);
+        if (blob.size < 1) setRecordError("Chưa ghi nhận được âm thanh. Hãy thử thu lại.");
+        stream.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+        setRecording(false);
+      };
+      recorderRef.current = recorder;
+      recorder.start(250);
+      setRecording(true);
+    } catch {
+      setRecordError("Piner cần quyền microphone để thu bài nói.");
+    }
+  }
+
+  function stopRecording() {
+    if (recorderRef.current?.state === "recording") recorderRef.current.stop();
+  }
+  if (loading && !practice) return <SurfaceLoading label="Đang đọc bài luyện tập…" />;
+  if (!set || !option) return <div className={styles.toppiPracticePanel}><p className={styles.eyebrow}>LUYỆN TẬP</p><strong>Chưa có bài luyện tập cho Level này.</strong>{error ? <span className={styles.error}>{error}</span> : null}</div>;
+  const completedOption = set.completion ? set.options.find((item) => item.id === set.completion?.optionId) : null;
+  const canComplete = option.kind === "SPEAKING" ? Boolean(audioBlob?.size) : worksheetText.trim().length >= 20;
+
+  async function submit() {
+    if (!set || !option || !canComplete) return;
+    if (option.kind === "SPEAKING" && audioBlob) {
+      await onComplete(set.id, option.id, { kind: "SPEAKING", audio: audioBlob });
+    } else if (option.kind === "WORKSHEET") {
+      await onComplete(set.id, option.id, { kind: "WORKSHEET", textResponse: worksheetText.trim() });
+    }
+  }
+
+  return (
+    <section className={styles.toppiPracticePanel} aria-label="Luyện tập Toppi">
+      <div className={styles.toppiPracticeHeader}>
+        <div><p className={styles.eyebrow}>LUYỆN TẬP · {set.level.name}</p><h3>{set.title}</h3><p>{option.kind === "SPEAKING" ? "Bài nói dành cho nhánh Tự tin giao tiếp." : "Worksheet dành cho nhánh Vững nền ngôn ngữ."}</p></div>
+        <div className={styles.toppiPracticeReward}><strong>+{set.reward.amount}</strong><span>{set.reward.code}</span></div>
+      </div>
+      {set.completion ? (
+        <div className={styles.toppiPracticeDone} data-testid="toppi-practice-done">
+          <span>✓ Đã hoàn thành</span><strong>{completedOption?.title || option.title}</strong>
+          <p>+{set.completion.reward?.amount ?? set.reward.amount} {set.reward.code} đã được ghi nhận cho completion này.</p>
+          <small>Tổng reward từ Practice đã ghi nhận: {practice?.rewardSummary.earnedTotal ?? 0} PLS</small>
+        </div>
+      ) : (
+        <div className={styles.toppiPracticeWork}>
+          <div className={styles.toppiPracticePrompt}><span>{option.kind === "SPEAKING" ? "BÀI NÓI" : "WORKSHEET"}</span><strong>{option.title}</strong><p>{option.prompt}</p><small>{option.instructions}</small></div>
+          {option.kind === "SPEAKING" ? (
+            <div className={styles.toppiRecorder}>
+              <div className={styles.toppiRecorderActions}>
+                {!recording ? <button className={styles.inlineButton} type="button" disabled={busy} data-testid="toppi-practice-record-start" onClick={() => void startRecording()}>{audioBlob ? "Thu lại" : "Bắt đầu thu âm"}</button> : null}
+                {recording ? <button className={styles.actionButton} type="button" disabled={busy} data-testid="toppi-practice-record-stop" onClick={stopRecording}>Dừng thu âm</button> : null}
+                <span>{recording ? "● Đang thu…" : audioBlob ? "Đã có bản thu" : "Chưa thu"}</span>
+              </div>
+              {audioUrl ? <audio className={styles.toppiAudioPreview} controls src={audioUrl}>Trình duyệt chưa hỗ trợ phát audio.</audio> : null}
+              {recordError ? <div className={styles.error}>{recordError}</div> : null}
+            </div>
+          ) : (
+            <textarea className={styles.toppiPracticeTextarea} rows={6} value={worksheetText} onChange={(event) => setWorksheetText(event.target.value)} placeholder="Viết 3–5 câu ở đây…" aria-label="Câu trả lời Worksheet" />
+          )}
+          <button className={`${styles.actionButton} ${styles.toppiPracticeComplete}`} type="button" disabled={busy || recording || !canComplete} data-testid="toppi-practice-submit" onClick={() => void submit()}>{busy ? "Đang lưu bài…" : `Nộp bài & nhận ${set.reward.amount} PLS`}</button>
+        </div>
+      )}
+      <div className={styles.toppiPracticeWallet} data-state={practice?.rewardSummary.syncState ?? "UNAVAILABLE"} data-testid="toppi-practice-pls-wallet">
+        <div><span>PINORIA · PLS</span><strong>{practice?.rewardSummary.pinoriaBalance ?? "—"} PLS</strong></div>
+        <small>{practice?.rewardSummary.syncState === "SYNCED" ? "Đã đồng bộ với kho PLS Pinoria." : practice?.rewardSummary.syncState === "PENDING" ? "Bài đã ghi nhận ở Toppi · đang chờ đồng bộ sang Pinoria." : "Bài Toppi vẫn được giữ an toàn · kho Pinoria tạm chưa đọc được."}</small>
+      </div>      {notice ? <div className={styles.toppiPracticeNotice}>{notice}</div> : null}
+      {error ? <div className={styles.error}>{error}</div> : null}
+    </section>
+  );
+}
+
+function competencyStateLabel(state: string) {
+  const labels: Record<string, string> = { emerging: "Đang hình thành", developing: "Đang phát triển", secure: "Vững", advanced: "Nâng cao" };
+  return labels[state] || state;
 }
 
 function CollectionSurface({ student }: { student: PinerStudentSummary }) {
@@ -726,6 +1063,63 @@ function Loading() {
 
 function Unavailable({ message, onRetry }: { message: string; onRetry: () => void }) {
   return <main className={styles.authPage}><section className={styles.authCard}><a className={styles.brand} href="/" aria-label="PINO"><img className={styles.authLogo} src={PINO_CANONICAL_LOGO} alt="PINO" /></a><div><p className={styles.eyebrow}>PINER SPACE</p><h1>Tạm thời chưa sẵn sàng.</h1><p>{message}</p></div><button className={styles.primaryButton} onClick={onRetry}>Thử lại</button></section></main>;
+}
+
+async function readToppiProjection(studentId: string, signal: AbortSignal): Promise<OptionalProjectionResult<ToppiMemberProjection>> {
+  try {
+    const response = await fetch(`/api/piner/students/${studentId}/toppi`, { cache: "no-store", signal });
+    if (response.status === 401) return { kind: "auth" };
+    if (response.status === 404) return { kind: "absent" };
+    if (!response.ok) return { kind: "error", message: await apiMessage(response, "Toppi tạm thời chưa sẵn sàng.") };
+    const payload = await response.json() as unknown;
+    const parsed = parseToppiProjection(payload, studentId);
+    return parsed ? { kind: "ok", data: parsed } : { kind: "error", message: "Toppi trả về dữ liệu chưa hợp lệ." };
+  } catch {
+    return signal.aborted ? { kind: "aborted" } : { kind: "error", message: "Toppi tạm thời chưa sẵn sàng." };
+  }
+}
+
+async function readToppiPracticeProjection(studentId: string, signal: AbortSignal): Promise<ProjectionResult<ToppiPracticeProjection>> {
+  try {
+    const response = await fetch(`/api/piner/students/${studentId}/toppi/practice`, { cache: "no-store", signal });
+    if (response.status === 401) return { kind: "auth" };
+    if (!response.ok) return { kind: "error", message: await apiMessage(response, "Luyện tập Toppi tạm thời chưa sẵn sàng.") };
+    const payload = await response.json() as unknown;
+    const parsed = parseToppiPracticeProjection(payload, studentId);
+    return parsed ? { kind: "ok", data: parsed } : { kind: "error", message: "Toppi trả về bài luyện tập chưa hợp lệ." };
+  } catch {
+    return signal.aborted ? { kind: "aborted" } : { kind: "error", message: "Luyện tập Toppi tạm thời chưa sẵn sàng." };
+  }
+}
+
+function updatePracticeCompletion(
+  current: ToppiPracticeProjection | null,
+  result: NonNullable<ReturnType<typeof parseToppiPracticeCompletion>>,
+): ToppiPracticeProjection | null {
+  if (!current) return current;
+  let newlyCredited = false;
+  const sets: ToppiPracticeSet[] = current.sets.map((set) => {
+    if (set.id !== result.completion.practiceSetId || set.completion) return set;
+    newlyCredited = !result.replayed;
+    return {
+      ...set,
+      completion: {
+        id: result.completion.id,
+        optionId: result.completion.optionId,
+        completedAt: result.completion.completedAt,
+        reward: result.reward,
+      },
+    };
+  });
+  return {
+    ...current,
+    sets,
+    rewardSummary: {
+      ...current.rewardSummary,
+      earnedTotal: current.rewardSummary.earnedTotal + (newlyCredited ? result.reward.amount : 0),
+      syncState: newlyCredited ? "PENDING" : current.rewardSummary.syncState,
+    },
+  };
 }
 
 async function readHomeProjection(studentId: string, signal: AbortSignal): Promise<ProjectionResult<MemberHomeProjection>> {
