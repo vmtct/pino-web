@@ -1,0 +1,47 @@
+name: Piner Handoff Production Preflight
+
+on:
+  push:
+    branches:
+      - feature/piner-handoff-redemption-v1-20260829
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: piner-handoff-production-preflight
+  cancel-in-progress: true
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.15
+      - run: bun install --frozen-lockfile
+      - name: Verify production Piner boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'name = "piner"' wrangler.piner.production.toml
+          grep -Fq 'main = "worker-piner.ts"' wrangler.piner.production.toml
+          grep -Fq 'ENVIRONMENT = "production"' wrangler.piner.production.toml
+          grep -Fq 'binding = "PINO_MEMBER_CORE"' wrangler.piner.production.toml
+          grep -Fq 'entrypoint = "ParentMemberControlPlane"' wrangler.piner.production.toml
+          grep -Fq 'binding = "PINO_PINER_HANDOFF"' wrangler.piner.production.toml
+          grep -Fq 'service = "pino-core"' wrangler.piner.production.toml
+          grep -Fq 'entrypoint = "PinerHandoffControlPlane"' wrangler.piner.production.toml
+          grep -Fq 'pattern = "piner.pinohouse.art"' wrangler.piner.production.toml
+          grep -Fq 'const HANDOFF_PATH = /^\\/handoff\\/' lib/piner-handoff-adapter.ts
+          grep -Fq 'HttpOnly; Secure; SameSite=Lax' lib/piner-handoff-adapter.ts
+      - name: Run focused Piner handoff tests
+        run: node --test --experimental-strip-types test/piner-member-core-adapter.test.ts test/piner-member-projections.test.ts test/piner-worker.test.ts
+      - name: Build production assets
+        run: bun run build
+      - name: Validate production Worker package without upload
+        run: bunx wrangler deploy --config wrangler.piner.production.toml --dry-run --outdir .piner-prod-preflight
+      - name: Preflight conclusion
+        run: echo 'PINER_PRODUCTION_PACKAGE_READY_FOR_EXPLICIT_RELEASE=true'
