@@ -12,6 +12,11 @@ binding = "PINO_MEMBER_CORE"
 service = "pino-core"
 entrypoint = "ParentMemberControlPlane"
 
+[[services]]
+binding = "PINO_PINER_HANDOFF"
+service = "pino-core"
+entrypoint = "PinerHandoffControlPlane"
+
 [[routes]]
 pattern = "piner.pinohouse.art"
 custom_domain = true
