@@ -57,6 +57,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          grep -Fq 'toppi/practice' lib/piner-toppi-adapter.ts
+          grep -Fq 'practice/completions' lib/piner-toppi-adapter.ts
           grep -Fq 'toppi-practice-record-start' app/piner/piner-member-entry.tsx
           grep -Fq 'MediaRecorder' app/piner/piner-member-entry.tsx
