@@ -1,0 +1,75 @@
+name: Piner Open Studio Production Preflight
+
+on:
+  push:
+    branches:
+      - release/piner-open-studio-prod-preflight-20260830
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: piner-open-studio-production-preflight
+  cancel-in-progress: true
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.15
+      - run: bun install --frozen-lockfile
+
+      - name: Validate release-preflight source boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          base=5095d2e00c62a5a628897d048ebdd086e9f394ab
+          git merge-base --is-ancestor "$base" HEAD
+          mapfile -t changed < <(git diff --name-only "$base..HEAD")
+          [ "${#changed[@]}" -eq 1 ]
+          [ "${changed[0]}" = ".github/workflows/piner-open-studio-prod-preflight.yml" ]
+
+      - name: Verify dedicated production Piner boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'name = "piner"' wrangler.piner.production.toml
+          grep -Fq 'main = "worker-piner.ts"' wrangler.piner.production.toml
+          grep -Fq 'ENVIRONMENT = "production"' wrangler.piner.production.toml
+          grep -Fq 'binding = "PINO_MEMBER_CORE"' wrangler.piner.production.toml
+          grep -Fq 'service = "pino-core"' wrangler.piner.production.toml
+          grep -Fq 'entrypoint = "ParentMemberControlPlane"' wrangler.piner.production.toml
+          grep -Fq 'pattern = "piner.pinohouse.art"' wrangler.piner.production.toml
+          grep -Fq 'custom_domain = true' wrangler.piner.production.toml
+
+      - name: Run focused Piner Open Studio contracts
+        run: >-
+          node --test --experimental-strip-types
+          test/piner-member-core-adapter.test.ts
+          test/piner-member-projections.test.ts
+          test/piner-worker.test.ts
+
+      - name: Build production assets
+        run: bun run build
+
+      - name: Validate production Piner package without upload
+        run: >-
+          bunx wrangler deploy
+          --config wrangler.piner.production.toml
+          --dry-run
+          --outdir .piner-open-studio-prod-preflight
+
+      - name: Preflight conclusion
+        shell: bash
+        run: |
+          echo 'PINER_OPEN_STUDIO_PRODUCTION_PACKAGE_READY=true'
+          echo 'CORE_PRODUCTION_PREREQUISITE=PR_325_OR_DESCENDANT_REQUIRED'
+          echo 'PRODUCTION_DEPLOYMENT=NOT_ATTEMPTED'
+          echo 'PRODUCTION_MUTATION=NONE'
