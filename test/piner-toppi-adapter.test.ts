@@ -69,7 +69,7 @@ test("clears the local Piner cookie when Toppi reports the Core session invalid"
 
 test("maps Practice reads through the same private Toppi member binding", async () => {
   let seen: Request | undefined;
-  const binding: ToppiMemberBinding = { async fetch(request) { seen = request; return response({ student: { id: STUDENT, displayName: "Mori" }, sets: [], rewardSummary: { code: "PLS", earnedTotal: 0 } }); } };
+  const binding: ToppiMemberBinding = { async fetch(request) { seen = request; return response({ student: { id: STUDENT, displayName: "Mori" }, sets: [], rewardSummary: { code: "PLS", earnedTotal: 0, pinoriaBalance: 0, syncState: "SYNCED" } }); } };
   const result = await proxyPinerToppiRequest(new Request(`https://piner.pinohouse.art/api/piner/students/${STUDENT}/toppi/practice`, {
     headers: { cookie: `__Host-piner_session=${TOKEN}` },
   }), { TOPPI_MEMBER: binding });

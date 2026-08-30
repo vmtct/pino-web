@@ -24,12 +24,14 @@ export type ToppiPracticeSet = {
 export type ToppiPracticeProjection = {
   student: { id: string; displayName: string };
   sets: ToppiPracticeSet[];
-  rewardSummary: { code: "PLS"; earnedTotal: number };
+  rewardSummary: { code: "PLS"; earnedTotal: number; pinoriaBalance: number | null; syncState: "SYNCED" | "PENDING" | "UNAVAILABLE" };
 };
 export function parseToppiPracticeProjection(value: unknown, expectedStudentId: string): ToppiPracticeProjection | null {
   if (!record(value) || !record(value.student) || value.student.id !== expectedStudentId || !text(value.student.displayName)) return null;
   if (!Array.isArray(value.sets) || !value.sets.every(practiceSet)) return null;
   if (!record(value.rewardSummary) || value.rewardSummary.code !== "PLS" || !nonNegativeInteger(value.rewardSummary.earnedTotal)) return null;
+  if (!(value.rewardSummary.pinoriaBalance === null || nonNegativeInteger(value.rewardSummary.pinoriaBalance))) return null;
+  if (value.rewardSummary.syncState !== "SYNCED" && value.rewardSummary.syncState !== "PENDING" && value.rewardSummary.syncState !== "UNAVAILABLE") return null;
   return value as ToppiPracticeProjection;
 }
 

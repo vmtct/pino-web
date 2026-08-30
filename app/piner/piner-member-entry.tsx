@@ -338,6 +338,12 @@ export default function PinerMemberEntry() {
       if (activeStudentRef.current !== studentId) return;
       setToppiPractice((current) => updatePracticeCompletion(current, parsed));
       setToppiPracticeNotice(`Hoàn thành · +${parsed.reward.amount} ${parsed.reward.code}`);
+      const refresh = new AbortController();
+      void readToppiPracticeProjection(studentId, refresh.signal).then((result) => {
+        if (activeStudentRef.current !== studentId) return;
+        if (result.kind === "auth") { clearMemberContext(); setView("signed-out"); return; }
+        if (result.kind === "ok") { setToppiPractice(result.data); setToppiPracticeError(""); }
+      });
     } catch {
       setToppiPracticeError("Chưa thể hoàn thành bài luyện tập. Vui lòng thử lại.");
     } finally {
@@ -879,7 +885,10 @@ function ToppiPracticePanel({ practice, loading, error, busy, notice, onComplete
           <button className={`${styles.actionButton} ${styles.toppiPracticeComplete}`} type="button" disabled={busy || recording || !canComplete} data-testid="toppi-practice-submit" onClick={() => void submit()}>{busy ? "Đang lưu bài…" : `Nộp bài & nhận ${set.reward.amount} PLS`}</button>
         </div>
       )}
-      {notice ? <div className={styles.toppiPracticeNotice}>{notice}</div> : null}
+      <div className={styles.toppiPracticeWallet} data-state={practice?.rewardSummary.syncState ?? "UNAVAILABLE"} data-testid="toppi-practice-pls-wallet">
+        <div><span>PINORIA · PLS</span><strong>{practice?.rewardSummary.pinoriaBalance ?? "—"} PLS</strong></div>
+        <small>{practice?.rewardSummary.syncState === "SYNCED" ? "Đã đồng bộ với kho PLS Pinoria." : practice?.rewardSummary.syncState === "PENDING" ? "Bài đã ghi nhận ở Toppi · đang chờ đồng bộ sang Pinoria." : "Bài Toppi vẫn được giữ an toàn · kho Pinoria tạm chưa đọc được."}</small>
+      </div>      {notice ? <div className={styles.toppiPracticeNotice}>{notice}</div> : null}
       {error ? <div className={styles.error}>{error}</div> : null}
     </section>
   );
@@ -1035,6 +1044,7 @@ function updatePracticeCompletion(
     rewardSummary: {
       ...current.rewardSummary,
       earnedTotal: current.rewardSummary.earnedTotal + (newlyCredited ? result.reward.amount : 0),
+      syncState: newlyCredited ? "PENDING" : current.rewardSummary.syncState,
     },
   };
 }

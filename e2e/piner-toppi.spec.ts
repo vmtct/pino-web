@@ -45,7 +45,7 @@ function toppi(studentId: string, displayName: string, level: number, lens: stri
 function practice(studentId: string, displayName: string, level: number, kind: 'SPEAKING' | 'WORKSHEET') {
   return {
     student: { id: studentId, displayName },
-    rewardSummary: { code: 'PLS', earnedTotal: 0 },
+    rewardSummary: { code: 'PLS', earnedTotal: 0, pinoriaBalance: 0, syncState: 'SYNCED' },
     sets: [{
       id: `top_prs_${level}`, enrollmentId: `top_enr_${level}`, code: `P${level}`, title: 'Practice V1',
       level: { code: `L${level}`, number: level, name: `Level ${level}` }, reward: { code: 'PLS', amount: 10 },
@@ -94,5 +94,7 @@ test('Toppi stays inside Journey and late sibling responses cannot overwrite act
   await expect(page.getByText('Level 4')).toHaveCount(0);
   await page.getByRole('button', { name: 'Mở Toppi →' }).click();
   await expect(page.getByText('Worksheet · Story Builder')).toBeVisible();
+  await expect(page.getByTestId('toppi-practice-pls-wallet')).toContainText('0 PLS');
+  await expect(page.getByTestId('toppi-practice-pls-wallet')).toContainText('Đã đồng bộ');
   await expect(page.getByText('Bài nói dành cho nhánh Tự tin giao tiếp.')).toHaveCount(0);
 });

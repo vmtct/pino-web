@@ -10,7 +10,7 @@ const STUDENT = "019d2000-0001-7000-8000-000000000001";
 function practice(studentId = STUDENT) {
   return {
     student: { id: studentId, displayName: "Mori Cross-App" },
-    rewardSummary: { code: "PLS", earnedTotal: 10 },
+    rewardSummary: { code: "PLS", earnedTotal: 10, pinoriaBalance: 10, syncState: "SYNCED" },
     sets: [{
       id: "top_prs_test",
       enrollmentId: "top_enr_test",

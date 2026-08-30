@@ -18,17 +18,7 @@ jobs:
         with:
           node-version: 22
       - run: npm install
-      - name: Typecheck excluding known main baseline debt
-        shell: bash
-        run: |
-          cat > .tmp-tsconfig.json <<'JSON'
-          {
-            "extends": "./tsconfig.json",
-            "compilerOptions": { "incremental": false },
-            "exclude": ["node_modules", "e2e/member-booking.spec.ts"]
-          }
-          JSON
-          npx tsc -p .tmp-tsconfig.json --noEmit
+      - run: npm run typecheck
       - name: Run Piner member contract tests
         run: >-
           node --test --experimental-strip-types
@@ -38,21 +28,7 @@ jobs:
           test/piner-toppi-projection.test.ts
           test/piner-toppi-practice-projection.test.ts
           test/piner-worker.test.ts
-      - name: Production compile excluding known main baseline debt
-        shell: bash
-        run: |
-          cp next.config.ts /tmp/next.config.ts
-          node --input-type=module <<'NODE'
-          import { readFileSync, writeFileSync } from 'node:fs';
-          const path = 'next.config.ts';
-          const source = readFileSync(path, 'utf8');
-          const anchor = '  output: "export",';
-          if (!source.includes(anchor)) throw new Error('next config anchor missing');
-          writeFileSync(path, source.replace(anchor, `${anchor}\n  typescript: { ignoreBuildErrors: true },`));
-          NODE
-          npm run build
-          cp /tmp/next.config.ts next.config.ts
-          git diff --exit-code -- next.config.ts
+      - run: npm run build
       - name: Verify Practice UI contract is wired through Piner only
         shell: bash
         run: |
@@ -60,3 +36,4 @@ jobs:
           grep -Fq 'practice/completions' lib/piner-toppi-adapter.ts
           grep -Fq 'toppi-practice-record-start' app/piner/piner-member-entry.tsx
           grep -Fq 'MediaRecorder' app/piner/piner-member-entry.tsx
+          grep -Fq 'toppi-practice-pls-wallet' app/piner/piner-member-entry.tsx
