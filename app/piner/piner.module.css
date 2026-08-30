@@ -498,3 +498,40 @@
 .toppiCompetencyRow b { border-radius:999px; background:#efede6; color:#6e6c64; padding:7px 10px; font-size:.72rem; white-space:nowrap; }
 .toppiEmpty { border:1px dashed #cbc6ba; border-radius:16px; padding:18px; color:#81847b; font-size:.82rem; }
 @media (max-width:720px) { .toppiModuleHead,.toppiDetailHeader { align-items:flex-start; } .toppiCompetencyRow { align-items:flex-start; } .toppiCompetencyRow b { max-width:42%; white-space:normal; text-align:right; } }
+
+.toppiPracticePanel { display:grid; gap:18px; border:1px solid rgba(51,69,48,.12); border-radius:26px; background:linear-gradient(150deg,#f8f4e9 0%,#eef1e8 100%); padding:clamp(22px,4vw,32px); }
+.toppiPracticeHeader { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; }
+.toppiPracticeHeader h3 { margin:8px 0 7px; font-size:clamp(1.45rem,3vw,2rem); letter-spacing:-.035em; line-height:1.08; }
+.toppiPracticeHeader p:last-child { margin:0; max-width:620px; color:#73766e; line-height:1.55; }
+.toppiPracticeReward { flex:0 0 auto; display:grid; justify-items:center; min-width:68px; border-radius:18px; background:#354335; color:#fff; padding:12px 10px; }
+.toppiPracticeReward strong { font-size:1.35rem; letter-spacing:-.04em; }
+.toppiPracticeReward span { font-size:.68rem; font-weight:800; letter-spacing:.1em; }
+.toppiPracticeChoices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.toppiPracticeChoice { display:grid; gap:6px; text-align:left; border:1px solid rgba(45,55,42,.1); border-radius:18px; background:rgba(255,255,255,.72); padding:16px; font:inherit; color:#343a31; cursor:pointer; }
+.toppiPracticeChoice span { color:#8a7655; font-size:.7rem; font-weight:800; text-transform:uppercase; letter-spacing:.09em; }
+.toppiPracticeChoice strong { font-size:.95rem; }
+.toppiPracticeChoiceActive { border-color:#62745f; box-shadow:inset 0 0 0 1px #62745f; background:#fff; }
+.toppiPracticeChoice:disabled { cursor:default; opacity:.65; }
+.toppiPracticeWork { display:grid; gap:14px; border-top:1px solid rgba(45,55,42,.09); padding-top:18px; }
+.toppiPracticePrompt { display:grid; gap:7px; border-radius:18px; background:rgba(255,255,255,.62); padding:16px; }
+.toppiPracticePrompt > span { color:#8a7655; font-size:.68rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+.toppiPracticePrompt strong { line-height:1.45; }
+.toppiPracticePrompt p { margin:0; color:#74786e; font-size:.84rem; line-height:1.55; }
+.toppiPracticeTextarea { width:100%; box-sizing:border-box; resize:vertical; border:1px solid rgba(45,55,42,.14); border-radius:16px; background:#fff; padding:14px; font:inherit; color:#30352e; line-height:1.55; outline:none; }
+.toppiPracticeTextarea:focus { border-color:#6b7b67; box-shadow:0 0 0 3px rgba(92,111,87,.09); }
+.toppiPracticeComplete { width:100%; justify-content:center; }
+.toppiPracticeDone { display:grid; gap:7px; border-radius:18px; background:#fff; padding:18px; }
+.toppiPracticeDone > span { color:#4d6a4a; font-size:.72rem; font-weight:850; letter-spacing:.08em; text-transform:uppercase; }
+.toppiPracticeDone strong { font-size:1.05rem; }
+.toppiPracticeDone p,.toppiPracticeDone small { margin:0; color:#73776e; line-height:1.5; }
+.toppiPracticeNotice { border-radius:14px; background:#e5eddf; color:#466043; padding:11px 13px; font-size:.8rem; font-weight:800; }
+@media (max-width:720px) {
+  .toppiPracticeHeader { flex-direction:column; }
+  .toppiPracticeReward { grid-auto-flow:column; align-items:center; justify-content:start; gap:6px; min-width:0; }
+  .toppiPracticeChoices { grid-template-columns:1fr; }
+}
+
+.toppiRecorder { display:grid; gap:12px; border:1px solid rgba(32,35,30,.08); border-radius:18px; background:#fff; padding:14px; }
+.toppiRecorderActions { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
+.toppiRecorderActions > span { color:#777a72; font-size:.78rem; font-weight:750; }
+.toppiAudioPreview { width:100%; min-height:38px; }

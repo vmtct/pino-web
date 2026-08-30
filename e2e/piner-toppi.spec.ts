@@ -42,6 +42,18 @@ function toppi(studentId: string, displayName: string, level: number, lens: stri
   };
 }
 
+function practice(studentId: string, displayName: string, level: number, kind: 'SPEAKING' | 'WORKSHEET') {
+  return {
+    student: { id: studentId, displayName },
+    rewardSummary: { code: 'PLS', earnedTotal: 0 },
+    sets: [{
+      id: `top_prs_${level}`, enrollmentId: `top_enr_${level}`, code: `P${level}`, title: 'Practice V1',
+      level: { code: `L${level}`, number: level, name: `Level ${level}` }, reward: { code: 'PLS', amount: 10 },
+      options: [{ id: `top_pro_${kind}_${level}`, kind, title: kind === 'SPEAKING' ? 'Nói 60 giây' : 'Worksheet · Story Builder', prompt: 'Tell your story', instructions: 'Complete the task' }],
+      completion: null,
+    }],
+  };
+}
 test('Toppi stays inside Journey and late sibling responses cannot overwrite active Student', async ({ page }) => {
   await page.route('**/api/piner/session', route => route.fulfill(envelope({
     principalType: 'PARENT_USER', parent: { id: parentId, displayName: 'Gia đình PINO' },
@@ -62,6 +74,13 @@ test('Toppi stays inside Journey and late sibling responses cannot overwrite act
     status: 200, contentType: 'application/json', body: JSON.stringify(toppi(studentB, 'Mori B', 6, 'Vững nền ngôn ngữ')),
   }));
 
+  await page.route(`**/api/piner/students/${studentA}/toppi/practice`, async route => {
+    await new Promise(resolve => setTimeout(resolve, 700));
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(practice(studentA, 'Mori A', 4, 'SPEAKING')) }).catch(() => {});
+  });
+  await page.route(`**/api/piner/students/${studentB}/toppi/practice`, route => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify(practice(studentB, 'Mori B', 6, 'WORKSHEET')),
+  }));
   await page.goto('/piner');
   await expect(page.getByRole('button', { name: /Mori B/ })).toBeVisible();
   await page.getByRole('button', { name: /Mori B/ }).click();
@@ -73,4 +92,7 @@ test('Toppi stays inside Journey and late sibling responses cannot overwrite act
   await page.waitForTimeout(850);
   await expect(page.getByText('Tự tin giao tiếp')).toHaveCount(0);
   await expect(page.getByText('Level 4')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Mở Toppi →' }).click();
+  await expect(page.getByText('Worksheet · Story Builder')).toBeVisible();
+  await expect(page.getByText('Bài nói dành cho nhánh Tự tin giao tiếp.')).toHaveCount(0);
 });
