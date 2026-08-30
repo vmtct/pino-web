@@ -1,4 +1,5 @@
 import { proxyPinerMemberRequest, type ParentMemberCoreBinding } from "./lib/piner-member-core-adapter.ts";
+import { isPinerToppiPath, proxyPinerToppiRequest, type ToppiMemberBinding } from "./lib/piner-toppi-adapter.ts";
 import { WORKER_BUILD_INFO } from "./worker-build-info.ts";
 
 interface PinerAssetsBinding {
@@ -7,6 +8,7 @@ interface PinerAssetsBinding {
 
 interface PinerEnv {
   PINO_MEMBER_CORE?: ParentMemberCoreBinding;
+  TOPPI_MEMBER?: ToppiMemberBinding;
   ASSETS: PinerAssetsBinding;
 }
 
@@ -31,6 +33,9 @@ const handler = {
 
     if (request.method === "GET" && url.pathname === "/build-info.json") {
       return noStoreJson(WORKER_BUILD_INFO);
+    }
+    if (isPinerToppiPath(url.pathname)) {
+      return proxyPinerToppiRequest(request, env);
     }
     if (url.pathname.startsWith("/api/piner/")) {
       return proxyPinerMemberRequest(request, env);

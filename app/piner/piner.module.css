@@ -469,3 +469,32 @@
   .unsupportedPanel > div { flex-direction: column; gap: 4px; }
   .exploreFeature { min-height: 320px; }
 }
+
+.toppiModuleCard { display:grid; gap:18px; border:1px solid rgba(32,35,30,.08); border-radius:24px; background:linear-gradient(145deg,#fff 0%,#f2ecdf 100%); padding:clamp(22px,4vw,30px); }
+.toppiModuleHead,.toppiDetailHeader { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; }
+.toppiModuleHead h3,.toppiDetailHeader h3 { margin:8px 0 5px; font-size:clamp(1.6rem,3vw,2.25rem); letter-spacing:-.035em; line-height:1.05; }
+.toppiModuleHead p:last-child,.toppiDetailHeader p:last-child { margin:0; color:#74776f; }
+.toppiLevelBadge { flex:0 0 auto; display:inline-flex; border-radius:999px; background:#282c25; color:#fff; padding:8px 11px; font-size:.76rem; font-weight:800; white-space:nowrap; }
+.toppiModuleStats { display:flex; flex-wrap:wrap; gap:8px; color:#777a72; font-size:.8rem; }
+.toppiModuleStats span { border-radius:999px; background:rgba(255,255,255,.7); padding:8px 10px; }
+.toppiModuleStats strong { color:#3b3e37; }
+.toppiModuleLoading,.toppiModuleNotice { display:flex; align-items:center; gap:10px; border:1px dashed #c8c3b8; border-radius:18px; background:rgba(255,255,255,.5); padding:16px 18px; color:#777a72; font-size:.84rem; }
+.toppiModuleNotice { align-items:flex-start; flex-direction:column; gap:4px; }
+.toppiModuleNotice strong { color:#42453e; }
+.toppiBackButton { width:fit-content; border:0; background:transparent; color:#66563d; padding:8px 2px; font:inherit; font-size:.84rem; font-weight:750; cursor:pointer; }
+.toppiDetailCard { display:grid; gap:22px; border:1px solid rgba(32,35,30,.08); border-radius:26px; background:rgba(255,255,255,.76); padding:clamp(22px,4vw,32px); }
+.toppiNextStep { display:grid; grid-template-columns:90px minmax(0,1fr); gap:8px 12px; border-radius:18px; background:#f4f0e7; padding:16px; }
+.toppiNextStep span { color:#8b7655; font-size:.7rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+.toppiNextStep strong { color:#34372f; }
+.toppiStatGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.toppiStatGrid div { display:grid; gap:3px; border:1px solid rgba(32,35,30,.07); border-radius:18px; background:#fff; padding:16px; }
+.toppiStatGrid strong { font-size:1.8rem; letter-spacing:-.05em; }
+.toppiStatGrid span { color:#7e8179; font-size:.76rem; }
+.toppiCompetencies { display:grid; gap:12px; padding-top:4px; }
+.toppiCompetencyList { display:grid; }
+.toppiCompetencyRow { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:13px 0; border-top:1px solid rgba(32,35,30,.07); }
+.toppiCompetencyRow > span { display:grid; gap:3px; }
+.toppiCompetencyRow small { color:#8a8d84; }
+.toppiCompetencyRow b { border-radius:999px; background:#efede6; color:#6e6c64; padding:7px 10px; font-size:.72rem; white-space:nowrap; }
+.toppiEmpty { border:1px dashed #cbc6ba; border-radius:16px; padding:18px; color:#81847b; font-size:.82rem; }
+@media (max-width:720px) { .toppiModuleHead,.toppiDetailHeader { align-items:flex-start; } .toppiCompetencyRow { align-items:flex-start; } .toppiCompetencyRow b { max-width:42%; white-space:normal; text-align:right; } }

@@ -12,6 +12,10 @@ binding = "PINO_MEMBER_CORE"
 service = "pino-core-staging"
 entrypoint = "ParentMemberControlPlane"
 
+[[services]]
+binding = "TOPPI_MEMBER"
+service = "toppi-web-staging"
+
 [assets]
 directory = "./out"
 binding = "ASSETS"

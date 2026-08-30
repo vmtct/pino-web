@@ -17,6 +17,8 @@ import type {
   PinerParentSession,
   PinerStudentSummary,
 } from "../../lib/piner-member-projections";
+import { parseToppiProjection } from "../../lib/piner-toppi-projection";
+import type { ToppiMemberProjection, ToppiProgramProgress } from "../../lib/piner-toppi-projection";
 import styles from "./piner.module.css";
 
 type ViewState = "loading" | "signed-out" | "change-pin" | "ready" | "unavailable";
@@ -27,6 +29,7 @@ type ProjectionResult<T> =
   | { kind: "auth" }
   | { kind: "aborted" }
   | { kind: "error"; message: string };
+type OptionalProjectionResult<T> = ProjectionResult<T> | { kind: "absent" };
 
 export default function PinerMemberEntry() {
   const [view, setView] = useState<ViewState>("loading");
@@ -37,6 +40,10 @@ export default function PinerMemberEntry() {
   const [error, setError] = useState("");
   const [home, setHome] = useState<MemberHomeProjection | null>(null);
   const [journey, setJourney] = useState<MemberJourneyProjection | null>(null);
+  const [toppi, setToppi] = useState<ToppiMemberProjection | null>(null);
+  const [toppiError, setToppiError] = useState("");
+  const [toppiLoading, setToppiLoading] = useState(false);
+  const [toppiOpen, setToppiOpen] = useState(false);
   const [homeError, setHomeError] = useState("");
   const [journeyError, setJourneyError] = useState("");
   const [projectionLoading, setProjectionLoading] = useState(false);
@@ -59,6 +66,7 @@ export default function PinerMemberEntry() {
   );
   const visibleHome = home?.student.id === activeStudentId ? home : null;
   const visibleJourney = journey?.student.id === activeStudentId ? journey : null;
+  const visibleToppi = toppi?.student.id === activeStudentId ? toppi : null;
 
   useEffect(() => {
     if (view !== "ready" || !activeStudentId) return;
@@ -71,8 +79,19 @@ export default function PinerMemberEntry() {
     setProjectionLoading(true);
     setHome(null);
     setJourney(null);
+    setToppi(null);
+    setToppiError("");
+    setToppiLoading(true);
+    setToppiOpen(false);
     setHomeError("");
     setJourneyError("");
+
+    void readToppiProjection(requestedStudentId, controller.signal).then((result) => {
+      if (controller.signal.aborted || version !== projectionVersion.current) return;
+      if (result.kind === "auth") { clearMemberContext(); setView("signed-out"); return; }
+      applyToppiResult(result, requestedStudentId, version);
+      setToppiLoading(false);
+    });
 
     void Promise.all([
       readHomeProjection(requestedStudentId, controller.signal),
@@ -124,6 +143,15 @@ export default function PinerMemberEntry() {
       projectionVersion.current,
     )) return;
     setJourney(result.data);
+  }
+
+  function applyToppiResult(result: OptionalProjectionResult<ToppiMemberProjection>, studentId: string, version: number) {
+    if (result.kind === "aborted" || result.kind === "auth") return;
+    if (result.kind === "absent") { setToppi(null); setToppiError(""); return; }
+    if (result.kind === "error") { setToppi(null); setToppiError(result.message); return; }
+    if (!projectionResponseIsCurrent(studentId, result.data.student.id, activeStudentRef.current, version, projectionVersion.current)) return;
+    setToppi(result.data);
+    setToppiError("");
   }
 
   async function restoreSession() {
@@ -274,6 +302,10 @@ export default function PinerMemberEntry() {
     setActiveStudentId("");
     setHome(null);
     setJourney(null);
+    setToppi(null);
+    setToppiError("");
+    setToppiLoading(false);
+    setToppiOpen(false);
     setHomeError("");
     setJourneyError("");
     setProjectionLoading(false);
@@ -290,6 +322,10 @@ export default function PinerMemberEntry() {
     setActionError("");
     setHome(null);
     setJourney(null);
+    setToppi(null);
+    setToppiError("");
+    setToppiLoading(true);
+    setToppiOpen(false);
     setHomeError("");
     setJourneyError("");
     setProjectionLoading(true);
@@ -364,7 +400,7 @@ export default function PinerMemberEntry() {
                 />
               ) : null}
               {destination === "journey" ? (
-                <JourneySurface student={activeStudent} journey={visibleJourney} loading={projectionLoading} error={journeyError} />
+                <JourneySurface student={activeStudent} journey={visibleJourney} loading={projectionLoading} error={journeyError} toppi={visibleToppi} toppiLoading={toppiLoading} toppiError={toppiError} toppiOpen={toppiOpen} onOpenToppi={() => setToppiOpen(true)} onCloseToppi={() => setToppiOpen(false)} />
               ) : null}
               {destination === "collection" ? <CollectionSurface student={activeStudent} /> : null}
               {destination === "explore" ? <ExploreSurface student={activeStudent} /> : null}
@@ -520,7 +556,21 @@ function primaryActionCopy(action: HomePrimaryAction, home: MemberHomeProjection
   }
 }
 
-function JourneySurface({ student, journey, loading, error }: { student: PinerStudentSummary; journey: MemberJourneyProjection | null; loading: boolean; error: string }) {
+function JourneySurface({ student, journey, loading, error, toppi, toppiLoading, toppiError, toppiOpen, onOpenToppi, onCloseToppi }: {
+  student: PinerStudentSummary;
+  journey: MemberJourneyProjection | null;
+  loading: boolean;
+  error: string;
+  toppi: ToppiMemberProjection | null;
+  toppiLoading: boolean;
+  toppiError: string;
+  toppiOpen: boolean;
+  onOpenToppi: () => void;
+  onCloseToppi: () => void;
+}) {
+  if (toppiOpen && toppi && toppi.programs.length > 0) {
+    return <ToppiDetailSurface student={student} toppi={toppi} onBack={onCloseToppi} />;
+  }
   if (loading && !journey) return <SurfaceLoading label="Đang đọc Hành trình từ Core…" />;
   if (!journey) return <SurfaceError title="Hành trình chưa thể tải." message={error || "Core chưa trả về Hành trình hợp lệ cho Piner này."} />;
 
@@ -531,7 +581,6 @@ function JourneySurface({ student, journey, loading, error }: { student: PinerSt
         <div><p className={styles.eyebrow}>HÀNH TRÌNH · {journey.state}</p><h2>{student.displayName}</h2></div>
         <span className={styles.canonicalBadge}>Path-native</span>
       </section>
-
       {journey.state === "NO_ACTIVE_JOURNEY" ? (
         <div className={styles.emptyPanel}><strong>Chưa có Hành trình active.</strong><span>Piner không dựng level từ Attendance hay Evidence.</span></div>
       ) : null}
@@ -553,6 +602,9 @@ function JourneySurface({ student, journey, loading, error }: { student: PinerSt
         </div>
       ) : null}
 
+      {toppiLoading ? <div className={styles.toppiModuleLoading}><span className={styles.loader} /><span>Đang đọc Toppi…</span></div> : null}
+      {!toppiLoading && toppiError ? <div className={styles.toppiModuleNotice}><strong>Toppi tạm thời chưa sẵn sàng.</strong><span>Hành trình PINO vẫn hoạt động bình thường.</span></div> : null}
+      {!toppiLoading && toppi && toppi.programs.length > 0 ? <ToppiModuleCard program={toppi.programs[0]} onOpen={onOpenToppi} /> : null}
       {unsupported.length > 0 ? (
         <section className={styles.unsupportedPanel}>
           <p className={styles.eyebrow}>PATH CHƯA HỖ TRỢ</p>
@@ -561,6 +613,66 @@ function JourneySurface({ student, journey, loading, error }: { student: PinerSt
       ) : null}
     </div>
   );
+}
+
+function ToppiModuleCard({ program, onOpen }: { program: ToppiProgramProgress; onOpen: () => void }) {
+  return (
+    <article className={styles.toppiModuleCard}>
+      <div className={styles.toppiModuleHead}>
+        <div><p className={styles.eyebrow}>TOPPI ENGLISH</p><h3>{program.program.name}</h3><p>{program.class_lens.name} · {program.stage.name}</p></div>
+        <span className={styles.toppiLevelBadge}>Level {program.level.number}</span>
+      </div>
+      <div className={styles.toppiModuleStats}>
+        <span><strong>{program.evidence_summary.published_count}</strong> minh chứng</span>
+        <span><strong>{program.assessment_summary.published_count}</strong> lần đánh giá</span>
+      </div>
+      <button className={styles.actionButton} type="button" onClick={onOpen}>Mở Toppi →</button>
+    </article>
+  );
+}
+function ToppiDetailSurface({ student, toppi, onBack }: { student: PinerStudentSummary; toppi: ToppiMemberProjection; onBack: () => void }) {
+  return (
+    <div className={styles.surfaceStack}>
+      <button className={styles.toppiBackButton} type="button" onClick={onBack}>← Hành trình</button>
+      <section className={styles.sectionHeading}>
+        <div><p className={styles.eyebrow}>TOPPI · {student.displayName}</p><h2>Toppi English</h2></div>
+      </section>
+      {toppi.programs.map((program) => (
+        <article className={styles.toppiDetailCard} key={program.enrollment_id}>
+          <div className={styles.toppiDetailHeader}>
+            <div><p className={styles.eyebrow}>{program.class_lens.name}</p><h3>{program.program.name}</h3><p>{program.stage.name}</p></div>
+            <span className={styles.toppiLevelBadge}>Level {program.level.number}</span>
+          </div>
+          <div className={styles.toppiNextStep}>
+            <span>Hiện tại</span><strong>{program.level.name}</strong>
+            <span>Tiếp theo</span><strong>{program.next_level?.name || "Đã ở Level cuối"}</strong>
+          </div>
+          <div className={styles.toppiStatGrid}>
+            <div><strong>{program.evidence_summary.published_count}</strong><span>Minh chứng</span></div>
+            <div><strong>{program.assessment_summary.published_count}</strong><span>Lần đánh giá</span></div>
+          </div>
+          <section className={styles.toppiCompetencies}>
+            <div><p className={styles.eyebrow}>NĂNG LỰC HIỆN TẠI</p></div>
+            {program.competencies.length > 0 ? (
+              <div className={styles.toppiCompetencyList}>
+                {program.competencies.map((item) => (
+                  <div className={styles.toppiCompetencyRow} key={item.code}>
+                    <span><strong>{item.name}</strong><small>Cập nhật {formatDateTime(item.assessed_at)}</small></span>
+                    <b>{competencyStateLabel(item.state)}</b>
+                  </div>
+                ))}
+              </div>
+            ) : <div className={styles.toppiEmpty}>Chưa có lần đánh giá được công bố cho Level này.</div>}
+          </section>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function competencyStateLabel(state: string) {
+  const labels: Record<string, string> = { emerging: "Đang hình thành", developing: "Đang phát triển", secure: "Vững", advanced: "Nâng cao" };
+  return labels[state] || state;
 }
 
 function CollectionSurface({ student }: { student: PinerStudentSummary }) {
@@ -654,6 +766,20 @@ function Loading() {
 
 function Unavailable({ message, onRetry }: { message: string; onRetry: () => void }) {
   return <main className={styles.authPage}><section className={styles.authCard}><a className={styles.brand} href="/">PINO<span>•</span></a><div><p className={styles.eyebrow}>PINER SPACE</p><h1>Tạm thời chưa sẵn sàng.</h1><p>{message}</p></div><button className={styles.primaryButton} onClick={onRetry}>Thử lại</button></section></main>;
+}
+
+async function readToppiProjection(studentId: string, signal: AbortSignal): Promise<OptionalProjectionResult<ToppiMemberProjection>> {
+  try {
+    const response = await fetch(`/api/piner/students/${studentId}/toppi`, { cache: "no-store", signal });
+    if (response.status === 401) return { kind: "auth" };
+    if (response.status === 404) return { kind: "absent" };
+    if (!response.ok) return { kind: "error", message: await apiMessage(response, "Toppi tạm thời chưa sẵn sàng.") };
+    const payload = await response.json() as unknown;
+    const parsed = parseToppiProjection(payload, studentId);
+    return parsed ? { kind: "ok", data: parsed } : { kind: "error", message: "Toppi trả về dữ liệu chưa hợp lệ." };
+  } catch {
+    return signal.aborted ? { kind: "aborted" } : { kind: "error", message: "Toppi tạm thời chưa sẵn sàng." };
+  }
 }
 
 async function readHomeProjection(studentId: string, signal: AbortSignal): Promise<ProjectionResult<MemberHomeProjection>> {
