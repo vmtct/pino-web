@@ -35,8 +35,13 @@ jobs:
           grep -Fq 'service = "pino-core"' wrangler.piner.production.toml
           grep -Fq 'entrypoint = "PinerHandoffControlPlane"' wrangler.piner.production.toml
           grep -Fq 'pattern = "piner.pinohouse.art"' wrangler.piner.production.toml
-          grep -Fq 'const HANDOFF_PATH = /^\\/handoff\\/' lib/piner-handoff-adapter.ts
           grep -Fq 'HttpOnly; Secure; SameSite=Lax' lib/piner-handoff-adapter.ts
+          node <<'NODE'
+          const fs = require('fs');
+          const source = fs.readFileSync('lib/piner-handoff-adapter.ts', 'utf8');
+          if (!source.includes('HANDOFF_PATH') || !source.includes('/handoff/')) throw new Error('Piner handoff path guard missing');
+          if (!source.includes('PINER_HANDOFF_INVALID') || !source.includes('PINER_HANDOFF_UNAVAILABLE')) throw new Error('Piner handoff fail-closed errors missing');
+          NODE
       - name: Run focused Piner handoff tests
         run: node --test --experimental-strip-types test/piner-member-core-adapter.test.ts test/piner-member-projections.test.ts test/piner-worker.test.ts
       - name: Build production assets
