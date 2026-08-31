@@ -14,9 +14,14 @@ const buildBoundary = JSON.parse(
   externalConfigStatus: string;
 };
 
+const boundedReleaseTest =
+  "node --test --experimental-strip-types test/production-release-governance.test.ts";
+
 test("main CI validates an immutable candidate without promoting production", () => {
   assert.match(ci, /candidate:/);
   assert.match(ci, /Production traffic: not authorized by this workflow/);
+  assert.match(ci, new RegExp(boundedReleaseTest.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.doesNotMatch(ci, /bun run test/);
   assert.doesNotMatch(ci, /wrangler versions deploy/);
   assert.doesNotMatch(ci, /Verify deployed Worker identity/);
   assert.doesNotMatch(ci, /Run production smoke tests/);
@@ -29,11 +34,14 @@ test("production release requires Founder exact-SHA provenance and explicit conf
   assert.match(release, /merge_commit_sha == \$sha/);
   assert.match(release, /No successful completed CI run exists/);
   assert.match(release, /Workers Builds: pino-web/);
+  assert.match(release, new RegExp(boundedReleaseTest.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.doesNotMatch(release, /bun run test/);
   assert.doesNotMatch(release, /workflow_dispatch:/);
   assert.doesNotMatch(release, /^\s+push:/m);
 });
 
-test("promotion is SHA-tagged, config-preserving, rollback-capable, and post-verified", () => {
+test("promotion is forward-only, SHA-tagged, config-preserving, rollback-capable, and post-verified", () => {
+  assert.match(release, /git merge-base --is-ancestor "\$current_sha" "\$WEB_SHA"/);
   assert.match(release, /--version-tag "\$\{WEB_SHA\}@100%"/);
   assert.match(release, /git diff --quiet "\$current_sha" "\$WEB_SHA" -- wrangler\.toml wrangler\.piner\.production\.toml/);
   assert.match(release, /Candidate changes production bindings\/vars/);
