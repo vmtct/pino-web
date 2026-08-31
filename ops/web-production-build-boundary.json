@@ -1,0 +1,11 @@
+{
+  "featureCode": "PLT-RELEASE",
+  "worker": "pino-web",
+  "productionBranch": "main",
+  "deployCommand": "npx wrangler versions upload --tag \"$WORKERS_CI_COMMIT_SHA\" --message \"pino-web candidate $WORKERS_CI_COMMIT_SHA\"",
+  "automaticTrafficPromotion": false,
+  "candidateTag": "$WORKERS_CI_COMMIT_SHA",
+  "candidateMessage": "pino-web candidate $WORKERS_CI_COMMIT_SHA",
+  "promotionAuthority": ".github/workflows/production-release.yml",
+  "externalConfigStatus": "PENDING_CLOUDFLARE_BUILDS_CONFIG_EDIT"
+}
