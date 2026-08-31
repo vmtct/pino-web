@@ -5,6 +5,7 @@ import test from "node:test";
 
 const pkg = JSON.parse(readFileSync("package.json", "utf8"));
 const agents = readFileSync("AGENTS.md", "utf8");
+const ci = readFileSync(".github/workflows/ci.yml", "utf8");
 const careWrapper = readFileSync("scripts/delivery-care.mjs", "utf8");
 const verifier = "scripts/verify-pr-project-code.mjs";
 
@@ -31,6 +32,13 @@ function verify(body: string, createdAt: string) {
     env: { ...process.env, PINO_PR_BODY: body, PINO_PR_CREATED_AT: createdAt },
   });
 }
+
+test("web CI enforces Project-Code metadata without replacing PLT-RELEASE candidate flow", () => {
+  assert.match(ci, /Verify Project-Code metadata/);
+  assert.match(ci, /scripts\/verify-pr-project-code\.mjs/);
+  assert.match(ci, /candidate:/);
+  assert.match(ci, /Production traffic: not authorized by this workflow/);
+});
 
 test("web PR metadata requires Project-Code after care cutover", () => {
   const missing = verify(
