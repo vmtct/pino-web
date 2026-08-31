@@ -63,6 +63,6 @@ test("repository records the required external Cloudflare Builds decoupling", ()
   );
   assert.equal(
     buildBoundary.externalConfigStatus,
-    "PENDING_CLOUDFLARE_BUILDS_CONFIG_EDIT",
+    "VERIFIED_NON_PROMOTING",
   );
 });
