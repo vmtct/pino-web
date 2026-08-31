@@ -1,80 +1,95 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { parsePianoPracticeProjection } from "../lib/piner-piano-practice-projection.ts";
+import { parsePianoPracticeProjection, pinerPracticeMediaPath } from "../lib/piner-piano-practice-projection.ts";
 
 const studentId = "018f7f5a-4321-7abc-8def-1234567890ab";
+const resourceId = "018f7f5a-aaaa-7abc-8def-123456789001";
+const pathProgramId = "018f7f5a-aaaa-7abc-8def-123456789002";
+const repertoireItemId = "018f7f5a-aaaa-7abc-8def-123456789003";
+const page1 = "018f7f5a-bbbb-7abc-8def-123456789001";
+const page2 = "018f7f5a-bbbb-7abc-8def-123456789002";
+const page3 = "018f7f5a-bbbb-7abc-8def-123456789003";
+
+function media(pageId: string, role: "SHEET" | "WORKSHEET") {
+  return `/v1/member/students/${studentId}/piano/practice-resources/${resourceId}/pages/${pageId}/media/${role}`;
+}
 
 function fixture() {
   return {
-    state: "READY",
-    student: { id: studentId, displayName: "Chây" },
-    resource: {
-      id: "practice_always_with_me",
+    resourceId,
+    pathProgramId,
+    pianoRepertoireItemId: repertoireItemId,
+    family: "JOURNEY",
+    version: {
+      id: "018f7f5a-cccc-7abc-8def-123456789002",
+      number: 2,
       title: "Always With Me",
-      family: "JOURNEY",
-      context: { label: "PianoHouse · Level 3" },
-      version: { id: "practice_version_2", number: 2 },
-      pages: [
-        { id: "page_1", order: 1, sheet: { url: "/api/piner/students/018f7f5a-4321-7abc-8def-1234567890ab/piano/repertoire/018f7f5a-aaaa-7abc-8def-123456789001/practice-pages/018f7f5a-bbbb-7abc-8def-123456789001/media/SHEET" }, worksheet: { url: "/api/piner/students/018f7f5a-4321-7abc-8def-1234567890ab/piano/repertoire/018f7f5a-aaaa-7abc-8def-123456789001/practice-pages/018f7f5a-bbbb-7abc-8def-123456789001/media/WORKSHEET" } },
-        { id: "page_2", order: 2, sheet: { url: "/api/piner/students/018f7f5a-4321-7abc-8def-1234567890ab/piano/repertoire/018f7f5a-aaaa-7abc-8def-123456789001/practice-pages/018f7f5a-bbbb-7abc-8def-123456789002/media/SHEET" }, worksheet: null },
-        { id: "page_3", order: 3, sheet: { url: "/api/piner/students/018f7f5a-4321-7abc-8def-1234567890ab/piano/repertoire/018f7f5a-aaaa-7abc-8def-123456789001/practice-pages/018f7f5a-bbbb-7abc-8def-123456789003/media/SHEET" }, worksheet: { url: "/api/piner/students/018f7f5a-4321-7abc-8def-1234567890ab/piano/repertoire/018f7f5a-aaaa-7abc-8def-123456789001/practice-pages/018f7f5a-bbbb-7abc-8def-123456789003/media/WORKSHEET" } },
-      ],
+      formatDefinition: "PIANO_SHEET_176X250_8ROW_V1",
+      publishedAt: "2026-08-31T13:30:00.000Z",
     },
-    reasonCode: null,
-    asOf: "2026-08-31T13:30:00.000Z",
+    pages: [
+      { id: page1, order: 1, sheetMediaPath: media(page1, "SHEET"), worksheetMediaPath: media(page1, "WORKSHEET") },
+      { id: page2, order: 2, sheetMediaPath: media(page2, "SHEET"), worksheetMediaPath: null },
+      { id: page3, order: 3, sheetMediaPath: media(page3, "SHEET"), worksheetMediaPath: media(page3, "WORKSHEET") },
+    ],
   };
 }
 
-test("accepts the frozen three-page F0 fixture and preserves missing Worksheet", () => {
-  const parsed = parsePianoPracticeProjection(fixture(), studentId);
+test("accepts the exact Core F0 resource DTO and preserves missing Worksheet", () => {
+  const parsed = parsePianoPracticeProjection(fixture(), studentId, resourceId);
   assert.ok(parsed);
-  assert.equal(parsed.state, "READY");
-  assert.equal(parsed.resource?.title, "Always With Me");
-  assert.equal(parsed.resource?.pages.length, 3);
-  assert.equal(parsed.resource?.pages[1].worksheet, null);
-  assert.ok(parsed.resource?.pages[0].worksheet);
-  assert.ok(parsed.resource?.pages[2].worksheet);
+  assert.equal(parsed.resourceId, resourceId);
+  assert.equal(parsed.version.title, "Always With Me");
+  assert.equal(parsed.pages.length, 3);
+  assert.equal(parsed.pages[1].worksheetMediaPath, null);
 });
 
-test("rejects cross-Student projections", () => {
-  assert.equal(parsePianoPracticeProjection(fixture(), "different-student"), null);
+test("maps validated Core member media paths to the same-origin Piner proxy", () => {
+  assert.equal(
+    pinerPracticeMediaPath(media(page1, "SHEET")),
+    media(page1, "SHEET").replace(/^\/v1\/member/, "/api/piner"),
+  );
+  assert.equal(pinerPracticeMediaPath("https://media.pinohouse.art/sheet.png"), null);
 });
 
-test("rejects non-deterministic page order", () => {
-  const value = fixture();
-  value.resource.pages[1].order = 3;
-  assert.equal(parsePianoPracticeProjection(value, studentId), null);
+test("rejects resource, ordering, and page-identity drift", () => {
+  const wrongResource = fixture();
+  wrongResource.resourceId = "018f7f5a-aaaa-7abc-8def-123456789009";
+  assert.equal(parsePianoPracticeProjection(wrongResource, studentId, resourceId), null);
+
+  const wrongOrder = fixture();
+  wrongOrder.pages[1].order = 3;
+  assert.equal(parsePianoPracticeProjection(wrongOrder, studentId, resourceId), null);
+
+  const duplicate = fixture();
+  duplicate.pages[2].id = duplicate.pages[0].id;
+  assert.equal(parsePianoPracticeProjection(duplicate, studentId, resourceId), null);
 });
 
-test("rejects duplicate page identity", () => {
-  const value = fixture();
-  value.resource.pages[2].id = value.resource.pages[0].id;
-  assert.equal(parsePianoPracticeProjection(value, studentId), null);
-});
-
-test("accepts only contextual same-origin protected Practice media", () => {
+test("rejects legacy, external, wrong-Student and wrong-role media shapes", () => {
   const external = fixture();
-  external.resource.pages[0].sheet.url = "https://media.pinohouse.art/sheet-1.png";
-  assert.equal(parsePianoPracticeProjection(external, studentId), null);
+  external.pages[0].sheetMediaPath = "https://media.pinohouse.art/sheet.png";
+  assert.equal(parsePianoPracticeProjection(external, studentId, resourceId), null);
 
-  const rawProxy = fixture();
-  rawProxy.resource.pages[0].sheet.url = "/api/piner/media/sheet-1";
-  assert.equal(parsePianoPracticeProjection(rawProxy, studentId), null);
+  const legacy = fixture();
+  legacy.pages[0].sheetMediaPath = `/v1/member/students/${studentId}/piano/repertoire/${repertoireItemId}/practice-pages/${page1}/media/SHEET`;
+  assert.equal(parsePianoPracticeProjection(legacy, studentId, resourceId), null);
 
   const wrongStudent = fixture();
-  wrongStudent.resource.pages[0].sheet.url = "/api/piner/students/018f7f5a-4321-7abc-8def-000000000000/piano/repertoire/018f7f5a-aaaa-7abc-8def-123456789001/practice-pages/018f7f5a-bbbb-7abc-8def-123456789001/media/SHEET";
-  assert.equal(parsePianoPracticeProjection(wrongStudent, studentId), null);
+  wrongStudent.pages[0].sheetMediaPath = wrongStudent.pages[0].sheetMediaPath.replace(studentId, "018f7f5a-4321-7abc-8def-000000000000");
+  assert.equal(parsePianoPracticeProjection(wrongStudent, studentId, resourceId), null);
 
   const wrongRole = fixture();
-  wrongRole.resource.pages[0].worksheet!.url = wrongRole.resource.pages[0].sheet.url;
-  assert.equal(parsePianoPracticeProjection(wrongRole, studentId), null);
+  wrongRole.pages[0].worksheetMediaPath = media(page1, "SHEET");
+  assert.equal(parsePianoPracticeProjection(wrongRole, studentId, resourceId), null);
 });
 
-test("requires locked and unavailable projections to omit resource data", () => {
-  const locked = fixture() as any;
-  locked.state = "LOCKED";
-  locked.reasonCode = "PRACTICE_LOCKED";
-  assert.equal(parsePianoPracticeProjection(locked, studentId), null);
-  locked.resource = null;
-  assert.ok(parsePianoPracticeProjection(locked, studentId));
+test("rejects the obsolete state/resource wrapper instead of compatibility-parsing it", () => {
+  assert.equal(parsePianoPracticeProjection({
+    state: "READY",
+    student: { id: studentId, displayName: "Piner" },
+    resource: fixture(),
+    reasonCode: null,
+    asOf: "2026-08-31T13:30:00.000Z",
+  }, studentId, resourceId), null);
 });

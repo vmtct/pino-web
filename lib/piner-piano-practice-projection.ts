@@ -1,93 +1,83 @@
 export type PianoPracticeFamily = "STARTER" | "JOURNEY" | "SPECIALTY";
-export type PianoPracticeProjectionState = "READY" | "LOCKED" | "UNAVAILABLE";
-
-export type PianoPracticeMedia = {
-  url: string;
-};
+export type PianoPracticeMediaRole = "SHEET" | "WORKSHEET";
 
 export type PianoPracticePage = {
   id: string;
   order: number;
-  sheet: PianoPracticeMedia;
-  worksheet: PianoPracticeMedia | null;
-};
-
-export type PianoPracticeResource = {
-  id: string;
-  title: string;
-  family: PianoPracticeFamily;
-  context: { label: string | null };
-  version: { id: string; number: number };
-  pages: PianoPracticePage[];
+  sheetMediaPath: string;
+  worksheetMediaPath: string | null;
 };
 
 export type PianoPracticeProjection = {
-  state: PianoPracticeProjectionState;
-  student: { id: string; displayName: string };
-  resource: PianoPracticeResource | null;
-  reasonCode: string | null;
-  asOf: string;
+  resourceId: string;
+  pathProgramId: string;
+  pianoRepertoireItemId: string;
+  family: PianoPracticeFamily;
+  version: {
+    id: string;
+    number: number;
+    title: string;
+    formatDefinition: "PIANO_SHEET_176X250_8ROW_V1";
+    publishedAt: string;
+  };
+  pages: PianoPracticePage[];
 };
 
-const STATES = new Set<PianoPracticeProjectionState>(["READY", "LOCKED", "UNAVAILABLE"]);
 const FAMILIES = new Set<PianoPracticeFamily>(["STARTER", "JOURNEY", "SPECIALTY"]);
-
+const FORMAT = "PIANO_SHEET_176X250_8ROW_V1";
 export function parsePianoPracticeProjection(
   value: unknown,
   expectedStudentId: string,
+  expectedResourceId: string,
 ): PianoPracticeProjection | null {
-  if (!isRecord(value) || !STATES.has(value.state as PianoPracticeProjectionState)) return null;
-  if (!sameStudent(value.student, expectedStudentId) || !isTimestamp(value.asOf)) return null;
-  if (!(value.reasonCode === null || nonEmptyString(value.reasonCode))) return null;
-
-  if (value.state === "READY") {
-    if (!isResource(value.resource, expectedStudentId)) return null;
-  } else if (value.resource !== null) {
-    return null;
-  }
-
-  return value as PianoPracticeProjection;
-}
-
-function isResource(value: unknown, expectedStudentId: string): value is PianoPracticeResource {
-  if (!isRecord(value) || !nonEmptyString(value.id) || !nonEmptyString(value.title)) return false;
-  if (!FAMILIES.has(value.family as PianoPracticeFamily)) return false;
-  if (!isRecord(value.context) || !(value.context.label === null || nonEmptyString(value.context.label))) return false;
-  if (!isRecord(value.version) || !nonEmptyString(value.version.id) || !positiveInteger(value.version.number)) return false;
-  if (!Array.isArray(value.pages) || value.pages.length < 1) return false;
+  if (!isRecord(value) || !canonicalId(expectedStudentId) || !canonicalId(expectedResourceId)) return null;
+  if (value.resourceId !== expectedResourceId || !canonicalId(value.resourceId)) return null;
+  if (!canonicalId(value.pathProgramId) || !canonicalId(value.pianoRepertoireItemId)) return null;
+  if (!FAMILIES.has(value.family as PianoPracticeFamily)) return null;
+  if (!isVersion(value.version)) return null;
+  if (!Array.isArray(value.pages) || value.pages.length < 1) return null;
 
   const seen = new Set<string>();
   for (let index = 0; index < value.pages.length; index += 1) {
     const page = value.pages[index];
-    if (!isRecord(page) || !nonEmptyString(page.id) || seen.has(page.id)) return false;
+    if (!isRecord(page) || !canonicalId(page.id) || seen.has(page.id)) return null;
     seen.add(page.id);
-    if (page.order !== index + 1) return false;
-    if (!isMedia(page.sheet, expectedStudentId, "SHEET")) return false;
-    if (!(page.worksheet === null || isMedia(page.worksheet, expectedStudentId, "WORKSHEET"))) return false;
+    if (page.order !== index + 1) return null;
+    if (!coreMediaPath(page.sheetMediaPath, expectedStudentId, expectedResourceId, page.id, "SHEET")) return null;
+    if (!(page.worksheetMediaPath === null
+      || coreMediaPath(page.worksheetMediaPath, expectedStudentId, expectedResourceId, page.id, "WORKSHEET"))) return null;
   }
-  return true;
+
+  return value as PianoPracticeProjection;
+}
+export function pinerPracticeMediaPath(value: string): string | null {
+  if (!/^\/v1\/member\/students\/[0-9a-f-]{36}\/piano\/practice-resources\/[0-9a-f-]{36}\/pages\/[0-9a-f-]{36}\/media\/(SHEET|WORKSHEET)$/.test(value)) {
+    return null;
+  }
+  return value.replace(/^\/v1\/member/, "/api/piner");
 }
 
-function isMedia(
-  value: unknown,
-  expectedStudentId: string,
-  expectedRole: "SHEET" | "WORKSHEET",
-): value is PianoPracticeMedia {
-  return isRecord(value) && protectedPracticeMediaPath(value.url, expectedStudentId, expectedRole);
+function isVersion(value: unknown): boolean {
+  return isRecord(value)
+    && canonicalId(value.id)
+    && positiveInteger(value.number)
+    && nonEmptyString(value.title)
+    && value.formatDefinition === FORMAT
+    && isTimestamp(value.publishedAt);
 }
 
-function protectedPracticeMediaPath(
+function coreMediaPath(
   value: unknown,
-  expectedStudentId: string,
-  expectedRole: "SHEET" | "WORKSHEET",
+  studentId: string,
+  resourceId: string,
+  pageId: string,
+  role: PianoPracticeMediaRole,
 ): value is string {
-  if (typeof value !== "string" || !value.trim() || value.includes("?") || value.includes("#")) return false;
-  const match = /^\/api\/piner\/students\/([0-9a-f-]{36})\/piano\/repertoire\/([0-9a-f-]{36})\/practice-pages\/([0-9a-f-]{36})\/media\/(SHEET|WORKSHEET)$/.exec(value);
-  return Boolean(match && match[1] === expectedStudentId && match[4] === expectedRole);
+  return value === `/v1/member/students/${studentId}/piano/practice-resources/${resourceId}/pages/${pageId}/media/${role}`;
 }
-
-function sameStudent(value: unknown, expectedStudentId: string): boolean {
-  return isRecord(value) && value.id === expectedStudentId && nonEmptyString(value.displayName);
+function canonicalId(value: unknown): value is string {
+  return typeof value === "string"
+    && /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value);
 }
 
 function isTimestamp(value: unknown): value is string {

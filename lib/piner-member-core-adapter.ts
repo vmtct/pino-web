@@ -73,17 +73,17 @@ function routeFor(pathname: string): RouteContract | null {
       body: "forward",
     };
   }
-  const pianoPractice = /^\/api\/piner\/students\/([^/]+)\/piano-practice\/current$/.exec(pathname);
+  const pianoPractice = /^\/api\/piner\/students\/([0-9a-f-]{36})\/piano\/practice-resources\/([0-9a-f-]{36})$/.exec(pathname);
   if (pianoPractice) {
     return {
       method: "GET",
-      upstreamPath: `/v1/member/students/${pianoPractice[1]}/piano-practice/current`,
+      upstreamPath: pathname.replace(/^\/api\/piner/, "/v1/member"),
       auth: "session",
       result: "none",
       body: "none",
     };
   }
-  const protectedPracticeMedia = /^\/api\/piner\/students\/([0-9a-f-]{36})\/piano\/repertoire\/([0-9a-f-]{36})\/practice-pages\/([0-9a-f-]{36})\/media\/(SHEET|WORKSHEET|RIGHT_HAND_WORKSHEET)$/.exec(pathname);
+  const protectedPracticeMedia = /^\/api\/piner\/students\/([0-9a-f-]{36})\/piano\/practice-resources\/([0-9a-f-]{36})\/pages\/([0-9a-f-]{36})\/media\/(SHEET|WORKSHEET)$/.exec(pathname);
   if (protectedPracticeMedia) {
     return {
       method: "GET",
