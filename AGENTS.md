@@ -10,7 +10,7 @@ Before changing a material business rule, public/member data contract, eligibili
 2. resolve the canonical Core `featureId` in `pino-core/docs/features/feature-registry.json`;
 3. read `pino-core/docs/feature-governance.md` and `pino-core/docs/platform-foundations.md`;
 4. read the registered feature spec and relevant accepted ADRs;
-5. if readiness is `READY_FOR_CODEX`, read the registered handoff before canonical runtime integration.
+5. if readiness is `READY_FOR_IMPLEMENTATION`, read the registered handoff before canonical runtime integration.
 
 If the required Core governance/spec material is unavailable, stop before inventing shared business semantics and report the missing dependency.
 
@@ -30,7 +30,7 @@ Care ownership is coordination metadata only; it never authorizes staging or pro
 
 ## Feature readiness is implementation authority
 
-- `READY_FOR_CODEX` — implementation may proceed against the registered approved spec/handoff.
+- `READY_FOR_IMPLEMENTATION` — implementation may proceed against the registered approved spec/handoff.
 - `READY_WITH_PREREQUISITES` — UI/product review may continue, but blocked runtime integration waits for named prerequisites.
 - `PROPOSAL_ONLY` — prototype/product exploration only; do not turn mock/local rules into canonical runtime behavior.
 - `RECONSTRUCTED_ONLY` — current-state evidence only; not Founder approval for future changes.
@@ -66,7 +66,7 @@ Product discoveries follow:
 prototype finding
   -> canonical Core feature spec
   -> Founder approval when behavior changed
-  -> technical readiness / READY_FOR_CODEX handoff
+  -> technical readiness / READY_FOR_IMPLEMENTATION handoff
   -> canonical implementation
 ```
 
