@@ -126,6 +126,8 @@ jobs:
           [[ "$current_sha" =~ ^[0-9a-f]{40}$ ]] || fail "Current production SHA is not trustworthy."
           git cat-file -e "${current_sha}^{commit}" 2>/dev/null \
             || fail "Current production SHA is not present in repository history."
+          git merge-base --is-ancestor "$current_sha" "$WEB_SHA" \
+            || fail "Current production SHA is not an ancestor of the approved main SHA; forward-only release is required."
 
           if [ "$current_sha" = "$WEB_SHA" ]; then
             comment "WEB_PRODUCTION_RELEASE: **PASS_ALREADY_ACTIVE**\n\nProduction already serves exact approved SHA ${WEB_SHA}. No mutation was attempted."
