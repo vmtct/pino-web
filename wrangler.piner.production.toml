@@ -12,6 +12,10 @@ binding = "PINO_MEMBER_CORE"
 service = "pino-core"
 entrypoint = "ParentMemberControlPlane"
 
+[[services]]
+binding = "TOPPI_MEMBER"
+service = "toppi-web"
+
 [[routes]]
 pattern = "piner.pinohouse.art"
 custom_domain = true

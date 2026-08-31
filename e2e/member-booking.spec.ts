@@ -120,7 +120,7 @@ test.describe('Open Studio member booking journey', () => {
     });
 
     expect(response.status()).toBe(409);
-    await expect(response).toHaveText(/pass is not available|không khả dụng/i);
+    expect(await response.text()).toMatch(/pass is not available|không khả dụng/i);
   });
 
   test('sold-out session is rejected by the booking domain', async ({ page }) => {
@@ -141,7 +141,7 @@ test.describe('Open Studio member booking journey', () => {
     });
 
     expect(response.status()).toBe(409);
-    await expect(response).toHaveText(/sold out|hết chỗ/i);
+    expect(await response.text()).toMatch(/sold out|hết chỗ/i);
   });
 
   test('wrong-path pass is rejected by the booking domain', async ({ page }) => {
@@ -163,6 +163,6 @@ test.describe('Open Studio member booking journey', () => {
     });
 
     expect(response.status()).toBe(409);
-    await expect(response).toHaveText(/cannot access|pass cannot access|không thể truy cập/i);
+    expect(await response.text()).toMatch(/cannot access|pass cannot access|không thể truy cập/i);
   });
 });
