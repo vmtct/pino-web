@@ -31,7 +31,7 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
       - name: Unit and contract tests
-        run: bun test
+        run: bun run test
       - name: Production build
         run: bun run build
 
