@@ -260,3 +260,28 @@ test("forwards bounded OWNER Open Studio admission through the private member bi
   assert.equal(seen.headers.get("idempotency-key"), "piner-owner-admission-1");
   assert.deepEqual(await seen.json(), body);
 });
+test("maps the protected current Piano Practice read through the private member binding", async () => {
+  let seen: Request | undefined;
+  const binding: ParentMemberCoreBinding = {
+    async fetch(request) {
+      seen = request;
+      return jsonResponse({ data: { state: "READY" } });
+    },
+  };
+  const studentId = "018f7f5a-4321-7abc-8def-1234567890ab";
+  const response = await proxyPinerMemberRequest(
+    new Request(`https://pinohouse.art/api/piner/students/${studentId}/piano-practice/current`, {
+      headers: {
+        cookie: `__Host-piner_session=${SESSION_TOKEN}`,
+        authorization: `Bearer ${SPOOFED_TOKEN}`,
+      },
+    }),
+    { PINO_MEMBER_CORE: binding },
+  );
+
+  assert.ok(seen);
+  assert.equal(seen.url, `https://pino-member-core.internal/v1/member/students/${studentId}/piano-practice/current`);
+  assert.equal(seen.method, "GET");
+  assert.equal(seen.headers.get("authorization"), `Bearer ${SESSION_TOKEN}`);
+  assert.equal(response.status, 200);
+});

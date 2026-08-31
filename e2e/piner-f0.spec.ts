@@ -75,3 +75,61 @@ test('OWNER Open Studio action reuses its idempotency key until canonical Home c
   expect(admissionKeys[0]).toBeTruthy();
   expect(admissionBody).toEqual({ passId, listingId, participantMode: 'OWNER' });
 });
+test('Piano Practice renders deterministic pages and omits Worksheet when the published page has none', async ({ page }) => {
+  await page.route('**/api/piner/session', (route) => route.fulfill(envelope({
+    principalType: 'PARENT_USER',
+    parent: { id: parentId, displayName: 'Gia đình PINO' },
+    session: { id: parentSessionId, issuedAt: '2026-08-31T06:00:00.000Z', expiresAt: '2026-11-30T06:00:00.000Z' },
+  })));
+  await page.route('**/api/piner/students', (route) => route.fulfill(envelope([
+    { id: studentId, displayName: 'Piner Piano' },
+  ])));
+  await page.route(`**/api/piner/students/${studentId}/home`, (route) => route.fulfill(envelope({
+    state: 'NEUTRAL', student: { id: studentId, displayName: 'Piner Piano' },
+    primaryAction: null, nextTouchpoint: null, journey: null, recentOutcome: null,
+    asOf: '2026-08-31T06:00:00.000Z', resolverVersion: 'f0-v1',
+  })));
+  await page.route(`**/api/piner/students/${studentId}/journey`, (route) => route.fulfill(envelope({
+    state: 'NO_ACTIVE_JOURNEY', student: { id: studentId, displayName: 'Piner Piano' },
+    paths: [], journeys: [], asOf: '2026-08-31T06:00:00.000Z',
+  })));
+  await page.route(`**/api/piner/students/${studentId}/toppi**`, (route) => route.fulfill({
+    status: 404, contentType: 'application/json', body: JSON.stringify({ error: { code: 'NOT_FOUND' } }),
+  }));
+  await page.route(`**/api/piner/students/${studentId}/piano-practice/current`, (route) => route.fulfill(envelope({
+    state: 'READY',
+    student: { id: studentId, displayName: 'Piner Piano' },
+    resource: {
+      id: 'practice_always_with_me', title: 'Always With Me', family: 'JOURNEY',
+      context: { label: 'PianoHouse · Level 3' },
+      version: { id: 'practice_version_2', number: 2 },
+      pages: [
+        { id: 'page_1', order: 1, sheet: { url: '/mock/sheet-1.png' }, worksheet: { url: '/mock/worksheet-1.png' } },
+        { id: 'page_2', order: 2, sheet: { url: '/mock/sheet-2.png' }, worksheet: null },
+        { id: 'page_3', order: 3, sheet: { url: '/mock/sheet-3.png' }, worksheet: { url: '/mock/worksheet-3.png' } },
+      ],
+    },
+    reasonCode: null,
+    asOf: '2026-08-31T06:00:00.000Z',
+  })));
+
+  await page.goto('/piner');
+  await page.getByRole('button', { name: 'Hành trình' }).click();
+  await expect(page.getByTestId('piano-practice-module')).toContainText('Always With Me');
+  await page.getByRole('button', { name: 'Mở bài luyện →' }).click();
+
+  const player = page.getByTestId('piano-practice-player');
+  await expect(player).toContainText('Trang 1 / 3');
+  await expect(player.getByRole('button', { name: 'Worksheet' })).toBeVisible();
+  await player.getByRole('button', { name: 'Worksheet' }).click();
+  await expect(player.getByRole('img')).toHaveAttribute('src', '/mock/worksheet-1.png');
+
+  await player.getByRole('button', { name: 'Trang sau' }).click();
+  await expect(player).toContainText('Trang 2 / 3');
+  await expect(player.getByRole('button', { name: 'Worksheet' })).toHaveCount(0);
+  await expect(player.getByRole('img')).toHaveAttribute('src', '/mock/sheet-2.png');
+
+  await player.getByRole('button', { name: 'Trang sau' }).click();
+  await expect(player).toContainText('Trang 3 / 3');
+  await expect(player.getByRole('button', { name: 'Worksheet' })).toBeVisible();
+});

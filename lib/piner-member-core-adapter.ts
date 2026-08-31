@@ -73,6 +73,16 @@ function routeFor(pathname: string): RouteContract | null {
       body: "forward",
     };
   }
+  const pianoPractice = /^\/api\/piner\/students\/([^/]+)\/piano-practice\/current$/.exec(pathname);
+  if (pianoPractice) {
+    return {
+      method: "GET",
+      upstreamPath: `/v1/member/students/${pianoPractice[1]}/piano-practice/current`,
+      auth: "session",
+      result: "none",
+      body: "none",
+    };
+  }
   const projection = /^\/api\/piner\/students\/([^/]+)\/(journey|home)$/.exec(pathname);
   if (!projection) return null;
   const [, studentId, resource] = projection;

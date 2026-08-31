@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { parsePianoPracticeProjection } from "../../lib/piner-piano-practice-projection";
 import type { PianoPracticePage, PianoPracticeProjection } from "../../lib/piner-piano-practice-projection";
 import styles from "./piano-practice-player.module.css";
@@ -20,6 +20,8 @@ export default function PianoPracticePlayer({
   const [open, setOpen] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
   const [mode, setMode] = useState<"sheet" | "worksheet">("sheet");
+  const authRequiredRef = useRef(onAuthRequired);
+  authRequiredRef.current = onAuthRequired;
 
   useEffect(() => {
     if (!studentId) return;
@@ -37,7 +39,7 @@ export default function PianoPracticePlayer({
     }).then(async (response) => {
       if (controller.signal.aborted) return;
       if (response.status === 401) {
-        onAuthRequired();
+        authRequiredRef.current();
         return;
       }
       if (response.status === 404) {
@@ -65,7 +67,7 @@ export default function PianoPracticePlayer({
     });
 
     return () => controller.abort();
-  }, [studentId, onAuthRequired]);
+  }, [studentId]);
 
   const resource = projection?.state === "READY" ? projection.resource : null;
   const page = resource?.pages[pageIndex] ?? null;
