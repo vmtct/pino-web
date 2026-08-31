@@ -8,7 +8,14 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "node --test --experimental-strip-types test/*.test.ts",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "pino:resume": "node scripts/delivery-entry.mjs",
+    "delivery:enter": "node scripts/delivery-entry.mjs",
+    "delivery:care": "node scripts/delivery-care.mjs",
+    "delivery:claim": "node scripts/delivery-care.mjs claim",
+    "delivery:heartbeat": "node scripts/delivery-care.mjs heartbeat",
+    "delivery:release": "node scripts/delivery-care.mjs release",
+    "delivery:care:list": "node scripts/delivery-care.mjs list"
   },
   "dependencies": {
     "next": "15.5.6",

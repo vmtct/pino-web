@@ -10,13 +10,27 @@ Before changing a material business rule, public/member data contract, eligibili
 2. resolve the canonical Core `featureId` in `pino-core/docs/features/feature-registry.json`;
 3. read `pino-core/docs/feature-governance.md` and `pino-core/docs/platform-foundations.md`;
 4. read the registered feature spec and relevant accepted ADRs;
-5. if readiness is `READY_FOR_CODEX`, read the registered handoff before canonical runtime integration.
+5. if readiness is `READY_FOR_IMPLEMENTATION`, read the registered handoff before canonical runtime integration.
 
 If the required Core governance/spec material is unavailable, stop before inventing shared business semantics and report the missing dependency.
 
+## Continuation entry gate
+
+For material continuation intent (`continue`, `triển`, `triển tiếp`, `ok triển`, `finish`, or equivalent), conversation history is non-authoritative. Before material edits run `npm run pino:resume -- --core <current-pino-core-worktree>` or set `PINO_CORE_PATH`. Supply `--feature <featureCode|featureId>` only when branch/checkpoint resolution cannot identify one canonical feature.
+
+Obey the Core Drift Protocol result: `NONE` continues; `SAFE` continues without a forced sync; `CONTRACT` is reconciled by the coding agent in the same work session and the gate is rerun; `DESTRUCTIVE` or genuinely ambiguous state requires human review. Never ask the Founder to reconcile merely because `main` advanced, and never treat pino-web chat context as a substitute for Core registry/checkpoint authority.
+
+### Cross-Project slice care
+
+Material Web work must identify the coordinating ChatGPT Project with one canonical Project Code: `PRJ-TPP`, `PRJ-PSP`, `PRJ-PNR`, `PRJ-WFM`, or `PRJ-PLT`. Pass it through `--project` or `PINO_PROJECT_CODE`.
+
+Before material edits, Core PLT-CARE must report the current owner transparently. Unclaimed work requires a claim. Fresh foreign care blocks duplicate material edits and must surface owner, branch, PR, and freshness. Stale care requires explicit reclaim. Fresh foreign transfer requires explicit Founder approval plus a reason.
+
+Care ownership is coordination metadata only; it never authorizes staging or production.
+
 ## Feature readiness is implementation authority
 
-- `READY_FOR_CODEX` — implementation may proceed against the registered approved spec/handoff.
+- `READY_FOR_IMPLEMENTATION` — implementation may proceed against the registered approved spec/handoff.
 - `READY_WITH_PREREQUISITES` — UI/product review may continue, but blocked runtime integration waits for named prerequisites.
 - `PROPOSAL_ONLY` — prototype/product exploration only; do not turn mock/local rules into canonical runtime behavior.
 - `RECONSTRUCTED_ONLY` — current-state evidence only; not Founder approval for future changes.
@@ -52,7 +66,7 @@ Product discoveries follow:
 prototype finding
   -> canonical Core feature spec
   -> Founder approval when behavior changed
-  -> technical readiness / READY_FOR_CODEX handoff
+  -> technical readiness / READY_FOR_IMPLEMENTATION handoff
   -> canonical implementation
 ```
 
