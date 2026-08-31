@@ -87,7 +87,7 @@ jobs:
           test -z "$(git status --porcelain)"
           bun install --frozen-lockfile
           bun run typecheck
-          bun test
+          bun run test
           bun run build
 
       - name: Promote exact tagged candidate
