@@ -14,6 +14,12 @@ Before changing a material business rule, public/member data contract, eligibili
 
 If the required Core governance/spec material is unavailable, stop before inventing shared business semantics and report the missing dependency.
 
+## Continuation entry gate
+
+For material continuation intent (`continue`, `triển`, `triển tiếp`, `ok triển`, `finish`, or equivalent), conversation history is non-authoritative. Before material edits run `npm run pino:resume -- --core <current-pino-core-worktree>` or set `PINO_CORE_PATH`. Supply `--feature <featureCode|featureId>` only when branch/checkpoint resolution cannot identify one canonical feature.
+
+Obey the Core Drift Protocol result: `NONE` continues; `SAFE` continues without a forced sync; `CONTRACT` is reconciled by the coding agent in the same work session and the gate is rerun; `DESTRUCTIVE` or genuinely ambiguous state requires human review. Never ask the Founder to reconcile merely because `main` advanced, and never treat pino-web chat context as a substitute for Core registry/checkpoint authority.
+
 ## Feature readiness is implementation authority
 
 - `READY_FOR_CODEX` — implementation may proceed against the registered approved spec/handoff.
