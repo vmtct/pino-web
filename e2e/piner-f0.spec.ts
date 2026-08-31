@@ -96,6 +96,16 @@ test('Piano Practice renders deterministic pages and omits Worksheet when the pu
   await page.route(`**/api/piner/students/${studentId}/toppi**`, (route) => route.fulfill({
     status: 404, contentType: 'application/json', body: JSON.stringify({ error: { code: 'NOT_FOUND' } }),
   }));
+  const mediaReads: string[] = [];
+  await page.route('**/api/piner/students/*/piano/repertoire/*/practice-pages/*/media/*', async (route) => {
+    mediaReads.push(new URL(route.request().url()).pathname);
+    await route.fulfill({
+      status: 200,
+      contentType: 'image/png',
+      headers: { 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff' },
+      body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64'),
+    });
+  });
   await page.route(`**/api/piner/students/${studentId}/piano-practice/current`, (route) => route.fulfill(envelope({
     state: 'READY',
     student: { id: studentId, displayName: 'Piner Piano' },
@@ -104,9 +114,9 @@ test('Piano Practice renders deterministic pages and omits Worksheet when the pu
       context: { label: 'PianoHouse · Level 3' },
       version: { id: 'practice_version_2', number: 2 },
       pages: [
-        { id: 'page_1', order: 1, sheet: { url: '/mock/sheet-1.png' }, worksheet: { url: '/mock/worksheet-1.png' } },
-        { id: 'page_2', order: 2, sheet: { url: '/mock/sheet-2.png' }, worksheet: null },
-        { id: 'page_3', order: 3, sheet: { url: '/mock/sheet-3.png' }, worksheet: { url: '/mock/worksheet-3.png' } },
+        { id: 'page_1', order: 1, sheet: { url: '/api/piner/students/018f7f5a-4321-7abc-8def-1234567890ab/piano/repertoire/018f7f5a-aaaa-7abc-8def-123456789001/practice-pages/018f7f5a-bbbb-7abc-8def-123456789001/media/SHEET' }, worksheet: { url: '/api/piner/students/018f7f5a-4321-7abc-8def-1234567890ab/piano/repertoire/018f7f5a-aaaa-7abc-8def-123456789001/practice-pages/018f7f5a-bbbb-7abc-8def-123456789001/media/WORKSHEET' } },
+        { id: 'page_2', order: 2, sheet: { url: '/api/piner/students/018f7f5a-4321-7abc-8def-1234567890ab/piano/repertoire/018f7f5a-aaaa-7abc-8def-123456789001/practice-pages/018f7f5a-bbbb-7abc-8def-123456789002/media/SHEET' }, worksheet: null },
+        { id: 'page_3', order: 3, sheet: { url: '/api/piner/students/018f7f5a-4321-7abc-8def-1234567890ab/piano/repertoire/018f7f5a-aaaa-7abc-8def-123456789001/practice-pages/018f7f5a-bbbb-7abc-8def-123456789003/media/SHEET' }, worksheet: { url: '/api/piner/students/018f7f5a-4321-7abc-8def-1234567890ab/piano/repertoire/018f7f5a-aaaa-7abc-8def-123456789001/practice-pages/018f7f5a-bbbb-7abc-8def-123456789003/media/WORKSHEET' } },
       ],
     },
     reasonCode: null,
@@ -122,12 +132,14 @@ test('Piano Practice renders deterministic pages and omits Worksheet when the pu
   await expect(player).toContainText('Trang 1 / 3');
   await expect(player.getByRole('button', { name: 'Worksheet' })).toBeVisible();
   await player.getByRole('button', { name: 'Worksheet' }).click();
-  await expect(player.getByRole('img')).toHaveAttribute('src', '/mock/worksheet-1.png');
+  await expect(player.getByRole('img')).toHaveAttribute('src', '/api/piner/students/018f7f5a-4321-7abc-8def-1234567890ab/piano/repertoire/018f7f5a-aaaa-7abc-8def-123456789001/practice-pages/018f7f5a-bbbb-7abc-8def-123456789001/media/WORKSHEET');
+  await expect.poll(() => mediaReads.some((path) => path.endsWith('/018f7f5a-bbbb-7abc-8def-123456789001/media/WORKSHEET'))).toBe(true);
 
   await player.getByRole('button', { name: 'Trang sau' }).click();
   await expect(player).toContainText('Trang 2 / 3');
   await expect(player.getByRole('button', { name: 'Worksheet' })).toHaveCount(0);
-  await expect(player.getByRole('img')).toHaveAttribute('src', '/mock/sheet-2.png');
+  await expect(player.getByRole('img')).toHaveAttribute('src', '/api/piner/students/018f7f5a-4321-7abc-8def-1234567890ab/piano/repertoire/018f7f5a-aaaa-7abc-8def-123456789001/practice-pages/018f7f5a-bbbb-7abc-8def-123456789002/media/SHEET');
+  await expect.poll(() => mediaReads.some((path) => path.endsWith('/018f7f5a-bbbb-7abc-8def-123456789002/media/SHEET'))).toBe(true);
 
   await player.getByRole('button', { name: 'Trang sau' }).click();
   await expect(player).toContainText('Trang 3 / 3');

@@ -41,7 +41,7 @@ export function parsePianoPracticeProjection(
   if (!(value.reasonCode === null || nonEmptyString(value.reasonCode))) return null;
 
   if (value.state === "READY") {
-    if (!isResource(value.resource)) return null;
+    if (!isResource(value.resource, expectedStudentId)) return null;
   } else if (value.resource !== null) {
     return null;
   }
@@ -49,7 +49,7 @@ export function parsePianoPracticeProjection(
   return value as PianoPracticeProjection;
 }
 
-function isResource(value: unknown): value is PianoPracticeResource {
+function isResource(value: unknown, expectedStudentId: string): value is PianoPracticeResource {
   if (!isRecord(value) || !nonEmptyString(value.id) || !nonEmptyString(value.title)) return false;
   if (!FAMILIES.has(value.family as PianoPracticeFamily)) return false;
   if (!isRecord(value.context) || !(value.context.label === null || nonEmptyString(value.context.label))) return false;
@@ -62,25 +62,28 @@ function isResource(value: unknown): value is PianoPracticeResource {
     if (!isRecord(page) || !nonEmptyString(page.id) || seen.has(page.id)) return false;
     seen.add(page.id);
     if (page.order !== index + 1) return false;
-    if (!isMedia(page.sheet)) return false;
-    if (!(page.worksheet === null || isMedia(page.worksheet))) return false;
+    if (!isMedia(page.sheet, expectedStudentId, "SHEET")) return false;
+    if (!(page.worksheet === null || isMedia(page.worksheet, expectedStudentId, "WORKSHEET"))) return false;
   }
   return true;
 }
 
-function isMedia(value: unknown): value is PianoPracticeMedia {
-  return isRecord(value) && safeMediaUrl(value.url);
+function isMedia(
+  value: unknown,
+  expectedStudentId: string,
+  expectedRole: "SHEET" | "WORKSHEET",
+): value is PianoPracticeMedia {
+  return isRecord(value) && protectedPracticeMediaPath(value.url, expectedStudentId, expectedRole);
 }
 
-function safeMediaUrl(value: unknown): value is string {
-  if (typeof value !== "string" || !value.trim()) return false;
-  if (value.startsWith("/")) return !value.startsWith("//");
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" && !url.username && !url.password;
-  } catch {
-    return false;
-  }
+function protectedPracticeMediaPath(
+  value: unknown,
+  expectedStudentId: string,
+  expectedRole: "SHEET" | "WORKSHEET",
+): value is string {
+  if (typeof value !== "string" || !value.trim() || value.includes("?") || value.includes("#")) return false;
+  const match = /^\/api\/piner\/students\/([0-9a-f-]{36})\/piano\/repertoire\/([0-9a-f-]{36})\/practice-pages\/([0-9a-f-]{36})\/media\/(SHEET|WORKSHEET)$/.exec(value);
+  return Boolean(match && match[1] === expectedStudentId && match[4] === expectedRole);
 }
 
 function sameStudent(value: unknown, expectedStudentId: string): boolean {

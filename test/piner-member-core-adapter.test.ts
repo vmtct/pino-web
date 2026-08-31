@@ -285,3 +285,55 @@ test("maps the protected current Piano Practice read through the private member 
   assert.equal(seen.headers.get("authorization"), `Bearer ${SESSION_TOKEN}`);
   assert.equal(response.status, 200);
 });
+
+
+test("streams contextual protected Piano Practice media through the authenticated Core seam", async () => {
+  let seen: Request | undefined;
+  const binding: ParentMemberCoreBinding = {
+    async fetch(request) {
+      seen = request;
+      return new Response(new Uint8Array([137, 80, 78, 71]), {
+        status: 200,
+        headers: { "content-type": "image/png", "cache-control": "private, no-store", "x-content-type-options": "nosniff" },
+      });
+    },
+  };
+  const studentId = "018f7f5a-4321-7abc-8def-1234567890ab";
+  const path = `/api/piner/students/${studentId}/piano/repertoire/018f7f5a-aaaa-7abc-8def-123456789001/practice-pages/018f7f5a-bbbb-7abc-8def-123456789001/media/SHEET`;
+  const response = await proxyPinerMemberRequest(new Request(`https://pinohouse.art${path}`, {
+    headers: { cookie: `__Host-piner_session=${SESSION_TOKEN}`, authorization: `Bearer ${SPOOFED_TOKEN}` },
+  }), { PINO_MEMBER_CORE: binding });
+
+  assert.ok(seen);
+  assert.equal(seen.url, `https://pino-member-core.internal/v1/member/students/${studentId}/piano/repertoire/018f7f5a-aaaa-7abc-8def-123456789001/practice-pages/018f7f5a-bbbb-7abc-8def-123456789001/media/SHEET`);
+  assert.equal(seen.headers.get("authorization"), `Bearer ${SESSION_TOKEN}`);
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("cache-control"), "private, no-store");
+  assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+  assert.deepEqual([...new Uint8Array(await response.arrayBuffer())], [137, 80, 78, 71]);
+});
+
+test("protected Piano Practice media fails closed without session and preserves Core Student rejection", async () => {
+  let calls = 0;
+  let seen: Request | undefined;
+  const binding: ParentMemberCoreBinding = {
+    async fetch(request) {
+      calls += 1;
+      seen = request;
+      return jsonResponse({ error: { code: "MEMBER_CONTENT_MEDIA_UNAVAILABLE" } }, 404);
+    },
+  };
+  const path = "/api/piner/students/018f7f5a-4321-7abc-8def-000000000000/piano/repertoire/018f7f5a-aaaa-7abc-8def-123456789001/practice-pages/018f7f5a-bbbb-7abc-8def-123456789001/media/WORKSHEET";
+  const unauthenticated = await proxyPinerMemberRequest(new Request(`https://pinohouse.art${path}`), { PINO_MEMBER_CORE: binding });
+  assert.equal(unauthenticated.status, 401);
+  assert.equal(calls, 0);
+
+  const rejected = await proxyPinerMemberRequest(new Request(`https://pinohouse.art${path}`, {
+    headers: { cookie: `__Host-piner_session=${SESSION_TOKEN}` },
+  }), { PINO_MEMBER_CORE: binding });
+  assert.equal(rejected.status, 404);
+  assert.equal(calls, 1);
+  assert.ok(seen);
+  assert.equal(seen.url, `https://pino-member-core.internal/v1/member${path.slice("/api/piner".length)}`);
+  assert.equal(seen.headers.get("authorization"), `Bearer ${SESSION_TOKEN}`);
+});

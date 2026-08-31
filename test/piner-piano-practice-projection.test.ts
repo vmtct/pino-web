@@ -15,9 +15,9 @@ function fixture() {
       context: { label: "PianoHouse · Level 3" },
       version: { id: "practice_version_2", number: 2 },
       pages: [
-        { id: "page_1", order: 1, sheet: { url: "https://media.pinohouse.art/sheet-1.png" }, worksheet: { url: "/api/piner/media/worksheet-1" } },
-        { id: "page_2", order: 2, sheet: { url: "https://media.pinohouse.art/sheet-2.png" }, worksheet: null },
-        { id: "page_3", order: 3, sheet: { url: "https://media.pinohouse.art/sheet-3.png" }, worksheet: { url: "https://media.pinohouse.art/worksheet-3.png" } },
+        { id: "page_1", order: 1, sheet: { url: "/api/piner/students/018f7f5a-4321-7abc-8def-1234567890ab/piano/repertoire/018f7f5a-aaaa-7abc-8def-123456789001/practice-pages/018f7f5a-bbbb-7abc-8def-123456789001/media/SHEET" }, worksheet: { url: "/api/piner/students/018f7f5a-4321-7abc-8def-1234567890ab/piano/repertoire/018f7f5a-aaaa-7abc-8def-123456789001/practice-pages/018f7f5a-bbbb-7abc-8def-123456789001/media/WORKSHEET" } },
+        { id: "page_2", order: 2, sheet: { url: "/api/piner/students/018f7f5a-4321-7abc-8def-1234567890ab/piano/repertoire/018f7f5a-aaaa-7abc-8def-123456789001/practice-pages/018f7f5a-bbbb-7abc-8def-123456789002/media/SHEET" }, worksheet: null },
+        { id: "page_3", order: 3, sheet: { url: "/api/piner/students/018f7f5a-4321-7abc-8def-1234567890ab/piano/repertoire/018f7f5a-aaaa-7abc-8def-123456789001/practice-pages/018f7f5a-bbbb-7abc-8def-123456789003/media/SHEET" }, worksheet: { url: "/api/piner/students/018f7f5a-4321-7abc-8def-1234567890ab/piano/repertoire/018f7f5a-aaaa-7abc-8def-123456789001/practice-pages/018f7f5a-bbbb-7abc-8def-123456789003/media/WORKSHEET" } },
       ],
     },
     reasonCode: null,
@@ -52,10 +52,22 @@ test("rejects duplicate page identity", () => {
   assert.equal(parsePianoPracticeProjection(value, studentId), null);
 });
 
-test("rejects unsafe media URLs", () => {
-  const value = fixture();
-  value.resource.pages[0].sheet.url = "javascript:alert(1)";
-  assert.equal(parsePianoPracticeProjection(value, studentId), null);
+test("accepts only contextual same-origin protected Practice media", () => {
+  const external = fixture();
+  external.resource.pages[0].sheet.url = "https://media.pinohouse.art/sheet-1.png";
+  assert.equal(parsePianoPracticeProjection(external, studentId), null);
+
+  const rawProxy = fixture();
+  rawProxy.resource.pages[0].sheet.url = "/api/piner/media/sheet-1";
+  assert.equal(parsePianoPracticeProjection(rawProxy, studentId), null);
+
+  const wrongStudent = fixture();
+  wrongStudent.resource.pages[0].sheet.url = "/api/piner/students/018f7f5a-4321-7abc-8def-000000000000/piano/repertoire/018f7f5a-aaaa-7abc-8def-123456789001/practice-pages/018f7f5a-bbbb-7abc-8def-123456789001/media/SHEET";
+  assert.equal(parsePianoPracticeProjection(wrongStudent, studentId), null);
+
+  const wrongRole = fixture();
+  wrongRole.resource.pages[0].worksheet!.url = wrongRole.resource.pages[0].sheet.url;
+  assert.equal(parsePianoPracticeProjection(wrongRole, studentId), null);
 });
 
 test("requires locked and unavailable projections to omit resource data", () => {
