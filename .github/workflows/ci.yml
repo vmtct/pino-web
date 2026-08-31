@@ -28,143 +28,62 @@ jobs:
           bun-version: 1.2.15
       - name: Install dependencies
         run: bun install --frozen-lockfile
+      - name: Typecheck
+        run: bun run typecheck
+      - name: PLT-RELEASE contract tests
+        run: node --test --experimental-strip-types test/production-release-governance.test.ts
       - name: Production build
         run: bun run build
 
-  smoke:
+  candidate:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Wait for Cloudflare Workers Build
+      - name: Wait for immutable Cloudflare candidate
         env:
           GH_TOKEN: ${{ github.token }}
           EXPECTED_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          echo "Waiting for Cloudflare Workers Build for $EXPECTED_SHA"
+          echo "Waiting for Cloudflare candidate build for $EXPECTED_SHA"
           for attempt in $(seq 1 36); do
-            check=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${EXPECTED_SHA}/check-runs?per_page=100" \
-              --jq '[.check_runs[] | select(.name == "Workers Builds: pino-web")] | sort_by(.started_at) | last // empty')
-
+            check=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${EXPECTED_SHA}/check-runs?per_page=100" --jq '[.check_runs[] | select(.name == "Workers Builds: pino-web")] | sort_by(.started_at) | last // empty')
             if [ -n "$check" ]; then
               status=$(printf '%s' "$check" | python -c 'import json,sys; print(json.load(sys.stdin).get("status", ""))')
               conclusion=$(printf '%s' "$check" | python -c 'import json,sys; print(json.load(sys.stdin).get("conclusion", ""))')
               details=$(printf '%s' "$check" | python -c 'import json,sys; print(json.load(sys.stdin).get("details_url", ""))')
-              echo "Cloudflare Workers Build: status=$status conclusion=$conclusion"
-
+              echo "Cloudflare candidate: status=$status conclusion=$conclusion"
               if [ "$status" = "completed" ]; then
-                if [ "$conclusion" = "success" ]; then
-                  echo "Cloudflare deployment/build confirmed: $details"
-                  exit 0
-                fi
-                echo "Cloudflare Workers Build failed: $details"
-                exit 1
+                test "$conclusion" = "success"
+                echo "Immutable candidate build confirmed: $details"
+                exit 0
               fi
-            else
-              echo "Cloudflare check not created yet"
             fi
-
-            echo "Waiting for Cloudflare deployment (attempt $attempt/36)"
+            echo "Waiting for candidate build (attempt $attempt/36)"
             sleep 10
           done
-
-          echo "Timed out waiting for Cloudflare Workers Build"
+          echo "Timed out waiting for immutable Cloudflare candidate"
           exit 1
-
-      - name: Verify deployed Worker identity
+      - name: Record candidate boundary
         run: |
-          set -euo pipefail
-          base="https://pino-web.minhtri-van42.workers.dev"
-          status=$(curl -sS -o /tmp/build-info.json -w "%{http_code}" "$base/build-info.json")
-          echo "GET /build-info.json -> $status"
-          test "$status" = "200"
-          cat /tmp/build-info.json
-          deployed_sha=$(python -c 'import json; print(json.load(open("/tmp/build-info.json"))["commit"])')
-          echo "Production commit: $deployed_sha"
-          test "$deployed_sha" = "$GITHUB_SHA"
-
-      - name: Run production smoke tests
-        run: |
-          set -euo pipefail
-          base="https://pino-web.minhtri-van42.workers.dev"
-
-          status=$(curl -sS -o /tmp/home.html -w "%{http_code}" "$base/")
-          echo "GET / -> $status"
-          test "$status" = "200"
-
-          status=$(curl -sS -o /tmp/sessions.json -w "%{http_code}" "$base/api/os-sessions")
-          echo "GET /api/os-sessions -> $status"
-          test "$status" = "200"
-          grep -q 'sessions' /tmp/sessions.json
-
-          status=$(curl -sS -o /tmp/book.json -w "%{http_code}" -X POST "$base/api/open-studio/book" -H 'Content-Type: application/json' -d '{}')
-          echo "POST /api/open-studio/book -> $status"
-          cat /tmp/book.json
-          test "$status" = "400"
-          grep -Eq 'required|Invalid request|error' /tmp/book.json
-
-          status=$(curl -sS -o /tmp/member.json -w "%{http_code}" -X POST "$base/api/member" -H 'Content-Type: application/json' -d '{}')
-          echo "POST /api/member -> $status"
-          cat /tmp/member.json
-          test "$status" = "400"
-          python - <<'PY'
-          import json
-          with open('/tmp/member.json', encoding='utf-8') as f:
-              payload = json.load(f)
-          assert isinstance(payload, dict), 'member response must be a JSON object'
-          assert isinstance(payload.get('error'), str) and payload['error'].strip(), 'member 400 must expose an error message'
-          PY
-
-          echo "Production smoke tests passed"
-
-  e2e:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: smoke
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.2.15
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-      - name: Install Playwright browsers
-        run: bunx playwright install --with-deps chromium
-      - name: Run Playwright E2E
-        env:
-          CI: true
-          E2E_BASE_URL: https://pino-web.minhtri-van42.workers.dev
-          E2E_MEMBER_PHONE: ${{ secrets.E2E_MEMBER_PHONE }}
-        run: bunx playwright test
-      - name: Upload Playwright report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: playwright-report/
-          if-no-files-found: ignore
-      - name: Upload Playwright test artifacts
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-test-results
-          path: test-results/
-          if-no-files-found: ignore
+          {
+            echo "### PLT-RELEASE candidate"
+            echo "- Source SHA: $GITHUB_SHA"
+            echo "- Cloudflare build: validated"
+            echo "- Production traffic: not authorized by this workflow"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   failure-intake:
-    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.build.result == 'failure' || needs.smoke.result == 'failure' || needs.e2e.result == 'failure')
-    needs: [build, smoke, e2e]
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.build.result == 'failure' || needs.candidate.result == 'failure')
+    needs: [build, candidate]
     runs-on: ubuntu-latest
     steps:
       - name: Create structured CI failure intake
         uses: actions/github-script@v7
         env:
           BUILD_RESULT: ${{ needs.build.result }}
-          SMOKE_RESULT: ${{ needs.smoke.result }}
-          E2E_RESULT: ${{ needs.e2e.result }}
+          CANDIDATE_RESULT: ${{ needs.candidate.result }}
         with:
           script: |
             const run = context.runId;
@@ -191,8 +110,7 @@ jobs:
               `- **Run:** ${run}`,
               `- **Run URL:** ${context.serverUrl}/${owner}/${repo}/actions/runs/${run}`,
               `- **Build:** ${process.env.BUILD_RESULT}`,
-              `- **Smoke:** ${process.env.SMOKE_RESULT}`,
-              `- **E2E:** ${process.env.E2E_RESULT}`,
+              `- **Candidate:** ${process.env.CANDIDATE_RESULT}`,
               '',
               '## Failed jobs',
               '```json',
@@ -200,7 +118,7 @@ jobs:
               '```',
               '',
               '## Agent instruction',
-              'Treat this issue as machine-generated CI evidence. Inspect the referenced workflow run, failed job logs, Playwright artifacts, and the commit diff before proposing or applying a fix.',
+              'Treat this issue as machine-generated CI evidence. Inspect the referenced workflow run, failed job logs, candidate-build evidence, and the commit diff before proposing or applying a fix.',
               '',
               '## Safety boundary',
               'Do not mutate production data merely to reproduce the failure. Prefer tests, mocks, validation-only endpoints, or disposable E2E fixtures.',

@@ -1,0 +1,194 @@
+name: Web Production Release
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+  issues: write
+  checks: read
+
+concurrency:
+  group: web-production-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.event.issue.title == '[GPT] Web production release' && github.event.issue.user.login == 'vmtct'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      ISSUE_BODY: ${{ github.event.issue.body }}
+      WEB_WORKER: pino-web
+      CF_ACCOUNT_ID: 952c3c8a236f8e4cbcf6ee10b86ad70c
+
+    steps:
+      - name: Validate Founder release request
+        id: gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+          fail_request() {
+            gh issue comment "$ISSUE_NUMBER" --repo "$repo" --body "WEB_PRODUCTION_RELEASE: **REJECTED**\n\n$1\n\nNo production mutation was attempted."
+            exit 1
+          }
+
+          mapfile -t sha_lines < <(printf '%s\n' "$ISSUE_BODY" | sed -nE 's/^WEB_SHA:[[:space:]]*([0-9a-fA-F]{40})[[:space:]]*$/\1/p')
+          [ "${#sha_lines[@]}" -eq 1 ] || fail_request "Issue body must contain exactly one WEB_SHA line with a 40-hex SHA."
+          web_sha="$(tr 'A-F' 'a-f' <<<"${sha_lines[0]}")"
+          grep -Eq '^CONFIRM:[[:space:]]*RELEASE_PRODUCTION[[:space:]]*$' <<<"$ISSUE_BODY" \
+            || fail_request "Issue body must contain CONFIRM: RELEASE_PRODUCTION."
+
+          main_sha="$(gh api "/repos/${repo}/git/ref/heads/main" --jq '.object.sha')" \
+            || fail_request "Cannot resolve current main HEAD."
+          [ "$web_sha" = "$main_sha" ] || fail_request "Requested SHA is not current main HEAD."
+
+          prs="$(gh api -H 'Accept: application/vnd.github+json' "/repos/${repo}/commits/${web_sha}/pulls")" \
+            || fail_request "Cannot resolve pull-request provenance."
+          jq -e --arg sha "$web_sha" '[.[] | select(.merged_at != null and .base.ref == "main" and .merge_commit_sha == $sha)] | length >= 1' <<<"$prs" >/dev/null \
+            || fail_request "Current main HEAD is not proven to be a merged pull request into main."
+
+          ci="$(gh api "/repos/${repo}/actions/workflows/ci.yml/runs?head_sha=${web_sha}&branch=main&status=completed&per_page=20")" \
+            || fail_request "Cannot read CI result for requested SHA."
+          jq -e --arg sha "$web_sha" '[.workflow_runs[] | select(.head_sha == $sha and .conclusion == "success")] | length >= 1' <<<"$ci" >/dev/null \
+            || fail_request "No successful completed CI run exists for this main SHA."
+
+          checks="$(gh api "/repos/${repo}/commits/${web_sha}/check-runs?per_page=100")" \
+            || fail_request "Cannot inspect candidate build checks."
+          jq -e '[.check_runs[] | select(.name == "Workers Builds: pino-web" and .status == "completed" and .conclusion == "success")] | length >= 1' <<<"$checks" >/dev/null \
+            || fail_request "No successful Cloudflare immutable-candidate build exists for this SHA."
+
+          echo "web_sha=$web_sha" >> "$GITHUB_OUTPUT"
+          echo "WEB_SHA=$web_sha" >> "$GITHUB_ENV"
+
+      - name: Check out exact approved main SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.gate.outputs.web_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.15
+
+      - name: Re-run locked validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$WEB_SHA"
+          test -z "$(git status --porcelain)"
+          bun install --frozen-lockfile
+          bun run typecheck
+          node --test --experimental-strip-types test/production-release-governance.test.ts
+          bun run build
+
+      - name: Promote exact tagged candidate
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.CF_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+          old_version=""
+          serving_changed=0
+          comment() { gh issue comment "$ISSUE_NUMBER" --repo "$repo" --body "$1"; }
+          rollback() {
+            if [ "$serving_changed" -eq 1 ] && [ -n "$old_version" ]; then
+              npx wrangler versions deploy "${old_version}@100%" --name "$WEB_WORKER" -y >/dev/null 2>&1 || true
+            fi
+          }
+          fail() {
+            rollback
+            comment "WEB_PRODUCTION_RELEASE: **FAIL_SAFE**\n\n$1\n\nRollback was attempted if traffic changed. No route, binding, secret, D1, or application-data mutation was authorized."
+            exit 1
+          }
+
+          [ -n "${CLOUDFLARE_API_TOKEN:-}" ] \
+            || fail "CLOUDFLARE_API_TOKEN is unavailable. No Cloudflare mutation was attempted."
+
+          current_main="$(gh api "/repos/${repo}/git/ref/heads/main" --jq '.object.sha')" \
+            || fail "Cannot re-check current main HEAD."
+          [ "$current_main" = "$WEB_SHA" ] \
+            || fail "main moved after release approval; re-authorize the new exact SHA."
+
+          current_info="$(curl -fsS https://pino-web.minhtri-van42.workers.dev/build-info.json)" \
+            || fail "Cannot inspect current production identity."
+          current_sha="$(jq -r '.commit // empty' <<<"$current_info")"
+          [[ "$current_sha" =~ ^[0-9a-f]{40}$ ]] || fail "Current production SHA is not trustworthy."
+          git cat-file -e "${current_sha}^{commit}" 2>/dev/null \
+            || fail "Current production SHA is not present in repository history."
+          git merge-base --is-ancestor "$current_sha" "$WEB_SHA" \
+            || fail "Current production SHA is not an ancestor of the approved main SHA; forward-only release is required."
+
+          if [ "$current_sha" = "$WEB_SHA" ]; then
+            comment "WEB_PRODUCTION_RELEASE: **PASS_ALREADY_ACTIVE**\n\nProduction already serves exact approved SHA ${WEB_SHA}. No mutation was attempted."
+            exit 0
+          fi
+
+          git diff --quiet "$current_sha" "$WEB_SHA" -- wrangler.toml wrangler.piner.production.toml \
+            || fail "Candidate changes production Wrangler configuration; separate configuration authority is required."
+
+          api="https://api.cloudflare.com/client/v4"
+          auth=(-H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H "Content-Type: application/json")
+          deployments="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${WEB_WORKER}/deployments" "${auth[@]}")" \
+            || fail "Cannot inspect current production deployment."
+          old_version="$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id // empty' <<<"$deployments" | head -1)"
+          [ -n "$old_version" ] || fail "Cannot resolve one active 100% version before release."
+
+          versions="$(npx wrangler versions list --name "$WEB_WORKER" --json)" \
+            || fail "Cannot list immutable candidate versions."
+          candidate_id="$(jq -r --arg tag "$WEB_SHA" '[.[] | select(.annotations["workers/tag"] == $tag)] | if length == 1 then .[0].id else empty end' <<<"$versions")"
+          [ -n "$candidate_id" ] \
+            || fail "Exactly one recent immutable version tagged with the approved SHA is required."
+          candidate_message="$(jq -r --arg id "$candidate_id" '.[] | select(.id == $id) | .annotations["workers/message"] // empty' <<<"$versions")"
+          [ "$candidate_message" = "pino-web candidate ${WEB_SHA}" ] \
+            || fail "Candidate version message does not bind to the approved SHA."
+
+          old_detail="$(npx wrangler versions view "$old_version" --name "$WEB_WORKER" --json)" \
+            || fail "Cannot inspect active version resources."
+          candidate_detail="$(npx wrangler versions view "$candidate_id" --name "$WEB_WORKER" --json)" \
+            || fail "Cannot inspect candidate resources."
+          old_bindings="$(jq -c '[.resources.bindings[]? | {name,type,text:(.text // null)}] | sort_by(.name)' <<<"$old_detail")"
+          new_bindings="$(jq -c '[.resources.bindings[]? | {name,type,text:(.text // null)}] | sort_by(.name)' <<<"$candidate_detail")"
+          [ "$old_bindings" = "$new_bindings" ] \
+            || fail "Candidate changes production bindings/vars; separate configuration authority is required."
+
+          npx wrangler versions deploy --name "$WEB_WORKER" --version-tag "${WEB_SHA}@100%" \
+            --message "pino-web production ${WEB_SHA}" -y >/dev/null \
+            || fail "Exact tagged candidate promotion failed."
+          serving_changed=1
+
+          current="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${WEB_WORKER}/deployments" "${auth[@]}")" \
+            || fail "Cannot verify post-deploy traffic."
+          active="$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id // empty' <<<"$current" | head -1)"
+          [ "$active" = "$candidate_id" ] || fail "Approved candidate is not the active 100% version."
+
+          deployed_info="$(curl -fsS https://pino-web.minhtri-van42.workers.dev/build-info.json)" \
+            || fail "Cannot verify deployed Worker identity."
+          deployed_sha="$(jq -r '.commit // empty' <<<"$deployed_info")"
+          [ "$deployed_sha" = "$WEB_SHA" ] \
+            || fail "Production identity does not match the approved SHA after promotion."
+
+          status="$(curl -sS -o /tmp/home.html -w '%{http_code}' https://pino-web.minhtri-van42.workers.dev/)"
+          [ "$status" = "200" ] || fail "Production root smoke failed with HTTP ${status}."
+          status="$(curl -sS -o /tmp/sessions.json -w '%{http_code}' https://pino-web.minhtri-van42.workers.dev/api/os-sessions)"
+          [ "$status" = "200" ] || fail "Production Open Studio smoke failed with HTTP ${status}."
+          jq -e '.sessions | type == "array"' /tmp/sessions.json >/dev/null \
+            || fail "Production Open Studio smoke returned an invalid payload."
+
+          final_main="$(gh api "/repos/${repo}/git/ref/heads/main" --jq '.object.sha')" \
+            || fail "Cannot verify main after promotion."
+          [ "$final_main" = "$WEB_SHA" ] \
+            || fail "main moved during promotion; rollback to prior 100% version."
+
+          serving_changed=0
+          comment "WEB_PRODUCTION_RELEASE: **PASS**\n\n- Web source: ${WEB_SHA}\n- Worker version: ${candidate_id}\n- Traffic: 100%\n- CI: successful main run required\n- Provenance: merged PR into main required\n- Candidate: immutable SHA-tagged Workers Build\n- Production config/bindings: unchanged\n- Post-deploy smoke: PASS\n\nNo route, binding, secret, D1, or application-data mutation was performed."

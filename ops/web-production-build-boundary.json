@@ -1,0 +1,19 @@
+{
+  "featureCode": "PLT-RELEASE",
+  "worker": "pino-web",
+  "productionBranch": "main",
+  "deployCommand": "npx wrangler versions upload --tag \"$WORKERS_CI_COMMIT_SHA\" --message \"pino-web candidate $WORKERS_CI_COMMIT_SHA\"",
+  "automaticTrafficPromotion": false,
+  "candidateTag": "$WORKERS_CI_COMMIT_SHA",
+  "candidateMessage": "pino-web candidate $WORKERS_CI_COMMIT_SHA",
+  "promotionAuthority": ".github/workflows/production-release.yml",
+  "externalConfigStatus": "VERIFIED_NON_PROMOTING",
+  "externalConfigEvidence": {
+    "triggerUuid": "7cd7ae99-ee7f-4195-a46d-e71e82f1af4f",
+    "verifiedAt": "2026-08-31T10:15:40.034Z",
+    "activeVersionBefore": "6fd9a16c-2130-4bda-9104-7b45e71b71cc",
+    "activeVersionAfter": "6fd9a16c-2130-4bda-9104-7b45e71b71cc",
+    "productionSourceShaBefore": "04c09df9e592d6e7ceff5cd40275fdeb207b084d",
+    "productionSourceShaAfter": "04c09df9e592d6e7ceff5cd40275fdeb207b084d"
+  }
+}
