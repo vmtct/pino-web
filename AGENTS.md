@@ -20,6 +20,14 @@ For material continuation intent (`continue`, `triển`, `triển tiếp`, `ok t
 
 Obey the Core Drift Protocol result: `NONE` continues; `SAFE` continues without a forced sync; `CONTRACT` is reconciled by the coding agent in the same work session and the gate is rerun; `DESTRUCTIVE` or genuinely ambiguous state requires human review. Never ask the Founder to reconcile merely because `main` advanced, and never treat pino-web chat context as a substitute for Core registry/checkpoint authority.
 
+### Cross-Project slice care
+
+Material Web work must identify the coordinating ChatGPT Project with one canonical Project Code: `PRJ-TPP`, `PRJ-PSP`, `PRJ-PNR`, `PRJ-WFM`, or `PRJ-PLT`. Pass it through `--project` or `PINO_PROJECT_CODE`.
+
+Before material edits, Core PLT-CARE must report the current owner transparently. Unclaimed work requires a claim. Fresh foreign care blocks duplicate material edits and must surface owner, branch, PR, and freshness. Stale care requires explicit reclaim. Fresh foreign transfer requires explicit Founder approval plus a reason.
+
+Care ownership is coordination metadata only; it never authorizes staging or production.
+
 ## Feature readiness is implementation authority
 
 - `READY_FOR_CODEX` — implementation may proceed against the registered approved spec/handoff.
