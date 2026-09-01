@@ -21,6 +21,7 @@ import {
   validateRegistration,
 } from "../../lib/open-studio-funnel";
 import { useLocale } from "../localization";
+import { CmsText } from "../cms-hydrator";
 import { buildOpenStudioFallbackSessions, isFallbackSession } from "./fallback-sessions";
 import "./page.css";
 
@@ -217,13 +218,13 @@ export default function OpenStudioPage() {
 
       <section className="os-hero os-shell" aria-labelledby="open-studio-title">
         <img className="os-hero-leaves" src={ASSETS.leavesOne} alt="" aria-hidden="true" />
-        <div className="os-hero-copy"><h1 id="open-studio-title">Open Studio</h1><p>{t.hero}</p><a href="#sessions" className="os-inline-link">{t.heroLink} <span>↓</span></a></div>
+        <div className="os-hero-copy"><h1 id="open-studio-title">Open Studio</h1><p><CmsText contentKey="os_v2_hero_description" fallback={t.hero} /></p><a href="#sessions" className="os-inline-link"><CmsText contentKey="os_v2_hero_cta" fallback={t.heroLink} /> <span>↓</span></a></div>
         <div className="os-hero-visual"><img src={ASSETS.hero} alt={t.heroAlt} /></div>
       </section>
 
       <section className="os-main os-shell" id="sessions" aria-labelledby="sessions-title">
         <div className="os-featured-panel">
-          <p className="os-kicker">✦ {t.upNext}{usingFallback ? ` · ${t.demoSchedule}` : ""}</p>
+          <p className="os-kicker">✦ <CmsText contentKey="os_v2_up_next_label" fallback={t.upNext} />{usingFallback ? ` · ${t.demoSchedule}` : ""}</p>
           {status === "loading" ? <div className="os-featured-loading">{t.loading}</div> : null}
           {status === "error" ? <div className="os-featured-error"><strong>{t.loadError}</strong><button type="button" onClick={() => void loadSessions()}>{t.retry}</button></div> : null}
           {status === "success" && !featuredSession ? <div className="os-featured-error"><strong>{t.noSchedule}</strong><span>{t.checkBack}</span></div> : null}
@@ -234,7 +235,7 @@ export default function OpenStudioPage() {
           </div> : null}
         </div>
 
-        <div className="os-week-head"><div><p className="os-kicker">{t.schedule}{usingFallback ? ` · ${t.demoData}` : ""}</p><div className="os-date-row" aria-label={t.filterDate}><button className={activeDate === "all" ? "is-active" : ""} onClick={() => setActiveDate("all")} type="button">{t.all}</button>{dateOptions.slice(0, 7).map((date) => { const representative = sessions.find((session) => localDateKey(session.startsAt) === date); return representative ? <button className={activeDate === date ? "is-active" : ""} onClick={() => setActiveDate(date)} type="button" key={date}>{compactDate(representative.startsAt, locale)}</button> : null; })}</div></div><div className="os-filter-row" aria-label={t.filterPath}>{(["all", "PianoHouse", "Artchitect", "Little Piner"] as PathFilter[]).map((filter) => <button className={pathFilter === filter ? "is-active" : ""} onClick={() => setPathFilter(filter)} type="button" key={filter}>{filter === "all" ? t.all : filter}</button>)}</div></div>
+        <div className="os-week-head"><div><p className="os-kicker"><CmsText contentKey="os_v2_schedule_label" fallback={t.schedule} />{usingFallback ? ` · ${t.demoData}` : ""}</p><div className="os-date-row" aria-label={t.filterDate}><button className={activeDate === "all" ? "is-active" : ""} onClick={() => setActiveDate("all")} type="button">{t.all}</button>{dateOptions.slice(0, 7).map((date) => { const representative = sessions.find((session) => localDateKey(session.startsAt) === date); return representative ? <button className={activeDate === date ? "is-active" : ""} onClick={() => setActiveDate(date)} type="button" key={date}>{compactDate(representative.startsAt, locale)}</button> : null; })}</div></div><div className="os-filter-row" aria-label={t.filterPath}>{(["all", "PianoHouse", "Artchitect", "Little Piner"] as PathFilter[]).map((filter) => <button className={pathFilter === filter ? "is-active" : ""} onClick={() => setPathFilter(filter)} type="button" key={filter}>{filter === "all" ? t.all : filter}</button>)}</div></div>
 
         {status === "loading" ? <div className="os-card-grid os-skeleton-grid">{[0, 1, 2, 3, 4, 5].map((item) => <div className="os-session-card os-skeleton-card" key={item}><span /><i /><i /><i /></div>)}</div> : null}
         {status === "success" && visibleSessions.length === 0 ? <div className="os-empty">{t.noFiltered}</div> : null}
@@ -259,7 +260,7 @@ export default function OpenStudioPage() {
 
       <section className="os-faq os-shell" aria-labelledby="faq-title"><h2 id="faq-title">FAQ</h2><div>{t.faq.map(([question, answer]) => <details key={question}><summary>{question}</summary><p>{answer}</p></details>)}</div></section>
 
-      <section className="os-final-cta os-shell"><img className="os-final-bg" src={ASSETS.gate} alt="" aria-hidden="true" /><img className="os-final-leaves os-final-leaves-left" src={ASSETS.leavesOne} alt="" aria-hidden="true" /><img className="os-final-leaves os-final-leaves-right" src={ASSETS.leavesTwo} alt="" aria-hidden="true" /><div><h2>{t.finalTitle}</h2><p>{t.finalCopy}</p><a className="os-final-button" href="#sessions">{t.finalButton} <span>→</span></a></div></section>
+      <section className="os-final-cta os-shell"><img className="os-final-bg" src={ASSETS.gate} alt="" aria-hidden="true" /><img className="os-final-leaves os-final-leaves-left" src={ASSETS.leavesOne} alt="" aria-hidden="true" /><img className="os-final-leaves os-final-leaves-right" src={ASSETS.leavesTwo} alt="" aria-hidden="true" /><div><h2><CmsText contentKey="os_v2_final_title" fallback={t.finalTitle} /></h2><p><CmsText contentKey="os_v2_final_description" fallback={t.finalCopy} /></p><a className="os-final-button" href="#sessions"><CmsText contentKey="os_v2_final_cta" fallback={t.finalButton} /> <span>→</span></a></div></section>
 
       <footer className="os-footer os-shell"><div className="os-footer-brand"><a className="os-brand" href="/"><img src={LOGO_URL} alt="" aria-hidden="true" /><span>PINO House</span></a><p>{locale === "vi" ? "Nghệ thuật. Âm nhạc. Lớn lên sáng tạo." : "Art. Music. Creative Growth."}</p><small>pinohouse.art</small></div><div><strong>{locale === "vi" ? "Khám phá" : "Explore"}</strong><a href="/">{locale === "vi" ? "Trang chủ" : "House"}</a><a href="/#paths">{locale === "vi" ? "Lộ trình" : "Paths"}</a><a href="/open-studio">Open Studio</a></div><div><strong>{locale === "vi" ? "Về PINO" : "About"}</strong><a href="/#why-pino">{locale === "vi" ? "Câu chuyện PINO" : "Our Story"}</a><a href="/#journey">Journey</a></div><div><strong>{locale === "vi" ? "Thông tin" : "Information"}</strong><a href="#sessions">{locale === "vi" ? "Đến thăm" : "Visit"}</a><a href="#faq-title">FAQs</a></div><div><strong>{locale === "vi" ? "Kết nối" : "Stay connected"}</strong><p>{t.stay}</p></div><span className="os-copyright">© {new Date().getFullYear()} PINO House. {locale === "vi" ? "Đã đăng ký bản quyền." : "All rights reserved."}</span></footer>
     </main>

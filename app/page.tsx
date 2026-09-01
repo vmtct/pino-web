@@ -1,5 +1,6 @@
 import styles from "./homepage.module.css";
 import { LocaleToggle, Localized as L } from "./localization";
+import { CmsText } from "./cms-hydrator";
 
 const ASSET = "https://assets.pinohouse.art/site/homepage";
 const SIGIL = "https://assets.pinohouse.art/core/Pino%20Sigil.png";
@@ -45,11 +46,11 @@ export default function Home() {
 
         <section className={styles.hero} aria-labelledby="home-title">
           <div className={styles.heroCopy}>
-            <h1 id="home-title"><L vi={<>Một ngôi nhà cho<br />những tâm trí<br />tò mò lớn lên.</>} en={<>A house for<br />growing curious<br />minds.</>} /></h1>
-            <p><L vi="Nơi trẻ cùng nhau khám phá nghệ thuật, âm nhạc và lớn lên sáng tạo." en="Where children explore art, music, and creative growth — together." /></p>
+            <h1 id="home-title"><CmsText contentKey="homepage_v2_hero_title_line_1" fallback="Một ngôi nhà cho" /><br /><CmsText contentKey="homepage_v2_hero_title_line_2" fallback="những tâm trí" /><br /><CmsText contentKey="homepage_v2_hero_title_line_3" fallback="tò mò lớn lên." /></h1>
+            <p><CmsText contentKey="homepage_v2_hero_description" fallback="Nơi trẻ cùng nhau khám phá nghệ thuật, âm nhạc và lớn lên sáng tạo." /></p>
             <div className={styles.heroActions}>
               <a className={styles.primary} href="/open-studio">Open Studio <span aria-hidden="true">→</span></a>
-              <a className={styles.secondary} href="#house"><L vi="Khám phá PINO House" en="Explore the House" /></a>
+              <a className={styles.secondary} href="#house"><CmsText contentKey="homepage_v2_hero_secondary_cta" fallback="Khám phá PINO House" /></a>
             </div>
           </div>
           <div className={styles.heroVisual} aria-label="Illustrated PINO House courtyard">
