@@ -73,6 +73,26 @@ function routeFor(pathname: string): RouteContract | null {
       body: "forward",
     };
   }
+  const pianoPractice = /^\/api\/piner\/students\/([0-9a-f-]{36})\/piano\/practice-resources\/([0-9a-f-]{36})$/.exec(pathname);
+  if (pianoPractice) {
+    return {
+      method: "GET",
+      upstreamPath: pathname.replace(/^\/api\/piner/, "/v1/member"),
+      auth: "session",
+      result: "none",
+      body: "none",
+    };
+  }
+  const protectedPracticeMedia = /^\/api\/piner\/students\/([0-9a-f-]{36})\/piano\/practice-resources\/([0-9a-f-]{36})\/pages\/([0-9a-f-]{36})\/media\/(SHEET|WORKSHEET)$/.exec(pathname);
+  if (protectedPracticeMedia) {
+    return {
+      method: "GET",
+      upstreamPath: pathname.replace(/^\/api\/piner/, "/v1/member"),
+      auth: "session",
+      result: "none",
+      body: "none",
+    };
+  }
   const projection = /^\/api\/piner\/students\/([^/]+)\/(journey|home)$/.exec(pathname);
   if (!projection) return null;
   const [, studentId, resource] = projection;
@@ -118,8 +138,11 @@ function forwardedHeaders(request: Request, token: string | null): Headers {
 }
 
 function downstreamHeaders(response: Response): Headers {
-  const headers = new Headers({ "Cache-Control": "no-store" });
-  for (const name of ["content-type", "x-request-id", "retry-after", "www-authenticate"]) {
+  const upstreamCacheControl = response.headers.get("cache-control");
+  const headers = new Headers({
+    "Cache-Control": upstreamCacheControl === "private, no-store" ? upstreamCacheControl : "no-store",
+  });
+  for (const name of ["content-type", "content-length", "x-content-type-options", "x-request-id", "retry-after", "www-authenticate"]) {
     const value = response.headers.get(name);
     if (value) headers.set(name, value);
   }

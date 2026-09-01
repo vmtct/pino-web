@@ -21,6 +21,7 @@ import { parseToppiProjection } from "../../lib/piner-toppi-projection";
 import type { ToppiMemberProjection, ToppiProgramProgress } from "../../lib/piner-toppi-projection";
 import { parseToppiPracticeCompletion, parseToppiPracticeProjection } from "../../lib/piner-toppi-practice-projection";
 import type { ToppiPracticeProjection, ToppiPracticeSet } from "../../lib/piner-toppi-practice-projection";
+import PianoPracticePlayer from "./piano-practice-player";
 import styles from "./piner.module.css";
 
 type ViewState = "loading" | "signed-out" | "change-pin" | "ready" | "unavailable";
@@ -475,7 +476,7 @@ export default function PinerMemberEntry() {
                   />
                 ) : null}
                 {destination === "journey" ? (
-                <JourneySurface student={activeStudent} journey={visibleJourney} loading={projectionLoading} error={journeyError} toppi={visibleToppi} toppiLoading={toppiLoading} toppiError={toppiError} toppiOpen={toppiOpen} onOpenToppi={() => setToppiOpen(true)} onCloseToppi={() => setToppiOpen(false)} practice={visibleToppiPractice} practiceLoading={toppiPracticeLoading} practiceError={toppiPracticeError} practiceBusy={toppiPracticeBusy} practiceNotice={toppiPracticeNotice} onCompletePractice={completeToppiPractice} />
+                <JourneySurface student={activeStudent} journey={visibleJourney} loading={projectionLoading} error={journeyError} toppi={visibleToppi} toppiLoading={toppiLoading} toppiError={toppiError} toppiOpen={toppiOpen} onOpenToppi={() => setToppiOpen(true)} onCloseToppi={() => setToppiOpen(false)} practice={visibleToppiPractice} practiceLoading={toppiPracticeLoading} practiceError={toppiPracticeError} practiceBusy={toppiPracticeBusy} practiceNotice={toppiPracticeNotice} onCompletePractice={completeToppiPractice} onAuthRequired={() => { clearMemberContext(); setView("signed-out"); }} />
                 ) : null}
                 {destination === "collection" ? <CollectionSurface student={activeStudent} /> : null}
                 {destination === "explore" ? (
@@ -668,7 +669,7 @@ function primaryActionCopy(action: HomePrimaryAction, home: MemberHomeProjection
       return { title: "Piner đang đồng bộ lại", note: "Một phần thông tin cần được cập nhật trước khi tiếp tục." };
   }
 }
-function JourneySurface({ student, journey, loading, error, toppi, toppiLoading, toppiError, toppiOpen, onOpenToppi, onCloseToppi, practice, practiceLoading, practiceError, practiceBusy, practiceNotice, onCompletePractice }: {
+function JourneySurface({ student, journey, loading, error, toppi, toppiLoading, toppiError, toppiOpen, onOpenToppi, onCloseToppi, practice, practiceLoading, practiceError, practiceBusy, practiceNotice, onCompletePractice, onAuthRequired }: {
   student: PinerStudentSummary;
   journey: MemberJourneyProjection | null;
   loading: boolean;
@@ -685,6 +686,7 @@ function JourneySurface({ student, journey, loading, error, toppi, toppiLoading,
   practiceBusy: boolean;
   practiceNotice: string;
   onCompletePractice: (practiceSetId: string, optionId: string, submission: PracticeSubmissionInput) => Promise<void>;
+  onAuthRequired: () => void;
 }) {
   if (toppiOpen && toppi && toppi.programs.length > 0) {
     return <ToppiDetailSurface student={student} toppi={toppi} practice={practice} practiceLoading={practiceLoading} practiceError={practiceError} practiceBusy={practiceBusy} practiceNotice={practiceNotice} onCompletePractice={onCompletePractice} onBack={onCloseToppi} />;
@@ -731,6 +733,7 @@ function JourneySurface({ student, journey, loading, error, toppi, toppiLoading,
           </section>
         );
       })}
+      <PianoPracticePlayer studentId={student.id} onAuthRequired={onAuthRequired} />
       {toppiLoading ? <div className={styles.toppiModuleLoading}><span className={styles.loader} /><span>Đang đọc Toppi…</span></div> : null}
       {!toppiLoading && toppiError ? <div className={styles.toppiModuleNotice}><strong>Toppi tạm thời chưa sẵn sàng.</strong><span>Hành trình PINO vẫn hoạt động bình thường.</span></div> : null}
       {!toppiLoading && toppi && toppi.programs.length > 0 ? <ToppiModuleCard program={toppi.programs[0]} onOpen={onOpenToppi} /> : null}

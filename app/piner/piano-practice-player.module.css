@@ -1,0 +1,213 @@
+.moduleCard,
+.player,
+.notice {
+  border: 1px solid rgba(87, 75, 57, 0.16);
+  border-radius: 22px;
+  background: rgba(255, 252, 245, 0.92);
+  box-shadow: 0 14px 34px rgba(48, 41, 31, 0.08);
+}
+
+.moduleCard {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+}
+
+.moduleCard h3,
+.player h3 {
+  margin: 4px 0 6px;
+  font-family: var(--font-piner-serif), serif;
+  font-size: 24px;
+  line-height: 1.08;
+}
+
+.moduleCard p,
+.player p,
+.notice span {
+  margin: 0;
+  color: #6b6255;
+}
+
+.eyebrow {
+  margin: 0 !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  color: #8b7046 !important;
+}
+
+.moduleMeta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.moduleMeta span,
+.version {
+  border-radius: 999px;
+  background: #f0eadf;
+  padding: 7px 10px;
+  color: #6b5940;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.primaryButton,
+.backButton,
+.modeButton,
+.modeActive,
+.pageControls button {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.primaryButton {
+  justify-self: start;
+  border-radius: 999px;
+  background: #332d25;
+  color: white;
+  padding: 11px 16px;
+  font-weight: 700;
+}
+
+.player {
+  padding: 16px;
+}
+
+.playerHeader {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.playerHeader > div {
+  grid-column: 1 / 2;
+}
+
+.backButton {
+  grid-column: 1 / -1;
+  justify-self: start;
+  background: transparent;
+  color: #6b5940;
+  padding: 0;
+  font-weight: 700;
+}
+
+.version {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.modeRow {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0 12px;
+}
+
+.modeButton,
+.modeActive {
+  border-radius: 999px;
+  padding: 9px 13px;
+  font-weight: 700;
+}
+
+.modeButton {
+  background: #f0eadf;
+  color: #6b5940;
+}
+
+.modeActive {
+  background: #332d25;
+  color: white;
+}
+
+.mediaFrame {
+  width: min(100%, 520px);
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 16px;
+  background: white;
+  aspect-ratio: 176 / 250;
+  box-shadow: 0 10px 24px rgba(48, 41, 31, .1);
+}
+
+.mediaFrame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: white;
+}
+
+.pageControls {
+  display: grid;
+  grid-template-columns: 42px 1fr 42px;
+  gap: 10px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.pageControls span {
+  text-align: center;
+  color: #6b6255;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pageControls button {
+  height: 42px;
+  border-radius: 50%;
+  background: #f0eadf;
+  color: #4e4335;
+  font-weight: 800;
+}
+
+.pageControls button:disabled {
+  opacity: .35;
+  cursor: default;
+}
+
+.notice {
+  display: grid;
+  gap: 6px;
+  padding: 16px 18px;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #6b6255;
+  font-size: 13px;
+}
+
+.loader {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(107, 98, 85, .24);
+  border-top-color: #6b6255;
+  border-radius: 50%;
+  animation: pianoPracticeSpin .8s linear infinite;
+}
+
+@keyframes pianoPracticeSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 520px) {
+  .moduleCard,
+  .player {
+    border-radius: 18px;
+  }
+
+  .moduleCard h3,
+  .player h3 {
+    font-size: 21px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader { animation: none; }
+}

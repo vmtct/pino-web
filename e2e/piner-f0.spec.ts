@@ -75,3 +75,77 @@ test('OWNER Open Studio action reuses its idempotency key until canonical Home c
   expect(admissionKeys[0]).toBeTruthy();
   expect(admissionBody).toEqual({ passId, listingId, participantMode: 'OWNER' });
 });
+test('Piano Practice composes with the exact Core F0 resource DTO and media routes', async ({ page }) => {
+  const resourceId = '018f7f5a-aaaa-7abc-8def-123456789001';
+  const pathProgramId = '018f7f5a-aaaa-7abc-8def-123456789002';
+  const repertoireItemId = '018f7f5a-aaaa-7abc-8def-123456789003';
+  const pageIds = [
+    '018f7f5a-bbbb-7abc-8def-123456789001',
+    '018f7f5a-bbbb-7abc-8def-123456789002',
+    '018f7f5a-bbbb-7abc-8def-123456789003',
+  ];
+  const coreMedia = (pageId: string, role: 'SHEET' | 'WORKSHEET') =>
+    `/v1/member/students/${studentId}/piano/practice-resources/${resourceId}/pages/${pageId}/media/${role}`;
+
+  await page.route('**/api/piner/session', (route) => route.fulfill(envelope({
+    principalType: 'PARENT_USER',
+    parent: { id: parentId, displayName: 'Gia đình PINO' },
+    session: { id: parentSessionId, issuedAt: '2026-08-31T06:00:00.000Z', expiresAt: '2026-11-30T06:00:00.000Z' },
+  })));
+  await page.route('**/api/piner/students', (route) => route.fulfill(envelope([{ id: studentId, displayName: 'Piner Piano' }])));
+  await page.route(`**/api/piner/students/${studentId}/home`, (route) => route.fulfill(envelope({
+    state: 'NEUTRAL', student: { id: studentId, displayName: 'Piner Piano' }, primaryAction: null,
+    nextTouchpoint: null, journey: null, recentOutcome: null, asOf: '2026-08-31T06:00:00.000Z', resolverVersion: 'f0-v1',
+  })));
+  await page.route(`**/api/piner/students/${studentId}/journey`, (route) => route.fulfill(envelope({
+    state: 'NO_ACTIVE_JOURNEY', student: { id: studentId, displayName: 'Piner Piano' },
+    paths: [], journeys: [], asOf: '2026-08-31T06:00:00.000Z',
+  })));
+  await page.route(`**/api/piner/students/${studentId}/toppi**`, (route) => route.fulfill({
+    status: 404, contentType: 'application/json', body: JSON.stringify({ error: { code: 'NOT_FOUND' } }),
+  }));
+
+  const mediaReads: string[] = [];
+  await page.route('**/api/piner/students/*/piano/practice-resources/*/pages/*/media/*', async (route) => {
+    mediaReads.push(new URL(route.request().url()).pathname);
+    await route.fulfill({
+      status: 200, contentType: 'image/png',
+      headers: { 'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff' },
+      body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64'),
+    });
+  });
+  await page.route(`**/api/piner/students/${studentId}/piano/practice-resources/${resourceId}`, (route) => route.fulfill(envelope({
+    resourceId, pathProgramId, pianoRepertoireItemId: repertoireItemId, family: 'JOURNEY',
+    version: {
+      id: '018f7f5a-cccc-7abc-8def-123456789002', number: 2, title: 'Always With Me',
+      formatDefinition: 'PIANO_SHEET_176X250_8ROW_V1', publishedAt: '2026-08-31T06:00:00.000Z',
+    },
+    pages: [
+      { id: pageIds[0], order: 1, sheetMediaPath: coreMedia(pageIds[0], 'SHEET'), worksheetMediaPath: coreMedia(pageIds[0], 'WORKSHEET') },
+      { id: pageIds[1], order: 2, sheetMediaPath: coreMedia(pageIds[1], 'SHEET'), worksheetMediaPath: null },
+      { id: pageIds[2], order: 3, sheetMediaPath: coreMedia(pageIds[2], 'SHEET'), worksheetMediaPath: coreMedia(pageIds[2], 'WORKSHEET') },
+    ],
+  })));
+
+  await page.goto(`/piner?practiceResourceId=${resourceId}`);
+  await page.getByRole('button', { name: 'Hành trình' }).click();
+  await expect(page.getByTestId('piano-practice-module')).toContainText('Always With Me');
+  await page.getByRole('button', { name: 'Mở bài luyện →' }).click();
+
+  const player = page.getByTestId('piano-practice-player');
+  await expect(player).toContainText('Trang 1 / 3');
+  await expect(player.getByRole('button', { name: 'Worksheet' })).toBeVisible();
+  await player.getByRole('button', { name: 'Worksheet' }).click();
+  await expect(player.getByRole('img')).toHaveAttribute('src', coreMedia(pageIds[0], 'WORKSHEET').replace(/^\/v1\/member/, '/api/piner'));
+  await expect.poll(() => mediaReads.some((path) => path.endsWith(`/${pageIds[0]}/media/WORKSHEET`))).toBe(true);
+
+  await player.getByRole('button', { name: 'Trang sau' }).click();
+  await expect(player).toContainText('Trang 2 / 3');
+  await expect(player.getByRole('button', { name: 'Worksheet' })).toHaveCount(0);
+  await expect(player.getByRole('img')).toHaveAttribute('src', coreMedia(pageIds[1], 'SHEET').replace(/^\/v1\/member/, '/api/piner'));
+  await expect.poll(() => mediaReads.some((path) => path.endsWith(`/${pageIds[1]}/media/SHEET`))).toBe(true);
+
+  await player.getByRole('button', { name: 'Trang sau' }).click();
+  await expect(player).toContainText('Trang 3 / 3');
+  await expect(player.getByRole('button', { name: 'Worksheet' })).toBeVisible();
+});
