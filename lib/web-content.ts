@@ -28,8 +28,12 @@ export const WEB_CONTENT_LANGUAGES = ["vi", "en"] as const;
 const webContentLanguages = new Set<string>(WEB_CONTENT_LANGUAGES);
 
 function localizedContentKey(key: string, language: string): string {
-  const suffix = key.match(/__(vi|en)$/);
-  if (suffix) return suffix[1] === language ? key : "";
+  const suffixed = key.match(/^(.*)__(vi|en)$/);
+  if (suffixed) {
+    const [, baseKey, suffixLanguage] = suffixed;
+    if (!baseKey || suffixLanguage !== language) return "";
+    return suffixLanguage === "en" ? `${baseKey}__en` : baseKey;
+  }
   return language === "en" ? `${key}__en` : key;
 }
 

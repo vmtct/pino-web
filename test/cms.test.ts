@@ -20,11 +20,13 @@ test("published CMS selection accepts active Production Vietnamese and English c
   assert.deepEqual(selectPublishedContent([
     contentRow("hero", "Đã duyệt"),
     contentRow("hero", "Approved", { Language: select("en") }),
+    contentRow("caption__vi", "Chú thích"),
     contentRow("cta__en", "Explore", { Language: select("en") }),
     contentRow("wrong__vi", "No", { Language: select("en") }),
+    contentRow("wrong__en", "No"),
     contentRow("draft", "No", { Status: select("Draft") }),
     contentRow("inactive", "No", { Active: { checkbox: false } }),
-  ]), { hero: "Đã duyệt", hero__en: "Approved", cta__en: "Explore" });
+  ]), { hero: "Đã duyệt", hero__en: "Approved", caption: "Chú thích", cta__en: "Explore" });
 });
 
 test("published CMS query requests both supported locales", () => {
@@ -43,6 +45,10 @@ test("duplicate active production content keys fail closed after locale normaliz
   assert.throws(() => selectPublishedContent([
     contentRow("hero", "One", { Language: select("en") }),
     contentRow("hero__en", "Two", { Language: select("en") }),
+  ]), /Duplicate/);
+  assert.throws(() => selectPublishedContent([
+    contentRow("hero", "Một"),
+    contentRow("hero__vi", "Hai"),
   ]), /Duplicate/);
 });
 
