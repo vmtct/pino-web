@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
-import { selectPublishedContent } from "../lib/web-content.ts";
+import { publishedContentQueryFilter, selectPublishedContent } from "../lib/web-content.ts";
 import { selectReadyImages } from "../lib/web-images.ts";
 
 const text = (value: string) => ({ rich_text: [{ plain_text: value }] });
@@ -16,21 +16,34 @@ const imageRow = (key: string, url: string, overrides: Record<string, unknown> =
   Environment: select("Production"), Status: select("Ready"), Active: { checkbox: true }, ...overrides,
 } });
 
-test("published CMS selection accepts only active Production Vietnamese content", () => {
+test("published CMS selection accepts active Production Vietnamese and English content", () => {
   assert.deepEqual(selectPublishedContent([
-    contentRow("hero", "Approved"),
+    contentRow("hero", "Đã duyệt"),
+    contentRow("hero", "Approved", { Language: select("en") }),
+    contentRow("cta__en", "Explore", { Language: select("en") }),
+    contentRow("wrong__vi", "No", { Language: select("en") }),
     contentRow("draft", "No", { Status: select("Draft") }),
-    contentRow("english", "No", { Language: select("en") }),
     contentRow("inactive", "No", { Active: { checkbox: false } }),
-  ]), { hero: "Approved" });
+  ]), { hero: "Đã duyệt", hero__en: "Approved", cta__en: "Explore" });
+});
+
+test("published CMS query requests both supported locales", () => {
+  const filter = JSON.stringify(publishedContentQueryFilter());
+  assert.match(filter, /\"Language\"/);
+  assert.match(filter, /\"vi\"/);
+  assert.match(filter, /\"en\"/);
 });
 
 test("empty and malformed content are ignored so UI fallbacks remain intact", () => {
   assert.deepEqual(selectPublishedContent([contentRow("empty", "  "), {}, { properties: null } as never]), {});
 });
 
-test("duplicate active production content keys fail closed", () => {
+test("duplicate active production content keys fail closed after locale normalization", () => {
   assert.throws(() => selectPublishedContent([contentRow("hero", "One"), contentRow("hero", "Two")]), /Duplicate/);
+  assert.throws(() => selectPublishedContent([
+    contentRow("hero", "One", { Language: select("en") }),
+    contentRow("hero__en", "Two", { Language: select("en") }),
+  ]), /Duplicate/);
 });
 
 test("ready media selection accepts only the canonical asset host", () => {
@@ -55,8 +68,8 @@ test("public pages use explicit CMS keys and retain canonical session ownership"
   const home = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
   const openStudio = readFileSync(new URL("../app/open-studio/page.tsx", import.meta.url), "utf8");
   const hydrator = readFileSync(new URL("../app/cms-hydrator.tsx", import.meta.url), "utf8");
-  assert.match(home, /homepage_hero_title_lead/);
-  assert.match(openStudio, /os_schedule_title_lead/);
+  assert.match(home, /homepage_v2_hero_title_line_1/);
+  assert.match(openStudio, /os_v2_schedule_label/);
   assert.match(openStudio, /publicSyllabusTitle\(session\.syllabus\.title\)/);
   assert.doesNotMatch(openStudio, /contentKey="[^"]*(?:syllabus_title|syllabus_description|session_title|session_date|session_time|remaining_seats|is_full)/i);
   assert.doesNotMatch(hydrator, /createTreeWalker|nodeValue/);

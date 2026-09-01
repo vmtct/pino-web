@@ -24,17 +24,37 @@ const value = (property: any) =>
 
 const checkbox = (property: any) => property?.checkbox === true;
 
+export const WEB_CONTENT_LANGUAGES = ["vi", "en"] as const;
+const webContentLanguages = new Set<string>(WEB_CONTENT_LANGUAGES);
+
+function localizedContentKey(key: string, language: string): string {
+  const suffix = key.match(/__(vi|en)$/);
+  if (suffix) return suffix[1] === language ? key : "";
+  return language === "en" ? `${key}__en` : key;
+}
+
+export function publishedContentQueryFilter() {
+  return { and: [
+    { property: "Environment", select: { equals: "Production" } },
+    { property: "Status", select: { equals: "Published" } },
+    { property: "Active", checkbox: { equals: true } },
+    { or: WEB_CONTENT_LANGUAGES.map((language) => ({ property: "Language", select: { equals: language } })) },
+  ] };
+}
+
 export function selectPublishedContent(rows: NotionContentRow[]): Record<string, string> {
   const values: Record<string, string> = {};
   for (const row of rows) {
     const props = row?.properties as Record<string, any> | undefined;
     if (!props) continue;
+    const language = value(props.Language).trim().toLowerCase();
     if (value(props.Environment) !== "Production"
       || value(props.Status) !== "Published"
-      || value(props.Language) !== "vi"
+      || !webContentLanguages.has(language)
       || !checkbox(props.Active)) continue;
 
-    const key = value(props["Content Key"]).trim();
+    const rawKey = value(props["Content Key"]).trim();
+    const key = localizedContentKey(rawKey, language);
     const content = value(props.Content).trim();
     if (!key || !content) continue;
     if (Object.prototype.hasOwnProperty.call(values, key)) throw new Error(`Duplicate published CMS key: ${key}`);
@@ -53,12 +73,7 @@ async function queryAllRows(env: ContentEnv, dataSourceId: string): Promise<Noti
       body: JSON.stringify({
         page_size: 100,
         ...(startCursor ? { start_cursor: startCursor } : {}),
-        filter: { and: [
-          { property: "Environment", select: { equals: "Production" } },
-          { property: "Status", select: { equals: "Published" } },
-          { property: "Active", checkbox: { equals: true } },
-          { property: "Language", select: { equals: "vi" } },
-        ] },
+        filter: publishedContentQueryFilter(),
       }),
     });
     if (!response.ok) throw new Error(`Web content query failed: ${response.status}`);
