@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { parsePianoPracticeProjection, pinerPracticeMediaPath } from "../../lib/piner-piano-practice-projection";
-import type { PianoPracticePage, PianoPracticeProjection } from "../../lib/piner-piano-practice-projection";
+import { parsePianoPracticeProjection } from "../../lib/piner-piano-practice-projection";
+import { parsePianoLibraryPathSummary, parsePianoLibraryProjection } from "../../lib/piner-piano-library-projection";
+import type { PianoPracticeProjection } from "../../lib/piner-piano-practice-projection";
+import PianoPracticeViewer from "./piano-practice-viewer";
 import styles from "./piano-practice-player.module.css";
 
 type LoadState = "idle" | "loading" | "absent" | "locked" | "ready" | "error";
+type AccessiblePractice = { resourceId: string; title: string; pathProgramId: string; explicitAccessGrant: boolean };
 
 export default function PianoPracticePlayer({
   studentId,
@@ -17,31 +20,47 @@ export default function PianoPracticePlayer({
   const [loadState, setLoadState] = useState<LoadState>("idle");
   const [projection, setProjection] = useState<PianoPracticeProjection | null>(null);
   const [resourceId, setResourceId] = useState("");
+  const [practices, setPractices] = useState<AccessiblePractice[]>([]);
   const [message, setMessage] = useState("");
   const [open, setOpen] = useState(false);
-  const [pageIndex, setPageIndex] = useState(0);
-  const [mode, setMode] = useState<"sheet" | "worksheet">("sheet");
   const authRequiredRef = useRef(onAuthRequired);
   authRequiredRef.current = onAuthRequired;
 
   useEffect(() => {
-    const selected = new URLSearchParams(window.location.search).get("practiceResourceId") ?? "";
-    setResourceId(canonicalResourceId(selected) ? selected : "");
-  }, []);
+    if (!studentId) return;
+    const controller = new AbortController();
+    setLoadState("loading"); setPractices([]); setResourceId(""); setProjection(null); setMessage("");
+    void (async () => {
+      const summaryResponse = await fetch(`/api/piner/students/${encodeURIComponent(studentId)}/summary`, { cache: "no-store", signal: controller.signal });
+      if (summaryResponse.status === 401) { authRequiredRef.current(); return; }
+      if (!summaryResponse.ok) throw new Error(await apiMessage(summaryResponse, "Piano Practice library tạm thời chưa sẵn sàng."));
+      const summaryEnvelope = await summaryResponse.json().catch(() => null) as { data?: unknown } | null;
+      const paths = parsePianoLibraryPathSummary(summaryEnvelope?.data, studentId);
+      if (!paths) throw new Error("Piano Practice nhận được summary chưa hợp lệ.");
+      const next: AccessiblePractice[] = [];
+      for (const pathProgramId of paths) {
+        const response = await fetch(`/api/piner/students/${encodeURIComponent(studentId)}/piano/library?pathProgramId=${encodeURIComponent(pathProgramId)}`, { cache: "no-store", signal: controller.signal });
+        if (response.status === 401) { authRequiredRef.current(); return; }
+        if (!response.ok) throw new Error(await apiMessage(response, "Piano Practice library tạm thời chưa sẵn sàng."));
+        const envelope = await response.json().catch(() => null) as { data?: unknown } | null;
+        const library = parsePianoLibraryProjection(envelope?.data, studentId, pathProgramId);
+        if (!library) throw new Error("Piano Practice nhận được library chưa hợp lệ.");
+        for (const item of library.items) if (item.publishedPracticeResourceId && item.access.capabilities.OPEN_VIEWER === "ALLOWED") next.push({ resourceId: item.publishedPracticeResourceId, title: item.title, pathProgramId, explicitAccessGrant: item.explicitAccessGrant });
+      }
+      const unique = [...new Map(next.map(item => [item.resourceId, item])).values()];
+      if (controller.signal.aborted) return;
+      setPractices(unique); setResourceId(unique[0]?.resourceId ?? ""); if (!unique.length) setLoadState("absent");
+    })().catch(error => { if (controller.signal.aborted || error?.name === "AbortError") return; setLoadState("error"); setMessage(error instanceof Error ? error.message : "Piano Practice library tạm thời chưa sẵn sàng."); });
+    return () => controller.abort();
+  }, [studentId]);
 
   useEffect(() => {
-    if (!studentId || !resourceId) {
-      setLoadState("absent");
-      setProjection(null);
-      return;
-    }
+    if (!studentId || !resourceId) { setProjection(null); return; }
     const controller = new AbortController();
     setLoadState("loading");
     setProjection(null);
     setMessage("");
     setOpen(false);
-    setPageIndex(0);
-    setMode("sheet");
 
     void fetch(`/api/piner/students/${encodeURIComponent(studentId)}/piano/practice-resources/${encodeURIComponent(resourceId)}`, {
       cache: "no-store",
@@ -83,12 +102,6 @@ export default function PianoPracticePlayer({
     return () => controller.abort();
   }, [studentId, resourceId]);
 
-  const page = projection?.pages[pageIndex] ?? null;
-
-  useEffect(() => {
-    if (!page?.worksheetMediaPath && mode === "worksheet") setMode("sheet");
-  }, [page, mode]);
-
   const familyLabel = useMemo(() => {
     if (!projection) return "";
     if (projection.family === "STARTER") return "Khởi Hành";
@@ -111,6 +124,7 @@ export default function PianoPracticePlayer({
   if (!open) {
     return (
       <article className={styles.moduleCard} data-testid="piano-practice-module">
+        {practices.length > 1 ? <label className={styles.resourcePicker}><span>Bài được mở</span><select value={resourceId} onChange={(event) => setResourceId(event.target.value)}>{practices.map(item => <option key={item.resourceId} value={item.resourceId}>{item.title}</option>)}</select></label> : null}
         <div>
           <p className={styles.eyebrow}>PIANO PRACTICE · {familyLabel.toUpperCase()}</p>
           <h3>{projection.version.title}</h3>
@@ -127,95 +141,8 @@ export default function PianoPracticePlayer({
     );
   }
 
-  return (
-    <section className={styles.player} data-testid="piano-practice-player">
-      <div className={styles.playerHeader}>
-        <button type="button" className={styles.backButton} onClick={() => setOpen(false)}>← Hành trình</button>
-        <div>
-          <p className={styles.eyebrow}>PIANO PRACTICE · {familyLabel.toUpperCase()}</p>
-          <h3>{projection.version.title}</h3>
-        </div>
-        <span className={styles.version}>v{projection.version.number}</span>
-      </div>
-
-      {page ? (
-        <>
-          <div className={styles.modeRow}>
-            <button
-              type="button"
-              className={mode === "sheet" ? styles.modeActive : styles.modeButton}
-              onClick={() => setMode("sheet")}
-            >
-              Bản nhạc
-            </button>
-            {page.worksheetMediaPath ? (
-              <button
-                type="button"
-                className={mode === "worksheet" ? styles.modeActive : styles.modeButton}
-                onClick={() => setMode("worksheet")}
-              >
-                Worksheet
-              </button>
-            ) : null}
-          </div>
-
-          <PracticeMedia page={page} mode={mode} title={projection.version.title} />
-
-          <div className={styles.pageControls}>
-            <button
-              type="button"
-              onClick={() => {
-                setPageIndex((value) => Math.max(0, value - 1));
-                setMode("sheet");
-              }}
-              disabled={pageIndex === 0}
-              aria-label="Trang trước"
-            >
-              ←
-            </button>
-            <span>Trang {pageIndex + 1} / {projection.pages.length}</span>
-            <button
-              type="button"
-              onClick={() => {
-                setPageIndex((value) => Math.min(projection.pages.length - 1, value + 1));
-                setMode("sheet");
-              }}
-              disabled={pageIndex >= projection.pages.length - 1}
-              aria-label="Trang sau"
-            >
-              →
-            </button>
-          </div>
-        </>
-      ) : null}
-    </section>
-  );
-}
-
-function PracticeMedia({
-  page,
-  mode,
-  title,
-}: {
-  page: PianoPracticePage;
-  mode: "sheet" | "worksheet";
-  title: string;
-}) {
-  const corePath = mode === "worksheet" ? page.worksheetMediaPath : page.sheetMediaPath;
-  const mediaPath = corePath ? pinerPracticeMediaPath(corePath) : null;
-  if (!mediaPath) return null;
-  return (
-    <div className={styles.mediaFrame}>
-      <img
-        src={mediaPath}
-        alt={`${title} · trang ${page.order} · ${mode === "sheet" ? "bản nhạc" : "worksheet"}`}
-      />
-    </div>
-  );
-}
-
-function canonicalResourceId(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value);
+  const selectedAccess = practices.find((item) => item.resourceId === resourceId);
+  return <PianoPracticeViewer projection={projection} accessLabel={selectedAccess?.explicitAccessGrant ? "Mở riêng" : "Đang mở"} onClose={() => setOpen(false)} />;
 }
 
 async function apiMessage(response: Response, fallback: string) {
