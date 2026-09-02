@@ -108,7 +108,7 @@ test('Piano Practice composes with the exact Core F0 resource DTO and media rout
   })));
   await page.route(`**/api/piner/students/${studentId}/piano/library**`, (route) => route.fulfill(envelope({
     studentId, pathProgramId, targetedPreviewItemId: null, effectiveAt: '2026-08-31T06:00:00.000Z',
-    items: [{ id: repertoireItemId, pathProgramId, title: 'Always With Me', explicitAccessGrant: true, publishedPracticeResourceId: resourceId, access: { state: 'FULL', action: 'NONE', capabilities: { OPEN_VIEWER: 'ALLOWED' } } }],
+    items: [{ id: repertoireItemId, pathProgramId, title: 'Always With Me', publishedPracticeResourceId: resourceId, access: { state: 'FULL', action: 'NONE', capabilities: { OPEN_VIEWER: 'ALLOWED' } } }],
   })));
   await page.route(`**/api/piner/students/${studentId}/toppi**`, (route) => route.fulfill({
     status: 404, contentType: 'application/json', body: JSON.stringify({ error: { code: 'NOT_FOUND' } }),

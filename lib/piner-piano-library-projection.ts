@@ -5,7 +5,6 @@ export type PianoLibraryItem = {
   id: string;
   pathProgramId: string;
   title: string;
-  explicitAccessGrant: boolean;
   publishedPracticeResourceId: string | null;
   access: {
     state: PianoLibraryAccessState;
@@ -33,7 +32,7 @@ export function parsePianoLibraryProjection(value: unknown, expectedStudentId: s
 }
 
 function parseItem(value: unknown, expectedPathProgramId: string): PianoLibraryItem | null {
-  if (!isRecord(value) || !canonicalId(value.id) || value.pathProgramId !== expectedPathProgramId || typeof value.title !== "string" || typeof value.explicitAccessGrant !== "boolean") return null;
+  if (!isRecord(value) || !canonicalId(value.id) || value.pathProgramId !== expectedPathProgramId || typeof value.title !== "string") return null;
   if (!(value.publishedPracticeResourceId === null || canonicalId(value.publishedPracticeResourceId))) return null;
   if (!isRecord(value.access) || !accessState(value.access.state) || typeof value.access.action !== "string" || !isRecord(value.access.capabilities)) return null;
   const capabilities: Record<string, PianoLibraryCapability> = {};
@@ -42,7 +41,7 @@ function parseItem(value: unknown, expectedPathProgramId: string): PianoLibraryI
     capabilities[key] = decision;
   }
   if (!capabilities.OPEN_VIEWER) return null;
-  return { id: value.id, pathProgramId: value.pathProgramId, title: value.title, explicitAccessGrant: value.explicitAccessGrant, publishedPracticeResourceId: value.publishedPracticeResourceId, access: { state: value.access.state, action: value.access.action, capabilities } };
+  return { id: value.id, pathProgramId: value.pathProgramId, title: value.title, publishedPracticeResourceId: value.publishedPracticeResourceId, access: { state: value.access.state, action: value.access.action, capabilities } };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> { return Boolean(value) && typeof value === "object" && !Array.isArray(value); }

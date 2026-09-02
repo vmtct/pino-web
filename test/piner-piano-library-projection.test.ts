@@ -18,7 +18,6 @@ function library() {
       id: itemId,
       pathProgramId,
       title: "Always With Me",
-      explicitAccessGrant: true,
       publishedPracticeResourceId: resourceId,
       access: {
         state: "FULL",
@@ -28,14 +27,13 @@ function library() {
     }],
   };
 }
-test("parses explicit repertoire grant library with published Practice resource", () => {
+test("parses canonical member library with published Practice resource", () => {
   const parsed = parsePianoLibraryProjection(library(), studentId, pathProgramId);
   assert.ok(parsed);
   assert.deepEqual(parsed.items[0], {
     id: itemId,
     pathProgramId,
     title: "Always With Me",
-    explicitAccessGrant: true,
     publishedPracticeResourceId: resourceId,
     access: {
       state: "FULL",

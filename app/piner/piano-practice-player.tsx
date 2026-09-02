@@ -8,7 +8,7 @@ import PianoPracticeViewer from "./piano-practice-viewer";
 import styles from "./piano-practice-player.module.css";
 
 type LoadState = "idle" | "loading" | "absent" | "locked" | "ready" | "error";
-type AccessiblePractice = { resourceId: string; title: string; pathProgramId: string; explicitAccessGrant: boolean };
+type AccessiblePractice = { resourceId: string; title: string; pathProgramId: string };
 
 export default function PianoPracticePlayer({
   studentId,
@@ -45,7 +45,7 @@ export default function PianoPracticePlayer({
         const envelope = await response.json().catch(() => null) as { data?: unknown } | null;
         const library = parsePianoLibraryProjection(envelope?.data, studentId, pathProgramId);
         if (!library) throw new Error("Piano Practice nhận được library chưa hợp lệ.");
-        for (const item of library.items) if (item.publishedPracticeResourceId && item.access.capabilities.OPEN_VIEWER === "ALLOWED") next.push({ resourceId: item.publishedPracticeResourceId, title: item.title, pathProgramId, explicitAccessGrant: item.explicitAccessGrant });
+        for (const item of library.items) if (item.publishedPracticeResourceId && item.access.capabilities.OPEN_VIEWER === "ALLOWED") next.push({ resourceId: item.publishedPracticeResourceId, title: item.title, pathProgramId });
       }
       const unique = [...new Map(next.map(item => [item.resourceId, item])).values()];
       if (controller.signal.aborted) return;
@@ -141,8 +141,7 @@ export default function PianoPracticePlayer({
     );
   }
 
-  const selectedAccess = practices.find((item) => item.resourceId === resourceId);
-  return <PianoPracticeViewer projection={projection} accessLabel={selectedAccess?.explicitAccessGrant ? "Mở riêng" : "Đang mở"} onClose={() => setOpen(false)} />;
+  return <PianoPracticeViewer projection={projection} accessLabel="Đang mở" onClose={() => setOpen(false)} />;
 }
 
 async function apiMessage(response: Response, fallback: string) {
