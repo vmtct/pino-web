@@ -260,6 +260,18 @@ test("forwards bounded OWNER Open Studio admission through the private member bi
   assert.equal(seen.headers.get("idempotency-key"), "piner-owner-admission-1");
   assert.deepEqual(await seen.json(), body);
 });
+test("maps F1 member summary and piano library through the authenticated binding", async () => {
+  const seen: string[] = [];
+  const binding: ParentMemberCoreBinding = { async fetch(request) { seen.push(request.url); return jsonResponse({ data: {} }); } };
+  const studentId = "018f7f5a-4321-7abc-8def-1234567890ab";
+  const pathProgramId = "018f7f5a-aaaa-7abc-8def-123456789002";
+  for (const path of [`/api/piner/students/${studentId}/summary`, `/api/piner/students/${studentId}/piano/library?pathProgramId=${pathProgramId}`]) {
+    const response = await proxyPinerMemberRequest(new Request(`https://pinohouse.art${path}`, { headers: { cookie: `__Host-piner_session=${SESSION_TOKEN}`, authorization: `Bearer ${SPOOFED_TOKEN}` } }), { PINO_MEMBER_CORE: binding });
+    assert.equal(response.status, 200);
+  }
+  assert.deepEqual(seen, [`https://pino-member-core.internal/v1/member/students/${studentId}/summary`, `https://pino-member-core.internal/v1/member/students/${studentId}/piano/library?pathProgramId=${pathProgramId}`]);
+});
+
 test("maps the exact Core F0 Practice resource read through the private member binding", async () => {
   let seen: Request | undefined;
   const binding: ParentMemberCoreBinding = {

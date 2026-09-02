@@ -73,6 +73,10 @@ function routeFor(pathname: string): RouteContract | null {
       body: "forward",
     };
   }
+  const pianoLibrary = /^\/api\/piner\/students\/([0-9a-f-]{36})\/piano\/library$/.exec(pathname);
+  if (pianoLibrary) {
+    return { method: "GET", upstreamPath: pathname.replace(/^\/api\/piner/, "/v1/member"), auth: "session", result: "none", body: "none" };
+  }
   const pianoPractice = /^\/api\/piner\/students\/([0-9a-f-]{36})\/piano\/practice-resources\/([0-9a-f-]{36})$/.exec(pathname);
   if (pianoPractice) {
     return {
@@ -93,7 +97,7 @@ function routeFor(pathname: string): RouteContract | null {
       body: "none",
     };
   }
-  const projection = /^\/api\/piner\/students\/([^/]+)\/(journey|home)$/.exec(pathname);
+  const projection = /^\/api\/piner\/students\/([^/]+)\/(journey|home|summary)$/.exec(pathname);
   if (!projection) return null;
   const [, studentId, resource] = projection;
   return {

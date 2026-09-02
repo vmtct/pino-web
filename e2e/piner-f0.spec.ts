@@ -101,6 +101,15 @@ test('Piano Practice composes with the exact Core F0 resource DTO and media rout
     state: 'NO_ACTIVE_JOURNEY', student: { id: studentId, displayName: 'Piner Piano' },
     paths: [], journeys: [], asOf: '2026-08-31T06:00:00.000Z',
   })));
+  await page.route(`**/api/piner/students/${studentId}/summary`, (route) => route.fulfill(envelope({
+    student: { id: studentId, displayName: 'Piner Piano' },
+    paths: [{ pathProgramId, hasActiveSubscription: false, hasPriorSubscription: false }],
+    houseMembership: { exists: true, joinedAt: '2026-08-31T06:00:00.000Z' }, piano: { inProgress: 0, completed: 0 }, effectiveAt: '2026-08-31T06:00:00.000Z',
+  })));
+  await page.route(`**/api/piner/students/${studentId}/piano/library**`, (route) => route.fulfill(envelope({
+    studentId, pathProgramId, targetedPreviewItemId: null, effectiveAt: '2026-08-31T06:00:00.000Z',
+    items: [{ id: repertoireItemId, pathProgramId, title: 'Always With Me', publishedPracticeResourceId: resourceId, access: { state: 'FULL', action: 'NONE', capabilities: { OPEN_VIEWER: 'ALLOWED' } } }],
+  })));
   await page.route(`**/api/piner/students/${studentId}/toppi**`, (route) => route.fulfill({
     status: 404, contentType: 'application/json', body: JSON.stringify({ error: { code: 'NOT_FOUND' } }),
   }));
@@ -127,25 +136,32 @@ test('Piano Practice composes with the exact Core F0 resource DTO and media rout
     ],
   })));
 
-  await page.goto(`/piner?practiceResourceId=${resourceId}`);
+  await page.goto(`/piner`);
   await page.getByRole('button', { name: 'Hành trình' }).click();
   await expect(page.getByTestId('piano-practice-module')).toContainText('Always With Me');
   await page.getByRole('button', { name: 'Mở bài luyện →' }).click();
 
   const player = page.getByTestId('piano-practice-player');
-  await expect(player).toContainText('Trang 1 / 3');
-  await expect(player.getByRole('button', { name: 'Worksheet' })).toBeVisible();
-  await player.getByRole('button', { name: 'Worksheet' }).click();
-  await expect(player.getByRole('img')).toHaveAttribute('src', coreMedia(pageIds[0], 'WORKSHEET').replace(/^\/v1\/member/, '/api/piner'));
-  await expect.poll(() => mediaReads.some((path) => path.endsWith(`/${pageIds[0]}/media/WORKSHEET`))).toBe(true);
+  await expect(player.getByRole('heading', { name: 'Lật ngang điện thoại để luyện tập' })).toBeVisible();
+  await player.getByRole('button', { name: /Đã xoay ngang/ }).click();
 
-  await player.getByRole('button', { name: 'Trang sau' }).click();
-  await expect(player).toContainText('Trang 2 / 3');
-  await expect(player.getByRole('button', { name: 'Worksheet' })).toHaveCount(0);
-  await expect(player.getByRole('img')).toHaveAttribute('src', coreMedia(pageIds[1], 'SHEET').replace(/^\/v1\/member/, '/api/piner'));
+  const scroller = player.locator('[class*="phraseScroller"]');
+  await expect(scroller).toBeVisible();
+  await expect(player.getByText('Câu 1')).toBeVisible();
+  await expect(player.getByAltText('Always With Me worksheet trang 1 câu 1')).toHaveAttribute('src', coreMedia(pageIds[0], 'WORKSHEET').replace(/^\/v1\/member/, '/api/piner'));
+  await expect.poll(() => mediaReads.some((path) => path.endsWith(`/${pageIds[0]}/media/WORKSHEET`))).toBe(true);
+  expect(await scroller.evaluate((node) => getComputedStyle(node).scrollSnapType)).toContain('mandatory');
+
+  await scroller.evaluate((node) => node.scrollTo({ top: 500, behavior: 'instant' }));
+  await expect.poll(() => player.getAttribute('data-practice-immersive')).toBe('true');
+  await scroller.evaluate((node) => node.scrollTo({ top: 0, behavior: 'instant' }));
+  await expect.poll(() => player.getAttribute('data-practice-immersive')).toBe('false');
+
+  await player.getByRole('button', { name: /Trang 2/ }).click();
+  await expect(player.getByRole('button', { name: 'Không có hướng dẫn' })).toBeDisabled();
+  await expect(player.getByAltText('Always With Me trang 2 câu 1')).toHaveAttribute('src', coreMedia(pageIds[1], 'SHEET').replace(/^\/v1\/member/, '/api/piner'));
   await expect.poll(() => mediaReads.some((path) => path.endsWith(`/${pageIds[1]}/media/SHEET`))).toBe(true);
 
-  await player.getByRole('button', { name: 'Trang sau' }).click();
-  await expect(player).toContainText('Trang 3 / 3');
-  await expect(player.getByRole('button', { name: 'Worksheet' })).toBeVisible();
+  await player.getByRole('button', { name: /Trang 3/ }).click();
+  await expect(player.getByRole('button', { name: 'Ẩn hướng dẫn' })).toBeVisible();
 });
