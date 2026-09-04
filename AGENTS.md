@@ -20,6 +20,8 @@ For material continuation intent (`continue`, `triển`, `triển tiếp`, `ok t
 
 Obey the Core Drift Protocol result: `NONE` continues; `SAFE` continues without a forced sync; `CONTRACT` is reconciled by the coding agent in the same work session and the gate is rerun; `DESTRUCTIVE` or genuinely ambiguous state requires human review. Never ask the Founder to reconcile merely because `main` advanced, and never treat pino-web chat context as a substitute for Core registry/checkpoint authority.
 
+For implementation/builder work, the terminal state is `DEV_HANDOFF_READY`: implementation complete, local verification complete, immutable candidate pushed, and exact-head CI requested/proven. Stop there. Authoritative PRE-MAIN audit, final current-main reconcile, `MERGE_READY`, and merge execution are owned downstream by Core `PLT-MERGE`.
+
 ### Cross-Project slice care
 
 Material Web work must identify the coordinating ChatGPT Project with one canonical Project Code: `PRJ-TPP`, `PRJ-PSP`, `PRJ-PNR`, `PRJ-WFM`, or `PRJ-PLT`. Pass it through `--project` or `PINO_PROJECT_CODE`.
@@ -85,6 +87,10 @@ For a material cross-repository feature:
 5. use canonical Core IDs/contracts where the domain is Core-owned;
 6. update app tests/E2E for public/member behavior and direct-server deny/failure cases where applicable;
 7. surface spec/code drift rather than silently choosing one side;
-8. require independent spec ↔ Core/web code ↔ tests review before staging/production readiness.
+8. hand off at `DEV_HANDOFF_READY`; Core `PLT-MERGE` owns current-main reconcile, exact candidate CI, authoritative independent PRE-MAIN review, freshness, and `MERGE_READY`.
+
+## Codex hard limit
+
+Codex is permitted only as the fresh independent PRE-MAIN reviewer launched by the canonical Core audit runner. GPT owns implementation, bug/audit-finding fixes, reconcile/restack/rebase, conflict resolution, evidence repair, merge orchestration, and release preparation. Do not invoke Codex for any of those non-audit activities.
 
 A green build, successful local preview, or merged PR does not itself authorize production deployment.
