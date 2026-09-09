@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
@@ -65,4 +66,40 @@ test("repository records the required external Cloudflare Builds decoupling", ()
     buildBoundary.externalConfigStatus,
     "VERIFIED_NON_PROMOTING",
   );
+});
+function rollbackDecision(input: Record<string, string>): string {
+  return execFileSync(
+    process.execPath,
+    ["scripts/web-production-release-fence.mjs", JSON.stringify(input)],
+    { encoding: "utf8" },
+  ).trim();
+}
+
+const rollbackBase = {
+  oldDeploymentId: "d-old", oldVersion: "v-old", candidateDeploymentId: "",
+  candidateVersion: "v-new", candidateMarker: "run-marker",
+  currentDeploymentId: "d-new", currentVersion: "v-new",
+  currentMarker: "run-marker", previousDeploymentId: "d-old",
+};
+
+test("Web rollback restores only the exact run-owned successor", () => {
+  assert.equal(rollbackDecision(rollbackBase), "RESTORE");
+  assert.equal(rollbackDecision({ ...rollbackBase, currentMarker: "external" }), "REFUSE");
+  assert.equal(rollbackDecision({ ...rollbackBase, previousDeploymentId: "d-external" }), "REFUSE");
+  assert.equal(rollbackDecision({ ...rollbackBase, candidateDeploymentId: "d-new" }), "RESTORE");
+});
+
+test("Web rollback refuses same-version external redeploy and different-version drift", () => {
+  assert.equal(rollbackDecision({ ...rollbackBase, currentVersion: "v-old", currentDeploymentId: "d-old" }), "NOOP");
+  assert.equal(rollbackDecision({ ...rollbackBase, currentVersion: "v-old", currentDeploymentId: "d-external" }), "REFUSE");
+  assert.equal(rollbackDecision({ ...rollbackBase, currentVersion: "v-third" }), "REFUSE");
+});
+test("Web production workflow binds terminal PASS to immutable deployment identity", () => {
+  for (const token of [
+    "old_deployment_id", "candidate_deployment_id", "deployment_marker",
+    "promotion_attempted=1", "main_predeploy", "final_deployments",
+    "PINO_WEB_PRODUCTION_RELEASE:", "web-production-release-fence.mjs",
+  ]) assert.ok(release.includes(token), `missing ${token}`);
+  assert.ok(release.indexOf("promotion_attempted=1") < release.indexOf("WRANGLER_OUTPUT_FILE_PATH=\"$deploy_output\""));
+  assert.match(release, /PASS_ALREADY_ACTIVE[\s\S]*Deployment ID/);
 });
