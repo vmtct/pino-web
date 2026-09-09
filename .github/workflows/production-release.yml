@@ -98,17 +98,38 @@ jobs:
         run: |
           set -euo pipefail
           repo="$GITHUB_REPOSITORY"
+          old_deployment_id=""
           old_version=""
-          serving_changed=0
+          candidate_deployment_id=""
+          deployment_marker=""
+          promotion_attempted=0
+          already_active=0
           comment() { gh issue comment "$ISSUE_NUMBER" --repo "$repo" --body "$1"; }
           rollback() {
-            if [ "$serving_changed" -eq 1 ] && [ -n "$old_version" ]; then
-              npx wrangler versions deploy "${old_version}@100%" --name "$WEB_WORKER" -y >/dev/null 2>&1 || true
-            fi
+            [ "$promotion_attempted" -eq 1 ] || return 0
+            [ -n "$old_deployment_id" ] && [ -n "$old_version" ] && [ -n "${candidate_id:-}" ] && [ -n "$deployment_marker" ] || return 1
+            local state current_deployment current_version current_marker previous_deployment decision after after_version
+            state="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${WEB_WORKER}/deployments" "${auth[@]}" 2>/dev/null)" || return 1
+            current_deployment="$(jq -r '.result.deployments[0].id // empty' <<<"$state")"
+            current_version="$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id // empty' <<<"$state" | head -1)"
+            current_marker="$(jq -r '.result.deployments[0].annotations["workers/message"] // empty' <<<"$state")"
+            previous_deployment="$(jq -r '.result.deployments[1].id // empty' <<<"$state")"
+            decision="$(node scripts/web-production-release-fence.mjs "$(jq -nc --arg oldDeploymentId "$old_deployment_id" --arg oldVersion "$old_version" --arg candidateDeploymentId "$candidate_deployment_id" --arg candidateVersion "$candidate_id" --arg candidateMarker "$deployment_marker" --arg currentDeploymentId "$current_deployment" --arg currentVersion "$current_version" --arg currentMarker "$current_marker" --arg previousDeploymentId "$previous_deployment" '{oldDeploymentId:$oldDeploymentId,oldVersion:$oldVersion,candidateDeploymentId:$candidateDeploymentId,candidateVersion:$candidateVersion,candidateMarker:$candidateMarker,currentDeploymentId:$currentDeploymentId,currentVersion:$currentVersion,currentMarker:$currentMarker,previousDeploymentId:$previousDeploymentId}')")" || return 1
+            case "$decision" in
+              RESTORE) npx wrangler versions deploy "${old_version}@100%" --name "$WEB_WORKER" -y >/dev/null 2>&1 || return 1 ;;
+              NOOP) ;;
+              *) return 1 ;;
+            esac
+            after="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${WEB_WORKER}/deployments" "${auth[@]}" 2>/dev/null)" || return 1
+            after_version="$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id // empty' <<<"$after" | head -1)"
+            [ "$after_version" = "$old_version" ]
           }
           fail() {
-            rollback
-            comment "WEB_PRODUCTION_RELEASE: **FAIL_SAFE**\n\n$1\n\nRollback was attempted if traffic changed. No route, binding, secret, D1, or application-data mutation was authorized."
+            local message="$1" rollback_note="No candidate traffic promotion had started."
+            if [ "$promotion_attempted" -eq 1 ]; then
+              if rollback; then rollback_note="Prior Web version was restored or exact pinned baseline remained active."; else rollback_note="Rollback was refused or failed because exact failed-promotion ownership could not be proven; no external deployment was overwritten."; fi
+            fi
+            comment "WEB_PRODUCTION_RELEASE: **FAIL_SAFE**\n\n${message}\n\n${rollback_note}\n\nNo route, binding, secret, D1, or application-data mutation was authorized."
             exit 1
           }
 
@@ -129,10 +150,7 @@ jobs:
           git merge-base --is-ancestor "$current_sha" "$WEB_SHA" \
             || fail "Current production SHA is not an ancestor of the approved main SHA; forward-only release is required."
 
-          if [ "$current_sha" = "$WEB_SHA" ]; then
-            comment "WEB_PRODUCTION_RELEASE: **PASS_ALREADY_ACTIVE**\n\nProduction already serves exact approved SHA ${WEB_SHA}. No mutation was attempted."
-            exit 0
-          fi
+          if [ "$current_sha" = "$WEB_SHA" ]; then already_active=1; fi
 
           git diff --quiet "$current_sha" "$WEB_SHA" -- wrangler.toml wrangler.piner.production.toml \
             || fail "Candidate changes production Wrangler configuration; separate configuration authority is required."
@@ -141,8 +159,9 @@ jobs:
           auth=(-H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H "Content-Type: application/json")
           deployments="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${WEB_WORKER}/deployments" "${auth[@]}")" \
             || fail "Cannot inspect current production deployment."
+          old_deployment_id="$(jq -r '.result.deployments[0].id // empty' <<<"$deployments")"
           old_version="$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id // empty' <<<"$deployments" | head -1)"
-          [ -n "$old_version" ] || fail "Cannot resolve one active 100% version before release."
+          [ -n "$old_deployment_id" ] && [ -n "$old_version" ] || fail "Cannot resolve one active 100% deployment/version before release."
 
           versions="$(npx wrangler versions list --name "$WEB_WORKER" --json)" \
             || fail "Cannot list immutable candidate versions."
@@ -162,15 +181,42 @@ jobs:
           [ "$old_bindings" = "$new_bindings" ] \
             || fail "Candidate changes production bindings/vars; separate configuration authority is required."
 
-          npx wrangler versions deploy --name "$WEB_WORKER" --version-tag "${WEB_SHA}@100%" \
-            --message "pino-web production ${WEB_SHA}" -y >/dev/null \
-            || fail "Exact tagged candidate promotion failed."
-          serving_changed=1
+          if [ "$already_active" -eq 1 ]; then
+            [ "$old_version" = "$candidate_id" ] || fail "Build identity says approved SHA is active but immutable Worker version does not match candidate."
+            final_main="$(gh api "/repos/${repo}/git/ref/heads/main" --jq '.object.sha')" || fail "Cannot verify main before already-active PASS."
+            [ "$final_main" = "$WEB_SHA" ] || fail "main moved before already-active PASS."
+            final="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${WEB_WORKER}/deployments" "${auth[@]}")" || fail "Cannot verify deployment before already-active PASS."
+            [ "$(jq -r '.result.deployments[0].id // empty' <<<"$final")" = "$old_deployment_id" ] || fail "Web deployment identity changed before already-active PASS."
+            [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id // empty' <<<"$final" | head -1)" = "$candidate_id" ] || fail "Approved Web candidate stopped serving before already-active PASS."
+            comment "WEB_PRODUCTION_RELEASE: **PASS_ALREADY_ACTIVE**\n\n- Web source: ${WEB_SHA}\n- Worker version: ${candidate_id}\n- Deployment ID: ${old_deployment_id}\n- Traffic: already 100%\n- Exact main + immutable deployment: terminally reverified\n\nNo mutation was attempted."
+            exit 0
+          fi
+
+          deployments_predeploy="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${WEB_WORKER}/deployments" "${auth[@]}")" || fail "Cannot re-read Web deployment immediately before promotion."
+          [ "$(jq -r '.result.deployments[0].id // empty' <<<"$deployments_predeploy")" = "$old_deployment_id" ] || fail "Web deployment drifted after preflight and before promotion."
+          [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id // empty' <<<"$deployments_predeploy" | head -1)" = "$old_version" ] || fail "Web version drifted after preflight and before promotion."
+          main_predeploy="$(gh api "/repos/${repo}/git/ref/heads/main" --jq '.object.sha')" || fail "Cannot re-read main immediately before promotion."
+          [ "$main_predeploy" = "$WEB_SHA" ] || fail "main moved immediately before Web promotion."
+
+          deployment_nonce="$(cat /proc/sys/kernel/random/uuid)"
+          [[ "$deployment_nonce" =~ ^[0-9a-f-]{36}$ ]] || fail "Cannot create Web deployment proof nonce."
+          deployment_marker="PINO_WEB_PRODUCTION_RELEASE:${WEB_SHA}:${GITHUB_RUN_ID}:${GITHUB_RUN_ATTEMPT}:${deployment_nonce}"
+          promotion_attempted=1
+          deploy_output="$RUNNER_TEMP/web-version-deploy.ndjson"; rm -f "$deploy_output"
+          set +e
+          WRANGLER_OUTPUT_FILE_PATH="$deploy_output" npx wrangler versions deploy --name "$WEB_WORKER" --version-tag "${WEB_SHA}@100%" --message "$deployment_marker" -y >/dev/null
+          deploy_rc=$?
+          set -e
+          if [ -s "$deploy_output" ]; then candidate_deployment_id="$(jq -r 'select(.type == "version-deploy") | .deployment_id // empty' "$deploy_output" | tail -1)"; fi
+          [ "$deploy_rc" -eq 0 ] || fail "Exact tagged candidate promotion failed after traffic mutation may have started."
+          [ -n "$candidate_deployment_id" ] || fail "Web promotion succeeded but no immutable deployment ID was returned."
 
           current="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${WEB_WORKER}/deployments" "${auth[@]}")" \
             || fail "Cannot verify post-deploy traffic."
+          active_deployment="$(jq -r '.result.deployments[0].id // empty' <<<"$current")"
+          active_marker="$(jq -r '.result.deployments[0].annotations["workers/message"] // empty' <<<"$current")"
           active="$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id // empty' <<<"$current" | head -1)"
-          [ "$active" = "$candidate_id" ] || fail "Approved candidate is not the active 100% version."
+          [ "$active_deployment" = "$candidate_deployment_id" ] && [ "$active_marker" = "$deployment_marker" ] && [ "$active" = "$candidate_id" ] || fail "Exact marked Web deployment is not active at 100%."
 
           deployed_info="$(curl -fsS https://pino-web.minhtri-van42.workers.dev/build-info.json)" \
             || fail "Cannot verify deployed Worker identity."
@@ -189,6 +235,10 @@ jobs:
             || fail "Cannot verify main after promotion."
           [ "$final_main" = "$WEB_SHA" ] \
             || fail "main moved during promotion; rollback to prior 100% version."
+          final_deployments="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${WEB_WORKER}/deployments" "${auth[@]}")" || fail "Cannot verify immutable Web deployment before terminal PASS."
+          [ "$(jq -r '.result.deployments[0].id // empty' <<<"$final_deployments")" = "$candidate_deployment_id" ] || fail "Web deployment identity changed before terminal PASS."
+          [ "$(jq -r '.result.deployments[0].annotations["workers/message"] // empty' <<<"$final_deployments")" = "$deployment_marker" ] || fail "Web deployment marker changed before terminal PASS."
+          [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id // empty' <<<"$final_deployments" | head -1)" = "$candidate_id" ] || fail "Web candidate stopped serving before terminal PASS."
 
-          serving_changed=0
-          comment "WEB_PRODUCTION_RELEASE: **PASS**\n\n- Web source: ${WEB_SHA}\n- Worker version: ${candidate_id}\n- Traffic: 100%\n- CI: successful main run required\n- Provenance: merged PR into main required\n- Candidate: immutable SHA-tagged Workers Build\n- Production config/bindings: unchanged\n- Post-deploy smoke: PASS\n\nNo route, binding, secret, D1, or application-data mutation was performed."
+          promotion_attempted=0
+          comment "WEB_PRODUCTION_RELEASE: **PASS**\n\n- Web source: ${WEB_SHA}\n- Worker version: ${candidate_id}\n- Deployment ID: ${candidate_deployment_id}\n- Traffic: 100%\n- CI: successful main run required\n- Provenance: merged PR into main required\n- Candidate: immutable SHA-tagged Workers Build\n- Production config/bindings: unchanged\n- Post-deploy smoke: PASS\n\nNo route, binding, secret, D1, or application-data mutation was performed."
