@@ -33,7 +33,7 @@ test("production release requires Founder exact-SHA provenance and explicit conf
   assert.match(release, /WEB_SHA:/);
   assert.match(release, /CONFIRM:\[\[:space:\]\]\*RELEASE_PRODUCTION/);
   assert.match(release, /merge_commit_sha == \$sha/);
-  assert.match(release, /No successful completed CI run exists/);
+  assert.match(release, /Newest same-SHA Web CI attempt is not terminal success/);
   assert.match(release, /Workers Builds: pino-web/);
   assert.match(release, new RegExp(boundedReleaseTest.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.doesNotMatch(release, /bun run test/);
@@ -106,10 +106,11 @@ test("Web production workflow binds terminal PASS to immutable deployment identi
     "PINO_WEB_PRODUCTION_RELEASE:", "web-production-release-fence.mjs",
   ]) assert.ok(release.includes(token), `missing ${token}`);
   assert.ok(release.indexOf("promotion_attempted=1") < release.indexOf("WRANGLER_OUTPUT_FILE_PATH=\"$deploy_output\""));
-  assert.match(release, /PASS_ALREADY_ACTIVE[\s\S]*Deployment ID/);
+  assert.match(release, /retroactive production authorization is forbidden/);
+  assert.doesNotMatch(release, /PASS_ALREADY_ACTIVE/);
 });
 
-test("Web hard-kill recovery is durable and route evidence is replayed on already-active retries", () => {
+test("Web hard-kill recovery is durable and terminal ingress proves immutable static assets", () => {
   const watchdog = readFileSync(".github/workflows/production-release-recovery-watchdog.yml", "utf8");
   const recovery = readFileSync("scripts/recover-worker-promotion.sh", "utf8");
   const armedAt = release.indexOf("PINO_WEB_PRODUCTION_RELEASE: **RECOVERY_ARMED**");
@@ -122,12 +123,20 @@ test("Web hard-kill recovery is durable and route evidence is replayed on alread
   assert.match(recovery, /current_marker/);
   assert.match(recovery, /previous_deployment/);
   assert.match(recovery, /REFUSE_OWNERSHIP/);
-  const alreadyAt = release.indexOf("PASS_ALREADY_ACTIVE");
-  assert.ok(alreadyAt > 0);
-  const prior = release.slice(Math.max(0, alreadyAt - 5000), alreadyAt);
-  assert.match(prior, /api\/pino-core\/open-studio\/sessions/);
-  assert.match(prior, /pinohouse\.art\/artchitect/);
-  assert.match(prior, /www\.pinohouse\.art\/little-piner/);
+  assert.ok(release.includes("pinohouse.art/_next/static/*"));
+  assert.ok(release.includes("www.pinohouse.art/_next/static/*"));
+  assert.match(release, /exposed no immutable Next static asset reference/);
+  assert.match(release, /immutable Next static asset routes: PASS/);
+});
+
+test("Web release immutably joins build execution, candidate version, and non-promoting trigger", () => {
+  assert.match(release, /latest_build_check/);
+  assert.match(release, /external_id/);
+  assert.match(release, /build_uuid==\$build/);
+  assert.match(release, /build_trigger_metadata\.commit_hash==\$sha/);
+  assert.match(release, /builds\/workers\/\$\{worker_tag\}\/triggers/);
+  assert.match(release, /canonical non-serving candidate command/);
+  assert.match(release, /retroactive production authorization is forbidden/);
 });
 
 test("production Web source no longer points Open Studio at dev Core", () => {

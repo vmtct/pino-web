@@ -188,6 +188,7 @@ export async function proxyCoreSessions(request: Request, env: PinoCorePublicEnv
           "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
           "Access-Control-Allow-Origin": new URL(request.url).origin,
           "X-PINO-Schedule-Source": "core",
+          ...(upstream.headers.get("X-PINO-Core-Version") ? { "X-PINO-Core-Version": upstream.headers.get("X-PINO-Core-Version")! } : {}),
         },
       });
     }
@@ -201,6 +202,7 @@ export async function proxyCoreSessions(request: Request, env: PinoCorePublicEnv
         "Content-Type": upstream.headers.get("Content-Type") || "application/json",
         "Cache-Control": "no-store",
         "Access-Control-Allow-Origin": new URL(request.url).origin,
+        ...(upstream.headers.get("X-PINO-Core-Version") ? { "X-PINO-Core-Version": upstream.headers.get("X-PINO-Core-Version")! } : {}),
       },
     });
   } catch {
