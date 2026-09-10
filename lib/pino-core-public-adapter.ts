@@ -1,13 +1,66 @@
-import { getPublicSessions } from "./open-studio-public";
-
-const DEFAULT_CORE_BASE_URL = "https://pino-core-dev.minhtri-van42.workers.dev";
+import { getPublicSessions } from "./open-studio-public.ts";
 
 export type PinoCorePublicEnv = {
-  PINO_CORE_BASE_URL?: string;
+  PINO_CORE_PUBLIC?: { fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> };
   PINO_CORE_REGISTRATION_ENABLED?: string;
 };
 
 type Fetcher = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+
+type CoreListing = {
+  id: string;
+  experienceType?: string;
+  session: { id: string; localDate: string; scheduledStartsAt: string; scheduledEndsAt: string };
+  center: { id: string; key: string; displayName: string; timeZone: string };
+  path: { id: string; code: string; displayName: string };
+  syllabus: { id: string; title: string };
+  bookingWindow: { opensAt: string | null; closesAt: string | null; phase: string };
+  bookable: boolean;
+};
+
+const canonicalSession = (listing: CoreListing) => ({
+  id: listing.id,
+  path: listing.path,
+  startsAt: listing.session.scheduledStartsAt,
+  endsAt: listing.session.scheduledEndsAt,
+  bookingClosesAt: listing.bookingWindow.closesAt || listing.session.scheduledStartsAt,
+  timezone: listing.center.timeZone,
+  availability: { remainingSeats: null, isFull: !listing.bookable },
+  access: { kind: "public-open-studio", trialPremium: false },
+  syllabus: {
+    id: listing.syllabus.id,
+    title: listing.syllabus.title,
+    shortDescription: null,
+    publicDescription: null,
+    skillSummary: null,
+    ageMin: null,
+    ageMax: null,
+    thumbnailUrl: null,
+    coverUrl: null,
+  },
+});
+
+const canonicalAcquisition = (body: unknown) => {
+  if (!body || typeof body !== "object") throw new Error("INVALID_REGISTRATION_BODY");
+  const input = body as Record<string, unknown>;
+  for (const key of ["sessionId", "contactName", "phone", "childName", "childDateOfBirth"]) {
+    if (typeof input[key] !== "string" || !(input[key] as string).trim()) throw new Error(`INVALID_${key}`);
+  }
+  const dob = (input.childDateOfBirth as string).trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dob);
+  if (!match) throw new Error("INVALID_childDateOfBirth");
+  return {
+    listingId: (input.sessionId as string).trim(),
+    displayName: (input.childName as string).trim(),
+    birthYear: Number(match[1]),
+    birthMonth: Number(match[2]),
+    birthDay: Number(match[3]),
+    birthPrecision: "FULL_DATE",
+    guardianDisplayName: (input.contactName as string).trim(),
+    contactType: "PHONE",
+    contactValue: (input.phone as string).trim(),
+  };
+};
 
 type LegacySession = {
   id?: string;
@@ -39,8 +92,6 @@ const disabledResponse = (request: Request) => new Response(JSON.stringify({
 }), { status: 503, headers: responseHeaders(request, "no-store") });
 
 export const registrationEnabled = (env: PinoCorePublicEnv) => env.PINO_CORE_REGISTRATION_ENABLED === "true";
-
-const baseUrl = (env: PinoCorePublicEnv) => (env.PINO_CORE_BASE_URL || DEFAULT_CORE_BASE_URL).replace(/\/$/, "");
 
 export const registrationCapability = (request: Request, env: PinoCorePublicEnv) => new Response(JSON.stringify({
   registrationEnabled: registrationEnabled(env),
@@ -118,15 +169,19 @@ async function legacyScheduleFallback(request: Request, env: PinoCorePublicEnv) 
   }
 }
 
-export async function proxyCoreSessions(request: Request, env: PinoCorePublicEnv, fetcher: Fetcher = fetch) {
+export async function proxyCoreSessions(request: Request, env: PinoCorePublicEnv, fetcher?: Fetcher) {
   try {
-    const upstream = await fetcher(`${baseUrl(env)}/v1/open-studio/sessions`, {
+    const upstreamFetch = fetcher ?? env.PINO_CORE_PUBLIC?.fetch.bind(env.PINO_CORE_PUBLIC);
+    if (!upstreamFetch) throw new Error("PINO_CORE_PUBLIC service binding unavailable");
+    const upstream = await upstreamFetch("https://pino-core.internal/v1/open-studio/listings", {
       headers: { Accept: "application/json" },
-      cf: { cacheEverything: true, cacheTtl: 60 },
-    } as RequestInit);
+    });
     const body = await upstream.text();
     if (upstream.ok) {
-      return new Response(body, {
+      const decoded = JSON.parse(body) as { data?: CoreListing[] };
+      if (!Array.isArray(decoded.data)) throw new Error("INVALID_CORE_LISTING_RESPONSE");
+      const responseBody = JSON.stringify({ sessions: decoded.data.map(canonicalSession) });
+      return new Response(responseBody, {
         status: upstream.status,
         headers: {
           "Content-Type": upstream.headers.get("Content-Type") || "application/json",
@@ -158,9 +213,8 @@ export async function proxyCoreSessions(request: Request, env: PinoCorePublicEnv
   }
 }
 
-export async function proxyCoreRegistration(request: Request, env: PinoCorePublicEnv, fetcher: Fetcher = fetch) {
+export async function proxyCoreRegistration(request: Request, env: PinoCorePublicEnv, fetcher?: Fetcher) {
   // This check intentionally happens before the body is read or any upstream call is made.
-  // Production remains safe while PINO_CORE_BASE_URL points at pino-core-dev.
   if (!registrationEnabled(env)) return disabledResponse(request);
 
   const idempotencyKey = request.headers.get("Idempotency-Key")?.trim();
@@ -172,15 +226,17 @@ export async function proxyCoreRegistration(request: Request, env: PinoCorePubli
   }
 
   try {
-    const body = await request.text();
-    const upstream = await fetcher(`${baseUrl(env)}/v1/open-studio/registrations`, {
+    const body = canonicalAcquisition(await request.json());
+    const upstreamFetch = fetcher ?? env.PINO_CORE_PUBLIC?.fetch.bind(env.PINO_CORE_PUBLIC);
+    if (!upstreamFetch) throw new Error("PINO_CORE_PUBLIC service binding unavailable");
+    const upstream = await upstreamFetch("https://pino-core.internal/v1/open-studio/public-acquisitions", {
       method: "POST",
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
         "Idempotency-Key": idempotencyKey,
       },
-      body,
+      body: JSON.stringify(body),
     });
     return new Response(await upstream.text(), {
       status: upstream.status,

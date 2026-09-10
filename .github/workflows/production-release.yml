@@ -1,4 +1,5 @@
 name: Web Production Release
+run-name: ${{ github.event.issue.user.login == 'vmtct' && format('Web production release #{0} @ {1}', github.event.issue.number, github.sha) || format('IGNORED Web production release #{0} @ {1}', github.event.issue.number, github.sha) }}
 
 on:
   issues:
@@ -26,6 +27,7 @@ jobs:
       ISSUE_BODY: ${{ github.event.issue.body }}
       WEB_WORKER: pino-web
       CF_ACCOUNT_ID: 952c3c8a236f8e4cbcf6ee10b86ad70c
+      ZONE_ID: 48b2809afabf3d65d30f80f346126213
 
     steps:
       - name: Validate Founder release request
@@ -33,6 +35,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          AUTH_BODY_HASH="$(printf '%s' "$ISSUE_BODY" | sha256sum | cut -d' ' -f1)"
+          echo "AUTH_BODY_HASH=$AUTH_BODY_HASH" >> "$GITHUB_ENV"
+          [ "$GITHUB_RUN_ATTEMPT" = "1" ] || { echo "Production release authority is one-shot; re-authorize with a fresh issue." >&2; exit 1; }
           repo="$GITHUB_REPOSITORY"
           fail_request() {
             gh issue comment "$ISSUE_NUMBER" --repo "$repo" --body "WEB_PRODUCTION_RELEASE: **REJECTED**\n\n$1\n\nNo production mutation was attempted."
@@ -129,13 +134,14 @@ jobs:
             if [ "$promotion_attempted" -eq 1 ]; then
               if rollback; then rollback_note="Prior Web version was restored or exact pinned baseline remained active."; else rollback_note="Rollback was refused or failed because exact failed-promotion ownership could not be proven; no external deployment was overwritten."; fi
             fi
-            comment "WEB_PRODUCTION_RELEASE: **FAIL_SAFE**\n\n${message}\n\n${rollback_note}\n\nNo route, binding, secret, D1, or application-data mutation was authorized."
+            comment "WEB_PRODUCTION_RELEASE: **FAIL_SAFE**\n\nWorkflow run: ${GITHUB_RUN_ID}\nWorkflow attempt: ${GITHUB_RUN_ATTEMPT}\n\n${message}\n\n${rollback_note}\n\nNo route, binding, secret, D1, or application-data mutation was authorized."
             exit 1
           }
 
           [ -n "${CLOUDFLARE_API_TOKEN:-}" ] \
             || fail "CLOUDFLARE_API_TOKEN is unavailable. No Cloudflare mutation was attempted."
 
+          bash scripts/assert-live-issue-authority.sh "$repo" "$ISSUE_NUMBER" "[GPT] Web production release" "$AUTH_BODY_HASH"
           current_main="$(gh api "/repos/${repo}/git/ref/heads/main" --jq '.object.sha')" \
             || fail "Cannot re-check current main HEAD."
           [ "$current_main" = "$WEB_SHA" ] \
@@ -152,8 +158,10 @@ jobs:
 
           if [ "$current_sha" = "$WEB_SHA" ]; then already_active=1; fi
 
-          git diff --quiet "$current_sha" "$WEB_SHA" -- wrangler.toml wrangler.piner.production.toml \
-            || fail "Candidate changes production Wrangler configuration; separate configuration authority is required."
+          config_diff="$RUNNER_TEMP/web-production-config.diff"
+          git diff --unified=0 "$current_sha" "$WEB_SHA" -- wrangler.toml wrangler.piner.production.toml > "$config_diff" || true
+          unexpected_config="$(grep -E '^[+-][^+-]' "$config_diff" | grep -Ev 'PINO_CORE_BASE_URL|Keep false while production pino-web reads from pino-core-dev|explicitly approved production pino-core cutover|^[-+]\[\[services\]\]$|^[-+]binding = "PINO_CORE_PUBLIC"$|^[-+]service = "pino-core"$|^[-+]entrypoint = "PublicOpenStudioControlPlane"$' || true)"
+          [ -z "$unexpected_config" ] || fail "Candidate contains an unapproved production Wrangler config delta."
 
           api="https://api.cloudflare.com/client/v4"
           auth=(-H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H "Content-Type: application/json")
@@ -176,10 +184,14 @@ jobs:
             || fail "Cannot inspect active version resources."
           candidate_detail="$(npx wrangler versions view "$candidate_id" --name "$WEB_WORKER" --json)" \
             || fail "Cannot inspect candidate resources."
-          old_bindings="$(jq -c '[.resources.bindings[]? | {name,type,text:(.text // null)}] | sort_by(.name)' <<<"$old_detail")"
-          new_bindings="$(jq -c '[.resources.bindings[]? | {name,type,text:(.text // null)}] | sort_by(.name)' <<<"$candidate_detail")"
+          jq -e '[.resources.bindings[]? | select(.name=="PINO_CORE_PUBLIC" and .type=="service" and .service=="pino-core" and .entrypoint=="PublicOpenStudioControlPlane")] | length==1' <<<"$candidate_detail" >/dev/null \
+            || fail "Candidate lacks exact PINO_CORE_PUBLIC -> pino-core/PublicOpenStudioControlPlane service binding."
+          jq -e '[.resources.bindings[]? | select(.name=="PINO_CORE_BASE_URL")] | length==0' <<<"$candidate_detail" >/dev/null \
+            || fail "Candidate retains forbidden dev-Core URL binding."
+          old_bindings="$(jq -c '[.resources.bindings[]? | select(.name!="PINO_CORE_BASE_URL" and .name!="PINO_CORE_PUBLIC") | {name,type,text:(.text // null),service:(.service // null),entrypoint:(.entrypoint // null)}] | sort_by(.name)' <<<"$old_detail")"
+          new_bindings="$(jq -c '[.resources.bindings[]? | select(.name!="PINO_CORE_BASE_URL" and .name!="PINO_CORE_PUBLIC") | {name,type,text:(.text // null),service:(.service // null),entrypoint:(.entrypoint // null)}] | sort_by(.name)' <<<"$candidate_detail")"
           [ "$old_bindings" = "$new_bindings" ] \
-            || fail "Candidate changes production bindings/vars; separate configuration authority is required."
+            || fail "Candidate changes production bindings outside the one approved Core service-binding cutover."
 
           if [ "$already_active" -eq 1 ]; then
             [ "$old_version" = "$candidate_id" ] || fail "Build identity says approved SHA is active but immutable Worker version does not match candidate."
@@ -188,7 +200,21 @@ jobs:
             final="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${WEB_WORKER}/deployments" "${auth[@]}")" || fail "Cannot verify deployment before already-active PASS."
             [ "$(jq -r '.result.deployments[0].id // empty' <<<"$final")" = "$old_deployment_id" ] || fail "Web deployment identity changed before already-active PASS."
             [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id // empty' <<<"$final" | head -1)" = "$candidate_id" ] || fail "Approved Web candidate stopped serving before already-active PASS."
-            comment "WEB_PRODUCTION_RELEASE: **PASS_ALREADY_ACTIVE**\n\n- Web source: ${WEB_SHA}\n- Worker version: ${candidate_id}\n- Deployment ID: ${old_deployment_id}\n- Traffic: already 100%\n- Exact main + immutable deployment: terminally reverified\n\nNo mutation was attempted."
+            bash scripts/assert-live-issue-authority.sh "$repo" "$ISSUE_NUMBER" "[GPT] Web production release" "$AUTH_BODY_HASH"
+            status="$(curl -sS -o /tmp/already-core-sessions.json -D /tmp/already-core-sessions.headers -w '%{http_code}' https://pino-web.minhtri-van42.workers.dev/api/pino-core/open-studio/sessions)"
+            [ "$status" = "200" ] || fail "Already-active Web->Core Open Studio proxy failed with HTTP ${status}."
+            jq -e '.sessions | type == "array"' /tmp/already-core-sessions.json >/dev/null || fail "Already-active Web->Core proxy returned invalid payload."
+            grep -Eqi '^X-PINO-Schedule-Source:[[:space:]]*core[[:space:]]*$' /tmp/already-core-sessions.headers || fail "Already-active Open Studio proxy did not prove canonical Core source."
+            routes="$(curl -fsS "${api}/zones/${ZONE_ID}/workers/routes" "${auth[@]}")" || fail "Cannot inspect already-active Web routes."
+            for pattern in 'pinohouse.art/artchitect*' 'www.pinohouse.art/artchitect*' 'pinohouse.art/little-piner*' 'www.pinohouse.art/little-piner*'; do
+              jq -e --arg p "$pattern" --arg s "$WEB_WORKER" '[.result[]? | select(.pattern==$p and .script==$s)] | length==1' <<<"$routes" >/dev/null || fail "Required public route ${pattern} is not attached exactly once to pino-web."
+            done
+            for url in 'https://pinohouse.art/artchitect' 'https://www.pinohouse.art/artchitect' 'https://pinohouse.art/little-piner' 'https://www.pinohouse.art/little-piner'; do
+              status="$(curl -LsS --max-redirs 3 -o /tmp/already-public-route.html -w '%{http_code}' "$url")"
+              [ "$status" = "200" ] || fail "Already-active public route ${url} failed with HTTP ${status}."
+              grep -q 'PINO' /tmp/already-public-route.html || fail "Already-active public route ${url} did not return PINO content."
+            done
+            comment "WEB_PRODUCTION_RELEASE: **PASS_ALREADY_ACTIVE**\n\n- Web source: ${WEB_SHA}\n- Workflow run: ${GITHUB_RUN_ID}\n- Workflow attempt: ${GITHUB_RUN_ATTEMPT}\n- Worker version: ${candidate_id}\n- Deployment ID: ${old_deployment_id}\n- Traffic: already 100%\n- Exact main + immutable deployment: terminally reverified\n\nNo mutation was attempted."
             exit 0
           fi
 
@@ -201,6 +227,8 @@ jobs:
           deployment_nonce="$(cat /proc/sys/kernel/random/uuid)"
           [[ "$deployment_nonce" =~ ^[0-9a-f-]{36}$ ]] || fail "Cannot create Web deployment proof nonce."
           deployment_marker="PINO_WEB_PRODUCTION_RELEASE:${WEB_SHA}:${GITHUB_RUN_ID}:${GITHUB_RUN_ATTEMPT}:${deployment_nonce}"
+          recovery_body="PINO_WEB_PRODUCTION_RELEASE: **RECOVERY_ARMED**\n\nWorkflow run: ${GITHUB_RUN_ID}\nWorkflow attempt: ${GITHUB_RUN_ATTEMPT}\nSource SHA: ${WEB_SHA}\nOld deployment ID: ${old_deployment_id}\nOld version ID: ${old_version}\nCandidate version ID: ${candidate_id}\nDeployment marker: ${deployment_marker}\n\nIndependent recovery identity persisted before traffic mutation."
+          comment "$recovery_body" >/dev/null || fail "Could not persist production traffic recovery identity before promotion."
           promotion_attempted=1
           deploy_output="$RUNNER_TEMP/web-version-deploy.ndjson"; rm -f "$deploy_output"
           set +e
@@ -226,10 +254,20 @@ jobs:
 
           status="$(curl -sS -o /tmp/home.html -w '%{http_code}' https://pino-web.minhtri-van42.workers.dev/)"
           [ "$status" = "200" ] || fail "Production root smoke failed with HTTP ${status}."
-          status="$(curl -sS -o /tmp/sessions.json -w '%{http_code}' https://pino-web.minhtri-van42.workers.dev/api/os-sessions)"
-          [ "$status" = "200" ] || fail "Production Open Studio smoke failed with HTTP ${status}."
-          jq -e '.sessions | type == "array"' /tmp/sessions.json >/dev/null \
-            || fail "Production Open Studio smoke returned an invalid payload."
+          status="$(curl -sS -o /tmp/core-sessions.json -D /tmp/core-sessions.headers -w '%{http_code}' https://pino-web.minhtri-van42.workers.dev/api/pino-core/open-studio/sessions)"
+          [ "$status" = "200" ] || fail "Production Web->Core Open Studio proxy failed with HTTP ${status}."
+          jq -e '.sessions | type == "array"' /tmp/core-sessions.json >/dev/null || fail "Production Web->Core Open Studio proxy returned invalid payload."
+          grep -Eqi '^X-PINO-Schedule-Source:[[:space:]]*core[[:space:]]*$' /tmp/core-sessions.headers || fail "Production Open Studio proxy did not prove canonical Core source."
+
+          routes="$(curl -fsS "${api}/zones/${ZONE_ID}/workers/routes" "${auth[@]}")" || fail "Cannot inspect production Web routes."
+          for pattern in 'pinohouse.art/artchitect*' 'www.pinohouse.art/artchitect*' 'pinohouse.art/little-piner*' 'www.pinohouse.art/little-piner*'; do
+            jq -e --arg p "$pattern" --arg s "$WEB_WORKER" '[.result[]? | select(.pattern==$p and .script==$s)] | length==1' <<<"$routes" >/dev/null || fail "Required public route ${pattern} is not attached exactly once to pino-web."
+          done
+          for url in 'https://pinohouse.art/artchitect' 'https://www.pinohouse.art/artchitect' 'https://pinohouse.art/little-piner' 'https://www.pinohouse.art/little-piner'; do
+            status="$(curl -LsS --max-redirs 3 -o /tmp/public-route.html -w '%{http_code}' "$url")"
+            [ "$status" = "200" ] || fail "Public production route ${url} failed with HTTP ${status}."
+            grep -q 'PINO' /tmp/public-route.html || fail "Public production route ${url} did not return PINO content."
+          done
 
           final_main="$(gh api "/repos/${repo}/git/ref/heads/main" --jq '.object.sha')" \
             || fail "Cannot verify main after promotion."
@@ -240,5 +278,6 @@ jobs:
           [ "$(jq -r '.result.deployments[0].annotations["workers/message"] // empty' <<<"$final_deployments")" = "$deployment_marker" ] || fail "Web deployment marker changed before terminal PASS."
           [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id // empty' <<<"$final_deployments" | head -1)" = "$candidate_id" ] || fail "Web candidate stopped serving before terminal PASS."
 
+          bash scripts/assert-live-issue-authority.sh "$repo" "$ISSUE_NUMBER" "[GPT] Web production release" "$AUTH_BODY_HASH"
           promotion_attempted=0
-          comment "WEB_PRODUCTION_RELEASE: **PASS**\n\n- Web source: ${WEB_SHA}\n- Worker version: ${candidate_id}\n- Deployment ID: ${candidate_deployment_id}\n- Traffic: 100%\n- CI: successful main run required\n- Provenance: merged PR into main required\n- Candidate: immutable SHA-tagged Workers Build\n- Production config/bindings: unchanged\n- Post-deploy smoke: PASS\n\nNo route, binding, secret, D1, or application-data mutation was performed."
+          comment "WEB_PRODUCTION_RELEASE: **PASS**\n\n- Web source: ${WEB_SHA}\n- Workflow run: ${GITHUB_RUN_ID}\n- Workflow attempt: ${GITHUB_RUN_ATTEMPT}\n- Worker version: ${candidate_id}\n- Deployment ID: ${candidate_deployment_id}\n- Traffic: 100%\n- CI: successful main run required\n- Provenance: merged PR into main required\n- Candidate: immutable SHA-tagged Workers Build\n- Production config: exact Core service-binding cutover only\n- Web->Core production Open Studio proxy: PASS\n- pinohouse.art/www Artchitect + Little Piner routed ingress: PASS\n\nNo route, binding, secret, D1, or application-data mutation was performed."

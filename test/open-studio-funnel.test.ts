@@ -115,18 +115,32 @@ test("20. Disabled POST never reads or forwards PII upstream", async () => {
 test("21. Existing homepage remains present and links to Open Studio", async () => {
   const homepage = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   const components = await readFile(new URL("../app/components/public-site.tsx", import.meta.url), "utf8");
-  assert.match(homepage, /<PrimaryCta/);
+  assert.match(homepage, /href="\/open-studio"/);
   assert.match(components, /href = "\/open-studio"/);
 });
-test("22. Existing schedule adapter still proxies canonical GET", async () => {
+test("22. Production schedule adapter maps the canonical Core listing contract", async () => {
   let requested = "";
-  const response = await proxyCoreSessions(new Request("https://pinohouse.art/api/pino-core/open-studio/sessions"), { PINO_CORE_BASE_URL: "https://core.example" }, async (input) => {
+  const response = await proxyCoreSessions(new Request("https://pinohouse.art/api/pino-core/open-studio/sessions"), {}, async (input) => {
     requested = String(input);
-    return new Response(JSON.stringify({ sessions: [makeSession()] }), { status: 200, headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ data: [{
+      id: "listing-1",
+      experienceType: "ART",
+      session: { id: "session-1", localDate: "2026-08-15", scheduledStartsAt: "2026-08-15T02:00:00.000Z", scheduledEndsAt: "2026-08-15T03:00:00.000Z" },
+      center: { id: "center-1", key: "can-tho", displayName: "Cần Thơ", timeZone: "Asia/Ho_Chi_Minh" },
+      path: { id: "path-1", code: "ART", displayName: "Art" },
+      syllabus: { id: "syllabus-1", title: "Những khu vườn biết kể chuyện" },
+      bookingWindow: { opensAt: null, closesAt: null, phase: "OPEN" },
+      bookable: true,
+    }] }), { status: 200, headers: { "Content-Type": "application/json" } });
   });
-  assert.equal(requested, "https://core.example/v1/open-studio/sessions");
+  assert.equal(requested, "https://pino-core.internal/v1/open-studio/listings");
   assert.equal(response.status, 200);
-  assert.equal((await response.json() as { sessions: CoreSession[] }).sessions.length, 1);
+  assert.equal(response.headers.get("X-PINO-Schedule-Source"), "core");
+  const session = (await response.json() as { sessions: CoreSession[] }).sessions[0];
+  assert.equal(session.id, "listing-1");
+  assert.equal(session.startsAt, "2026-08-15T02:00:00.000Z");
+  assert.equal(session.availability.remainingSeats, null);
+  assert.equal(session.availability.isFull, false);
 });
 test("Session media alt combines public Syllabus title and Path", () => assert.equal(sessionImageAlt(makeSession()), "Những khu vườn biết kể chuyện — Art"));
 test("Development suffixes are not exposed in public titles", () => assert.equal(publicSyllabusTitle("Nhân vật Rạn San Hô — Dev"), "Nhân vật Rạn San Hô"));
@@ -134,16 +148,29 @@ test("PINO date and time formatting never exposes raw UTC", () => {
   assert.match(formatLocalDate(makeSession().startsAt), /15\/08/);
   assert.equal(formatLocalTimeRange(makeSession().startsAt, makeSession().endsAt), "09:00–10:00");
 });
-test("Enabled adapter forwards canonical payload and Idempotency-Key", async () => {
+test("Enabled adapter forwards exact Core public-acquisition payload and Idempotency-Key", async () => {
+  let forwardedUrl = "";
   let forwardedKey = "";
   let forwardedBody = "";
-  const request = new Request("https://pinohouse.art/api/pino-core/open-studio/registrations", { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": "attempt-1" }, body: JSON.stringify({ sessionId: "s1", contactName: "Synthetic", phone: "000", childName: "Test", childDateOfBirth: "2020-01-01" }) });
-  const response = await proxyCoreRegistration(request, { PINO_CORE_BASE_URL: "https://core.example", PINO_CORE_REGISTRATION_ENABLED: "true" }, async (_input, init) => {
+  const request = new Request("https://pinohouse.art/api/pino-core/open-studio/registrations", { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": "attempt-1" }, body: JSON.stringify({ sessionId: "listing-1", contactName: "Synthetic Parent", phone: "0900000000", childName: "Test Child", childDateOfBirth: "2020-01-02" }) });
+  const response = await proxyCoreRegistration(request, { PINO_CORE_REGISTRATION_ENABLED: "true" }, async (input, init) => {
+    forwardedUrl = String(input);
     forwardedKey = new Headers(init?.headers).get("Idempotency-Key") || "";
     forwardedBody = String(init?.body);
-    return new Response(JSON.stringify({ registration: { id: "r1", sessionId: "s1", status: "holding", holdExpiresAt: "2026-08-16T00:00:00Z" } }), { status: 201 });
+    return new Response(JSON.stringify({ data: { registrationId: "r1", status: "CONFIRMED" } }), { status: 201 });
   });
   assert.equal(response.status, 201);
+  assert.equal(forwardedUrl, "https://pino-core.internal/v1/open-studio/public-acquisitions");
   assert.equal(forwardedKey, "attempt-1");
-  assert.match(forwardedBody, /"sessionId":"s1"/);
+  assert.deepEqual(JSON.parse(forwardedBody), {
+    listingId: "listing-1",
+    displayName: "Test Child",
+    birthYear: 2020,
+    birthMonth: 1,
+    birthDay: 2,
+    birthPrecision: "FULL_DATE",
+    guardianDisplayName: "Synthetic Parent",
+    contactType: "PHONE",
+    contactValue: "0900000000",
+  });
 });
