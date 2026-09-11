@@ -131,11 +131,17 @@ test("Web hard-kill recovery is durable and terminal ingress proves immutable st
   assert.match(release, /immutable Next static asset routes: PASS/);
 });
 
-test("Web release immutably joins build execution, candidate version, and non-promoting trigger", () => {
+test("Web release rebuilds and uploads the exact approved source under the trusted release recipe", () => {
   assert.match(release, /latest_build_check/);
   assert.match(release, /external_id/);
-  assert.match(release, /build_uuid==\$build/);
-  assert.match(release, /build_trigger_metadata\.commit_hash==\$sha/);
+  assert.match(release, /bun install --frozen-lockfile/);
+  assert.match(release, /bun run build/);
+  assert.match(release, /wrangler@4\.126\.0 versions upload -c wrangler\.toml/);
+  assert.match(release, /pino-web-trusted-\$\{WEB_SHA\}/);
+  assert.match(release, /PINO trusted Web release/);
+  assert.match(release, /External Web build UUID \(signal only\)/);
+  assert.match(release, /Candidate: trusted exact-source release-job upload/);
+  assert.doesNotMatch(release, /Candidate Worker version is not immutably joined to the authorized Cloudflare build UUID/);
   assert.match(release, /builds\/workers\/\$\{worker_tag\}\/triggers/);
   assert.match(release, /canonical non-serving candidate command/);
   assert.match(release, /retroactive production authorization is forbidden/);

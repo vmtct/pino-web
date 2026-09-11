@@ -204,24 +204,18 @@ jobs:
           old_version="$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id // empty' <<<"$deployments" | head -1)"
           [ -n "$old_deployment_id" ] && [ -n "$old_version" ] || fail "Cannot resolve one active 100% deployment/version before release."
 
-          versions="$(npx wrangler versions list --name "$WEB_WORKER" --json)" \
-            || fail "Cannot list immutable candidate versions."
-          candidate_id="$(jq -r --arg tag "$WEB_SHA" '[.[] | select(.annotations["workers/tag"] == $tag)] | if length == 1 then .[0].id else empty end' <<<"$versions")"
-          [ -n "$candidate_id" ] \
-            || fail "Exactly one recent immutable version tagged with the approved SHA is required."
-          candidate_message="$(jq -r --arg id "$candidate_id" '.[] | select(.id == $id) | .annotations["workers/message"] // empty' <<<"$versions")"
-          [ "$candidate_message" = "pino-web candidate ${WEB_SHA}" ] \
-            || fail "Candidate version message does not bind to the approved SHA."
-          candidate_builds="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/builds/builds?version_ids=${candidate_id}" "${auth[@]}")" \
-            || fail "Cannot resolve Cloudflare build provenance for exact Web candidate version."
-          jq -e --arg sha "$WEB_SHA" --arg build "$WEB_BUILD_UUID" \
-            '[.result.builds | to_entries[]? | .value | select(.build_uuid==$build and .build_outcome=="success" and .build_trigger_metadata.commit_hash==$sha)] | length==1' \
-            <<<"$candidate_builds" >/dev/null || fail "Candidate Worker version is not immutably joined to the authorized Cloudflare build UUID and Web SHA."
+          trusted_tag="pino-web-trusted-${WEB_SHA}"
+          trusted_message="PINO trusted Web release ${WEB_SHA} run ${GITHUB_RUN_ID}/${GITHUB_RUN_ATTEMPT}"
+          upload_output="$RUNNER_TEMP/web-version-upload.ndjson"; rm -f "$upload_output"
+          WRANGLER_OUTPUT_FILE_PATH="$upload_output" npx --yes wrangler@4.126.0 versions upload -c wrangler.toml --tag "$trusted_tag" --message "$trusted_message" >/dev/null || fail "Trusted Web candidate upload failed before traffic changed."
+          candidate_id="$(jq -r 'select(.type == "version-upload") | .version_id // empty' "$upload_output" | tail -1)"
+          [ -n "$candidate_id" ] || fail "Trusted Web upload returned no immutable Worker version."
+          candidate_detail="$(npx --yes wrangler@4.126.0 versions view "$candidate_id" --name "$WEB_WORKER" --json)" || fail "Cannot inspect trusted Web candidate resources."
+          [ "$(jq -r '.annotations["workers/tag"] // empty' <<<"$candidate_detail")" = "$trusted_tag" ] || fail "Trusted Web version tag does not bind exact reviewed source."
+          [ "$(jq -r '.annotations["workers/message"] // empty' <<<"$candidate_detail")" = "$trusted_message" ] || fail "Trusted Web version message does not bind this release run."
 
-          old_detail="$(npx wrangler versions view "$old_version" --name "$WEB_WORKER" --json)" \
+          old_detail="$(npx --yes wrangler@4.126.0 versions view "$old_version" --name "$WEB_WORKER" --json)" \
             || fail "Cannot inspect active version resources."
-          candidate_detail="$(npx wrangler versions view "$candidate_id" --name "$WEB_WORKER" --json)" \
-            || fail "Cannot inspect candidate resources."
           jq -e '[.resources.bindings[]? | select(.name=="PINO_CORE_PUBLIC" and .type=="service" and .service=="pino-core" and .entrypoint=="PublicOpenStudioControlPlane")] | length==1' <<<"$candidate_detail" >/dev/null \
             || fail "Candidate lacks exact PINO_CORE_PUBLIC -> pino-core/PublicOpenStudioControlPlane service binding."
           jq -e '[.resources.bindings[]? | select(.name=="PINO_CORE_BASE_URL")] | length==0' <<<"$candidate_detail" >/dev/null \
@@ -309,4 +303,4 @@ jobs:
           core_final="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/pino-core/deployments" "${auth[@]}")" || fail "Cannot re-read Core provider before terminal PASS."
           [ "$(jq -r '.result.deployments[0].id // empty' <<<"$core_final")" = "$CORE_DEPLOYMENT_ID" ] && [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$core_final" | head -1)" = "$CORE_VERSION" ] || fail "Core provider changed during Web release."
           promotion_attempted=0
-          comment "WEB_PRODUCTION_RELEASE: **PASS**\n\n- Web source: ${WEB_SHA}\n- Workflow run: ${GITHUB_RUN_ID}\n- Workflow attempt: ${GITHUB_RUN_ATTEMPT}\n- Authorization body hash: ${AUTH_BODY_HASH}\n- Web build UUID: ${WEB_BUILD_UUID}\n- Core release issue/run: #${CORE_RELEASE_ISSUE} / ${CORE_RELEASE_RUN_ID}\n- Core source: ${CORE_SHA}\n- Core version: ${CORE_VERSION}\n- Core deployment: ${CORE_DEPLOYMENT_ID}\n- Worker version: ${candidate_id}\n- Deployment ID: ${candidate_deployment_id}\n- Traffic: 100%\n- CI: successful main run required\n- Provenance: merged PR into main required\n- Candidate: immutable SHA-tagged Workers Build\n- Production config: exact Core service-binding cutover only\n- Web->Core production Open Studio proxy: PASS\n- pinohouse.art/www Artchitect + Little Piner routed ingress: PASS\n- pinohouse.art/www immutable Next static asset routes: PASS\n\nNo route, binding, secret, D1, or application-data mutation was performed."
+          comment "WEB_PRODUCTION_RELEASE: **PASS**\n\n- Web source: ${WEB_SHA}\n- Workflow run: ${GITHUB_RUN_ID}\n- Workflow attempt: ${GITHUB_RUN_ATTEMPT}\n- Authorization body hash: ${AUTH_BODY_HASH}\n- External Web build UUID (signal only): ${WEB_BUILD_UUID}\n- Trusted artifact tag: ${trusted_tag}\n- Trusted artifact message: ${trusted_message}\n- Core release issue/run: #${CORE_RELEASE_ISSUE} / ${CORE_RELEASE_RUN_ID}\n- Core source: ${CORE_SHA}\n- Core version: ${CORE_VERSION}\n- Core deployment: ${CORE_DEPLOYMENT_ID}\n- Worker version: ${candidate_id}\n- Deployment ID: ${candidate_deployment_id}\n- Traffic: 100%\n- CI: successful main run required\n- Provenance: merged PR into main required\n- Candidate: trusted exact-source release-job upload\n- Production config: exact Core service-binding cutover only\n- Web->Core production Open Studio proxy: PASS\n- pinohouse.art/www Artchitect + Little Piner routed ingress: PASS\n- pinohouse.art/www immutable Next static asset routes: PASS\n\nNo route, binding, secret, D1, or application-data mutation was performed."
