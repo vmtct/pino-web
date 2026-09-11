@@ -74,7 +74,7 @@ jobs:
 
           ci="$(gh api "/repos/${repo}/actions/workflows/ci.yml/runs?head_sha=${web_sha}&branch=main&per_page=20")" \
             || fail_request "Cannot read CI result for requested SHA."
-          latest_ci="$(jq -c --arg sha "$web_sha" '[.workflow_runs[] | select(.head_sha==$sha)] | sort_by(.created_at // .run_started_at // .updated_at // "") | last // empty' <<<"$ci")"
+          latest_ci="$(jq -c --arg sha "$web_sha" '[.workflow_runs[] | select(.head_sha==$sha)] | sort_by(.updated_at // .run_started_at // .created_at // "") | last // empty' <<<"$ci")"
           jq -e '.status=="completed" and .conclusion=="success"' <<<"$latest_ci" >/dev/null \
             || fail_request "Newest same-SHA Web CI attempt is not terminal success."
 

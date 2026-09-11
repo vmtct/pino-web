@@ -120,6 +120,8 @@ test("Web hard-kill recovery is durable and terminal ingress proves immutable st
   assert.match(watchdog, /Web Production Release/);
   assert.match(watchdog, /recover-worker-promotion\.sh/);
   assert.match(watchdog, /WATCHDOG_RECOVERED/);
+  assert.match(watchdog, /assert-no-core-verification-in-flight\.sh/);
+  assert.match(watchdog, /overlap_clear/);
   assert.match(recovery, /current_marker/);
   assert.match(recovery, /previous_deployment/);
   assert.match(recovery, /REFUSE_OWNERSHIP/);

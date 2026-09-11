@@ -60,6 +60,12 @@ jobs:
           candidate_version="$(sed -nE 's/^Candidate version ID:[[:space:]]*([0-9a-f-]{36})[[:space:]]*$/\1/p' <<<"$body")"
           deployment_marker="$(sed -nE 's/^Deployment marker:[[:space:]]*(PINO_[A-Z_]+:[^[:space:]]+)[[:space:]]*$/\1/p' <<<"$body")"
           [ -n "$old_deployment" ] && [ -n "$old_version" ] && [ -n "$candidate_version" ] && [ -n "$deployment_marker" ] || { echo "Malformed durable traffic recovery marker" >&2; exit 1; }
+          overlap_clear=0
+          for _ in $(seq 1 12); do
+            if bash scripts/assert-no-core-verification-in-flight.sh; then overlap_clear=1; break; fi
+            sleep 5
+          done
+          [ "$overlap_clear" -eq 1 ] || { echo "Core production mutation/recovery remained active; refusing overlapping Web recovery" >&2; exit 1; }
           set +e
           result="$(bash scripts/recover-worker-promotion.sh 'pino-web' "$old_deployment" "$old_version" "$candidate_version" "$deployment_marker" 'web' 2>&1)"
           rc=$?
