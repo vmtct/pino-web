@@ -10,6 +10,7 @@ import {
   formatLocalDate,
   formatLocalTimeRange,
   groupSessionsByLocalDate,
+  isCoreSession,
   isSessionFull,
   mapRegistrationError,
   publicSyllabusTitle,
@@ -173,4 +174,17 @@ test("Enabled adapter forwards exact Core public-acquisition payload and Idempot
     contactType: "PHONE",
     contactValue: "0900000000",
   });
+});
+
+
+test("canonical Core session accepts unknown remaining-seat count", () => {
+  const session = makeSession({ availability: { remainingSeats: null, isFull: false } });
+  assert.equal(isCoreSession(session), true);
+});
+
+
+test("production Core schedule failure never falls back to legacy Notion data", async () => {
+  const response = await proxyCoreSessions(new Request("https://pinohouse.art/api/pino-core/open-studio/sessions"), { ENVIRONMENT: "production" }, async () => new Response(JSON.stringify({ error: "canonical unavailable" }), { status: 503, headers: { "Content-Type": "application/json" } }));
+  assert.equal(response.status, 503);
+  assert.equal(response.headers.get("X-PINO-Schedule-Source"), null);
 });

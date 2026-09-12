@@ -35,6 +35,9 @@ const handler = {
     if (request.method === "GET" && url.pathname === "/api/pino-core/open-studio/sessions") return proxyCoreSessions(request, env);
     if (request.method === "GET" && url.pathname === "/api/pino-core/open-studio/capabilities") return registrationCapability(request, env);
     if (request.method === "POST" && url.pathname === "/api/pino-core/open-studio/registrations") return proxyCoreRegistration(request, env);
+    if (env.ENVIRONMENT === "production" && request.method === "POST" && (url.pathname === "/api/open-studio/book" || url.pathname.startsWith("/api/member"))) {
+      return new Response(JSON.stringify({ error: { code: "LEGACY_MUTATION_DISABLED", message: "Legacy production booking/member mutation is disabled; use the canonical Core/Piner authority." } }), { status: 410, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
+    }
     if (request.method === "POST" && url.pathname === "/api/open-studio/hold-request") return createOpenStudioHoldRequest(request, env as any);
     if (request.method === "GET" && url.pathname === "/api/os-sessions") return getPublicSessions(env as any, url.searchParams);
     if (request.method === "GET" && url.pathname === "/api/web-content") {

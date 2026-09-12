@@ -143,7 +143,7 @@ export function isCoreSession(value: unknown): value is CoreSession {
     && typeof session.path?.displayName === "string"
     && typeof session.startsAt === "string"
     && typeof session.endsAt === "string"
-    && typeof session.availability?.remainingSeats === "number"
+    && (session.availability?.remainingSeats === null || typeof session.availability?.remainingSeats === "number")
     && typeof session.availability?.isFull === "boolean"
     && typeof session.syllabus?.title === "string";
 }

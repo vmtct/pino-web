@@ -22,7 +22,7 @@ import {
 } from "../../lib/open-studio-funnel";
 import { useLocale } from "../localization";
 import { CmsText } from "../cms-hydrator";
-import { buildOpenStudioFallbackSessions, isFallbackSession } from "./fallback-sessions";
+
 import "./page.css";
 
 const SCHEDULE_ENDPOINT = "/api/pino-core/open-studio/sessions";
@@ -146,11 +146,11 @@ export default function OpenStudioPage() {
       const data = await response.json() as ScheduleResponse;
       if (!data || !Array.isArray(data.sessions)) throw new Error("Invalid schedule response");
       const realSessions = data.sessions.filter(isCoreSession).sort((a, b) => a.startsAt.localeCompare(b.startsAt));
-      setSessions(realSessions.length > 0 ? realSessions : buildOpenStudioFallbackSessions(locale));
+      setSessions(realSessions);
       setStatus("success");
     } catch {
-      setSessions(buildOpenStudioFallbackSessions(locale));
-      setStatus("success");
+      setSessions([]);
+      setStatus("error");
     }
   }, [locale]);
 
@@ -164,8 +164,8 @@ export default function OpenStudioPage() {
     return () => { cancelled = true; };
   }, []);
 
-  const usingFallback = sessions.length > 0 && sessions.every(isFallbackSession);
-  const canRegister = registrationEnabled && !usingFallback;
+  const usingFallback = false;
+  const canRegister = registrationEnabled;
   const selectedSession = sessions.find((session) => session.id === selectedId) || null;
   const featuredSession = useMemo(() => sessions.find((session) => !isSessionFull(session)) || sessions[0] || null, [sessions]);
   const dateOptions = useMemo(() => Array.from(new Set(sessions.map((session) => localDateKey(session.startsAt)))), [sessions]);

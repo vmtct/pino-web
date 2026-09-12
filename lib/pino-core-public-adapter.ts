@@ -3,6 +3,7 @@ import { getPublicSessions } from "./open-studio-public.ts";
 export type PinoCorePublicEnv = {
   PINO_CORE_PUBLIC?: { fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> };
   PINO_CORE_REGISTRATION_ENABLED?: string;
+  ENVIRONMENT?: string;
 };
 
 type Fetcher = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
@@ -193,8 +194,10 @@ export async function proxyCoreSessions(request: Request, env: PinoCorePublicEnv
       });
     }
 
-    const fallback = await legacyScheduleFallback(request, env);
-    if (fallback) return fallback;
+    if (env.ENVIRONMENT !== "production") {
+      const fallback = await legacyScheduleFallback(request, env);
+      if (fallback) return fallback;
+    }
 
     return new Response(body, {
       status: upstream.status,
@@ -206,8 +209,10 @@ export async function proxyCoreSessions(request: Request, env: PinoCorePublicEnv
       },
     });
   } catch {
-    const fallback = await legacyScheduleFallback(request, env);
-    if (fallback) return fallback;
+    if (env.ENVIRONMENT !== "production") {
+      const fallback = await legacyScheduleFallback(request, env);
+      if (fallback) return fallback;
+    }
     return new Response(JSON.stringify({ error: "Open Studio schedule is temporarily unavailable." }), {
       status: 502,
       headers: responseHeaders(request, "no-store"),

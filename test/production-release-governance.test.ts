@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import test from "node:test";
 
 const ci = readFileSync(".github/workflows/ci.yml", "utf8");
@@ -43,7 +43,7 @@ test("production release requires Founder exact-SHA provenance and explicit conf
 
 test("promotion is forward-only, SHA-tagged, config-preserving, rollback-capable, and post-verified", () => {
   assert.match(release, /git merge-base --is-ancestor "\$current_sha" "\$WEB_SHA"/);
-  assert.match(release, /--version-tag "\$\{WEB_SHA\}@100%"/);
+  assert.match(release, /versions deploy "\$\{candidate_id\}@100%"/);
   assert.match(release, /unapproved production Wrangler config delta/);
   assert.match(release, /PINO_CORE_PUBLIC -> pino-core\/PublicOpenStudioControlPlane/);
   assert.match(release, /forbidden dev-Core URL binding/);
@@ -114,7 +114,7 @@ test("Web hard-kill recovery is durable and terminal ingress proves immutable st
   const watchdog = readFileSync(".github/workflows/production-release-recovery-watchdog.yml", "utf8");
   const recovery = readFileSync("scripts/recover-worker-promotion.sh", "utf8");
   const armedAt = release.indexOf("PINO_WEB_PRODUCTION_RELEASE: **RECOVERY_ARMED**");
-  const deployAt = release.indexOf("--version-tag \"${WEB_SHA}@100%\"");
+  const deployAt = release.indexOf('versions deploy "${candidate_id}@100%"');
   assert.ok(armedAt > 0 && deployAt > armedAt);
   assert.match(watchdog, /workflow_run:/);
   assert.match(watchdog, /Web Production Release/);
@@ -156,4 +156,21 @@ test("production Web source no longer points Open Studio at dev Core", () => {
   assert.match(wrangler, /entrypoint = "PublicOpenStudioControlPlane"/);
   assert.doesNotMatch(adapter, /pino-core-dev|PINO_CORE_BASE_URL|DEFAULT_CORE_BASE_URL/);
   assert.match(adapter, /env\.PINO_CORE_PUBLIC\?\.fetch/);
+});
+
+
+test("production worker fails closed for legacy booking/member mutation authorities", () => {
+  const worker = readFileSync(new URL("../worker-entry.ts", import.meta.url), "utf8");
+  assert.match(worker, /ENVIRONMENT === "production"/);
+  assert.match(worker, /LEGACY_MUTATION_DISABLED/);
+  assert.match(worker, /url\.pathname === "\/api\/open-studio\/book"/);
+  assert.match(worker, /url\.pathname\.startsWith\("\/api\/member"\)/);
+});
+
+
+test("H6 Web release recovery binds run attempt and workflow run-name stays YAML-safe", () => {
+  const watchdog = readFileSync(new URL("../.github/workflows/production-release-recovery-watchdog.yml", import.meta.url), "utf8");
+  const unresolved = readFileSync(new URL("../scripts/assert-no-unresolved-recovery.sh", import.meta.url), "utf8");
+  assert.match(watchdog, /run_attempt/); assert.match(watchdog, /Workflow attempt:/); assert.match(unresolved, /run_attempt/);
+  for (const name of readdirSync(new URL("../.github/workflows/", import.meta.url)).filter((v:string)=>v.endsWith(".yml"))) assert.doesNotMatch(readFileSync(new URL(`../.github/workflows/${name}`, import.meta.url),"utf8"), /^run-name:\s+\$\{\{/m);
 });
