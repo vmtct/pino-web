@@ -1,0 +1,179 @@
+name: Piner Production Release
+run-name: "${{ github.event.issue.user.login == 'vmtct' && format('Piner production release #{0} @ {1}', github.event.issue.number, github.sha) || format('IGNORED Piner production release #{0} @ {1}', github.event.issue.number, github.sha) }}"
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+  issues: write
+
+concurrency:
+  group: web-production-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.event.issue.title == '[GPT] Piner production release' && github.event.issue.user.login == 'vmtct'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      ISSUE_BODY: ${{ github.event.issue.body }}
+      PINER_WORKER: piner
+      CF_ACCOUNT_ID: 952c3c8a236f8e4cbcf6ee10b86ad70c
+      CORE_RELEASE_GH_TOKEN: ${{ secrets.PINO_CORE_RELEASE_READ_TOKEN }}
+
+    steps:
+      - name: Checkout exact event source for authority tooling
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Validate Founder Piner release request
+        id: gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+          AUTH_BODY_HASH="$(printf '%s' "$ISSUE_BODY" | sha256sum | cut -d' ' -f1)"
+          echo "AUTH_BODY_HASH=$AUTH_BODY_HASH" >> "$GITHUB_ENV"
+          fail_request() { gh issue comment "$ISSUE_NUMBER" --repo "$repo" --body "PINER_PRODUCTION_RELEASE: **REJECTED**\n\n$1\n\nNo production mutation was attempted."; exit 1; }
+          [ "$GITHUB_RUN_ATTEMPT" = "1" ] || fail_request "Piner production authority is one-shot; open a fresh issue."
+          mapfile -t sha_lines < <(printf '%s\n' "$ISSUE_BODY" | sed -nE 's/^WEB_SHA:[[:space:]]*([0-9a-fA-F]{40})[[:space:]]*$/\1/p')
+          [ "${#sha_lines[@]}" -eq 1 ] || fail_request "Exactly one WEB_SHA is required."
+          web_sha="$(tr 'A-F' 'a-f' <<<"${sha_lines[0]}")"
+          grep -Eq '^CONFIRM:[[:space:]]*RELEASE_PINER_PRODUCTION[[:space:]]*$' <<<"$ISSUE_BODY" || fail_request "CONFIRM: RELEASE_PINER_PRODUCTION is required."
+          main_sha="$(gh api "/repos/${repo}/git/ref/heads/main" --jq '.object.sha')" || fail_request "Cannot resolve current main."
+          [ "$web_sha" = "$main_sha" ] || fail_request "Requested Web SHA is not exact current main."
+          prs="$(gh api -H 'Accept: application/vnd.github+json' "/repos/${repo}/commits/${web_sha}/pulls")" || fail_request "Cannot resolve merged-PR provenance."
+          jq -e --arg sha "$web_sha" '[.[] | select(.merged_at!=null and .base.ref=="main" and .merge_commit_sha==$sha)] | length>=1' <<<"$prs" >/dev/null || fail_request "Current main lacks reviewed merged-PR provenance."
+          ci="$(gh api "/repos/${repo}/actions/workflows/ci.yml/runs?head_sha=${web_sha}&branch=main&per_page=20")" || fail_request "Cannot resolve exact-head CI."
+          latest_ci="$(jq -c --arg sha "$web_sha" '[.workflow_runs[] | select(.head_sha==$sha)] | sort_by(.updated_at // .run_started_at // .created_at // "") | last // empty' <<<"$ci")"
+          jq -e '.status=="completed" and .conclusion=="success"' <<<"$latest_ci" >/dev/null || fail_request "Newest same-SHA Web CI is not terminal success."
+          echo "web_sha=$web_sha" >> "$GITHUB_OUTPUT"
+          echo "WEB_SHA=$web_sha" >> "$GITHUB_ENV"
+
+      - name: Check out exact approved main SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.gate.outputs.web_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.15
+
+      - name: Locked Piner validation and build
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$WEB_SHA"
+          test -z "$(git status --porcelain)"
+          bun install --frozen-lockfile
+          bun run typecheck
+          node --test --experimental-strip-types test/production-release-governance.test.ts test/h7-remediation.test.ts
+          WORKERS_CI_COMMIT_SHA="$WEB_SHA" bun run build
+          grep -Fq "$WEB_SHA" worker-build-info.ts
+
+      - name: Promote exact Piner candidate
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.CF_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+          api="https://api.cloudflare.com/client/v4"
+          auth=(-H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN:-}" -H "Content-Type: application/json")
+          old_deployment_id=""; old_version=""; candidate_deployment_id=""; deployment_marker=""; promotion_attempted=0
+          comment() { gh issue comment "$ISSUE_NUMBER" --repo "$repo" --body "$1"; }
+          rollback() {
+            [ "$promotion_attempted" -eq 1 ] || return 0
+            [ -n "$old_deployment_id" ] && [ -n "$old_version" ] && [ -n "${candidate_id:-}" ] && [ -n "$deployment_marker" ] || return 1
+            local state current_deployment current_version current_marker previous_deployment decision after after_version
+            state="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${PINER_WORKER}/deployments" "${auth[@]}" 2>/dev/null)" || return 1
+            current_deployment="$(jq -r '.result.deployments[0].id // empty' <<<"$state")"
+            current_version="$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$state" | head -1)"
+            current_marker="$(jq -r '.result.deployments[0].annotations["workers/message"] // empty' <<<"$state")"
+            previous_deployment="$(jq -r '.result.deployments[1].id // empty' <<<"$state")"
+            decision="$(node scripts/web-production-release-fence.mjs "$(jq -nc --arg oldDeploymentId "$old_deployment_id" --arg oldVersion "$old_version" --arg candidateDeploymentId "$candidate_deployment_id" --arg candidateVersion "$candidate_id" --arg candidateMarker "$deployment_marker" --arg currentDeploymentId "$current_deployment" --arg currentVersion "$current_version" --arg currentMarker "$current_marker" --arg previousDeploymentId "$previous_deployment" '{oldDeploymentId:$oldDeploymentId,oldVersion:$oldVersion,candidateDeploymentId:$candidateDeploymentId,candidateVersion:$candidateVersion,candidateMarker:$candidateMarker,currentDeploymentId:$currentDeploymentId,currentVersion:$currentVersion,currentMarker:$currentMarker,previousDeploymentId:$previousDeploymentId}')")" || return 1
+            case "$decision" in RESTORE) npx --yes wrangler@4.130.0 versions deploy "${old_version}@100%" --name "$PINER_WORKER" -y >/dev/null 2>&1 || return 1 ;; NOOP) ;; *) return 1 ;; esac
+            after="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${PINER_WORKER}/deployments" "${auth[@]}" 2>/dev/null)" || return 1
+            after_version="$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$after" | head -1)"
+            [ "$after_version" = "$old_version" ]
+          }
+          fail() {
+            local message="$1" rollback_note="No Piner traffic promotion had started."
+            if [ "$promotion_attempted" -eq 1 ]; then
+              if rollback; then rollback_note="Prior Piner version was restored or exact baseline remained active."; else rollback_note="Rollback was refused or failed because exact failed-promotion ownership could not be proven."; fi
+            fi
+            comment "PINER_PRODUCTION_RELEASE: **FAIL_SAFE**\n\nWorkflow run: ${GITHUB_RUN_ID}\nWorkflow attempt: ${GITHUB_RUN_ATTEMPT}\n\n${message}\n\n${rollback_note}"
+            exit 1
+          }
+          [ -n "${CLOUDFLARE_API_TOKEN:-}" ] || fail "CLOUDFLARE_API_TOKEN is unavailable."
+          bash scripts/assert-live-issue-authority.sh "$repo" "$ISSUE_NUMBER" "[GPT] Piner production release" "$AUTH_BODY_HASH" || fail "Founder authorization changed."
+          current_main="$(gh api "/repos/${repo}/git/ref/heads/main" --jq '.object.sha')" || fail "Cannot re-check current main."
+          [ "$current_main" = "$WEB_SHA" ] || fail "main moved after Piner approval."
+          current_info="$(curl -fsS https://piner.pinohouse.art/build-info.json)" || fail "Cannot inspect current Piner identity."
+          current_sha="$(jq -r '.commit // empty' <<<"$current_info")"
+          [[ "$current_sha" =~ ^[0-9a-f]{40}$ ]] || fail "Current Piner SHA is not trustworthy."
+          git cat-file -e "${current_sha}^{commit}" 2>/dev/null || fail "Current Piner SHA is outside repository history."
+          git merge-base --is-ancestor "$current_sha" "$WEB_SHA" || fail "Piner promotion must be forward-only."
+          [ "$current_sha" != "$WEB_SHA" ] || fail "Piner already serves this SHA; retroactive authorization is forbidden."
+          deployments="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${PINER_WORKER}/deployments" "${auth[@]}")" || fail "Cannot inspect current Piner deployment."
+          old_deployment_id="$(jq -r '.result.deployments[0].id // empty' <<<"$deployments")"
+          old_version="$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$deployments" | head -1)"
+          [ -n "$old_deployment_id" ] && [ -n "$old_version" ] || fail "Cannot resolve active Piner deployment/version."
+          trusted_tag="piner-trusted-${WEB_SHA}"
+          trusted_message="PINO trusted Piner release ${WEB_SHA} run ${GITHUB_RUN_ID}/${GITHUB_RUN_ATTEMPT}"
+          upload_output="$RUNNER_TEMP/piner-version-upload.ndjson"; rm -f "$upload_output"
+          WORKERS_CI_COMMIT_SHA="$WEB_SHA" WRANGLER_OUTPUT_FILE_PATH="$upload_output" npx --yes wrangler@4.130.0 versions upload -c wrangler.piner.production.toml --tag "$trusted_tag" --message "$trusted_message" >/dev/null || fail "Trusted Piner candidate upload failed."
+          candidate_id="$(jq -r 'select(.type=="version-upload") | .version_id // empty' "$upload_output" | tail -1)"
+          [ -n "$candidate_id" ] || fail "Piner upload returned no immutable Worker version."
+          candidate_detail="$(npx --yes wrangler@4.130.0 versions view "$candidate_id" --name "$PINER_WORKER" --json)" || fail "Cannot inspect Piner candidate resources."
+          [ "$(jq -r '.annotations["workers/tag"] // empty' <<<"$candidate_detail")" = "$trusted_tag" ] || fail "Piner tag does not bind exact reviewed source."
+          [ "$(jq -r '.annotations["workers/message"] // empty' <<<"$candidate_detail")" = "$trusted_message" ] || fail "Piner message does not bind this release run."
+          jq -e '[.resources.bindings[]? | select(.name=="PINO_MEMBER_CORE" and .type=="service" and .service=="pino-core" and .entrypoint=="ParentMemberControlPlane")] | length==1' <<<"$candidate_detail" >/dev/null || fail "Piner candidate lacks canonical Core member binding."
+          jq -e '[.resources.bindings[]? | select(.name=="TOPPI_MEMBER" and .type=="service" and .service=="toppi-web")] | length==1' <<<"$candidate_detail" >/dev/null || fail "Piner candidate lacks canonical Toppi binding."
+          main_predeploy="$(gh api "/repos/${repo}/git/ref/heads/main" --jq '.object.sha')" || fail "Cannot re-read main before promotion."
+          [ "$main_predeploy" = "$WEB_SHA" ] || fail "main moved immediately before Piner promotion."
+          bash scripts/assert-no-unresolved-recovery.sh || fail "Earlier Web/Piner production recovery is unresolved."
+          bash scripts/assert-no-core-verification-in-flight.sh || fail "Core production verification/recovery overlaps Piner promotion."
+          deployment_nonce="$(cat /proc/sys/kernel/random/uuid)"
+          deployment_marker="PINO_PINER_PRODUCTION_RELEASE:${WEB_SHA}:${GITHUB_RUN_ID}:${GITHUB_RUN_ATTEMPT}:${deployment_nonce}"
+          comment "PINO_PINER_PRODUCTION_RELEASE: **RECOVERY_ARMED**\n\nWorkflow run: ${GITHUB_RUN_ID}\nWorkflow attempt: ${GITHUB_RUN_ATTEMPT}\nSource SHA: ${WEB_SHA}\nOld deployment ID: ${old_deployment_id}\nOld version ID: ${old_version}\nCandidate version ID: ${candidate_id}\nDeployment marker: ${deployment_marker}\n\nIndependent recovery identity persisted before Piner traffic mutation." >/dev/null || fail "Could not persist Piner recovery ownership."
+          promotion_attempted=1
+          deploy_output="$RUNNER_TEMP/piner-version-deploy.ndjson"; rm -f "$deploy_output"
+          set +e
+          WRANGLER_OUTPUT_FILE_PATH="$deploy_output" npx --yes wrangler@4.130.0 versions deploy "${candidate_id}@100%" --name "$PINER_WORKER" --message "$deployment_marker" -y >/dev/null
+          deploy_rc=$?
+          set -e
+          [ -s "$deploy_output" ] && candidate_deployment_id="$(jq -r 'select(.type=="version-deploy") | .deployment_id // empty' "$deploy_output" | tail -1)"
+          [ "$deploy_rc" -eq 0 ] || fail "Piner candidate promotion failed after traffic mutation may have started."
+          [ -n "$candidate_deployment_id" ] || fail "Piner promotion returned no immutable deployment ID."
+          current="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${PINER_WORKER}/deployments" "${auth[@]}")" || fail "Cannot verify active Piner deployment."
+          [ "$(jq -r '.result.deployments[0].id // empty' <<<"$current")" = "$candidate_deployment_id" ] || fail "Piner deployment ID does not match this release."
+          [ "$(jq -r '.result.deployments[0].annotations["workers/message"] // empty' <<<"$current")" = "$deployment_marker" ] || fail "Piner deployment marker drifted."
+          [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$current" | head -1)" = "$candidate_id" ] || fail "Piner candidate is not serving at 100%."
+          deployed_info="$(curl -fsS https://piner.pinohouse.art/build-info.json)" || fail "Cannot verify deployed Piner identity."
+          [ "$(jq -r '.commit // empty' <<<"$deployed_info")" = "$WEB_SHA" ] || fail "Piner serving artifact does not match approved exact SHA."
+          status="$(curl -sS -o /tmp/piner-home.html -w '%{http_code}' https://piner.pinohouse.art/)"
+          [ "$status" = "200" ] || fail "Piner root smoke failed with HTTP ${status}."
+          final_main="$(gh api "/repos/${repo}/git/ref/heads/main" --jq '.object.sha')" || fail "Cannot re-read main before PASS."
+          [ "$final_main" = "$WEB_SHA" ] || fail "main moved during Piner promotion; rollback required."
+          final_deployments="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${PINER_WORKER}/deployments" "${auth[@]}")" || fail "Cannot verify Piner deployment before PASS."
+          [ "$(jq -r '.result.deployments[0].id // empty' <<<"$final_deployments")" = "$candidate_deployment_id" ] || fail "Piner deployment changed before PASS."
+          [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$final_deployments" | head -1)" = "$candidate_id" ] || fail "Piner version changed before PASS."
+          [ "$(jq -r '.result.deployments[0].annotations["workers/message"] // empty' <<<"$final_deployments")" = "$deployment_marker" ] || fail "Piner deployment marker changed before PASS."
+          bash scripts/assert-live-issue-authority.sh "$repo" "$ISSUE_NUMBER" "[GPT] Piner production release" "$AUTH_BODY_HASH" || fail "Founder authorization changed before PASS."
+          bash scripts/assert-no-core-verification-in-flight.sh || fail "Core production verification/recovery overlaps Piner terminal PASS."
+          promotion_attempted=0
+          comment "PINER_PRODUCTION_RELEASE: **PASS**\n\n- Web source: ${WEB_SHA}\n- Workflow run: ${GITHUB_RUN_ID}\n- Workflow attempt: ${GITHUB_RUN_ATTEMPT}\n- Authorization body hash: ${AUTH_BODY_HASH}\n- Trusted artifact tag: ${trusted_tag}\n- Trusted artifact message: ${trusted_message}\n- Worker: ${PINER_WORKER}\n- Worker version: ${candidate_id}\n- Deployment ID: ${candidate_deployment_id}\n- Deployment marker: ${deployment_marker}\n- Traffic: 100%\n- CI: latest exact-main terminal success required\n- Provenance: merged PR into main required\n- Candidate: trusted exact-source release-job upload\n- Core member binding: pino-core/ParentMemberControlPlane\n- Toppi binding: toppi-web\n- piner.pinohouse.art serving exact source: PASS\n\nNo route, secret, D1, schema, or application-data mutation was performed."

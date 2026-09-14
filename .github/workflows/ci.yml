@@ -37,7 +37,7 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
       - name: PLT-RELEASE contract tests
-        run: node --test --experimental-strip-types test/production-release-governance.test.ts
+        run: node --test --experimental-strip-types test/production-release-governance.test.ts test/h7-remediation.test.ts
       - name: Production build
         run: bun run build
 
