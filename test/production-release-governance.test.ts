@@ -163,14 +163,16 @@ test("production worker fails closed for legacy booking/member mutation authorit
   const worker = readFileSync(new URL("../worker-entry.ts", import.meta.url), "utf8");
   assert.match(worker, /ENVIRONMENT === "production"/);
   assert.match(worker, /LEGACY_MUTATION_DISABLED/);
-  assert.match(worker, /url\.pathname === "\/api\/open-studio\/book"/);
-  assert.match(worker, /url\.pathname\.startsWith\("\/api\/member"\)/);
+  assert.match(worker, /isLegacyProductionAuthority\(url\.pathname\)/);
+  for (const path of ["/api/open-studio/book", "/api/open-studio/eligibility", "/api/open-studio/interest", "/api/open-studio/hold-request", "/api/passes/issue"]) assert.ok(worker.includes(`"${path}"`), `missing production legacy-authority fence for ${path}`);
+  assert.match(worker, /pathname\.startsWith\("\/api\/member"\)/);
 });
 
 
 test("H6 Web release recovery binds run attempt and workflow run-name stays YAML-safe", () => {
   const watchdog = readFileSync(new URL("../.github/workflows/production-release-recovery-watchdog.yml", import.meta.url), "utf8");
   const unresolved = readFileSync(new URL("../scripts/assert-no-unresolved-recovery.sh", import.meta.url), "utf8");
+  assert.match(watchdog, /CORE_RELEASE_GH_TOKEN: \$\{\{ secrets\.PINO_CORE_RELEASE_READ_TOKEN \}\}/);
   assert.match(watchdog, /run_attempt/); assert.match(watchdog, /Workflow attempt:/); assert.match(unresolved, /run_attempt/);
   for (const name of readdirSync(new URL("../.github/workflows/", import.meta.url)).filter((v:string)=>v.endsWith(".yml"))) assert.doesNotMatch(readFileSync(new URL(`../.github/workflows/${name}`, import.meta.url),"utf8"), /^run-name:\s+\$\{\{/m);
 });

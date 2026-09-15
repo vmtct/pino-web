@@ -23,6 +23,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       CF_ACCOUNT_ID: 952c3c8a236f8e4cbcf6ee10b86ad70c
       CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CORE_RELEASE_GH_TOKEN: ${{ secrets.PINO_CORE_RELEASE_READ_TOKEN }}
     steps:
       - name: Check out exact failed release source
         uses: actions/checkout@v4

@@ -14,6 +14,7 @@ test("H7 R005 Piner has governed exact-head promotion authority",()=>{
 
 test("H7 R005 Piner hard-kill recovery is durable and cross-fenced",()=>{
   for(const token of ["Piner Production Release","run_attempt","Workflow attempt:","PINO_PINER_PRODUCTION_RELEASE: **RECOVERY_ARMED**","recover-worker-promotion.sh 'piner'","WATCHDOG_RECOVERED"]) assert.ok(watch.includes(token),token);
+  assert.match(watch, /CORE_RELEASE_GH_TOKEN: \$\{\{ secrets\.PINO_CORE_RELEASE_READ_TOKEN \}\}/);
   assert.match(watch,/group: web-production-release-recovery/);
   assert.match(unresolved,/piner-production-release\.yml/);
   assert.match(unresolved,/PINO_PINER_PRODUCTION_RELEASE/);
