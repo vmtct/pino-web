@@ -5,11 +5,13 @@ const r=(p:string)=>readFileSync(p,"utf8");
 const flow=r(".github/workflows/piner-production-release.yml");
 const watch=r(".github/workflows/piner-production-release-recovery-watchdog.yml");
 const unresolved=r("scripts/assert-no-unresolved-recovery.sh");
+const coreAuthority=r("scripts/assert-core-provider-authority.sh");
 
 test("H7 R005 Piner has governed exact-head promotion authority",()=>{
   for(const token of ["WEB_SHA","RELEASE_PINER_PRODUCTION","CORE_RELEASE_ISSUE","CORE_RELEASE_RUN_ID","assert-core-provider-authority.sh","CORE_DEPLOYMENT_ID","CORE_VERSION","merged-PR provenance","Newest same-SHA Web CI","WORKERS_CI_COMMIT_SHA=\"$WEB_SHA\"","wrangler.piner.production.toml","piner-trusted-${WEB_SHA}","PINO_MEMBER_CORE","ParentMemberControlPlane","TOPPI_MEMBER","PINO_PINER_PRODUCTION_RELEASE: **RECOVERY_ARMED**","piner.pinohouse.art/build-info.json","PINER_PRODUCTION_RELEASE: **PASS**"]) assert.ok(flow.includes(token),token);
   assert.match(flow,/group: web-production-release/);
   assert.match(flow,/retroactive authorization is forbidden/);
+  assert.ok(coreAuthority.includes(String.raw`gsub("\\\\n"; "\n")`));
   assert.ok((flow.match(/assert-core-provider-authority\.sh/g) ?? []).length >= 2);
   assert.match(flow,/workers\/scripts\/pino-core\/deployments/);
   assert.match(flow,/Core provider deployment no longer matches selected Core release/);

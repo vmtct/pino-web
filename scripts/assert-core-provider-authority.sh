@@ -12,7 +12,7 @@ jq -e '.state=="open" and .user.login=="vmtct" and .title=="[GPT] Core productio
 comments="$(GH_TOKEN="$token" gh api --paginate --slurp "/repos/${repo}/issues/${issue}/comments?per_page=100")"
 terminal="$(jq -c --arg run "$run_id" '[.[][] | select(.user.login=="github-actions[bot]" and ((.body // "")|startswith("CORE_PRODUCTION_RELEASE: **PASS**")) and ((.body // "")|contains("Workflow run: " + $run)))] | sort_by(.created_at) | last // empty' <<<"$comments")"
 [ -n "$terminal" ] || { echo "Core release run lacks exact terminal PASS receipt" >&2; exit 1; }
-body="$(jq -r '.body // ""' <<<"$terminal")"
+body="$(jq -r '.body | gsub("\\\\n"; "\n")' <<<"$terminal")"
 source="$(sed -nE 's/^- Core source:[[:space:]]*([0-9a-f]{40})[[:space:]]*$/\1/p' <<<"$body")"
 version="$(sed -nE 's/^- Worker version:[[:space:]]*([0-9a-f-]{36})[[:space:]]*$/\1/p' <<<"$body")"
 deployment="$(sed -nE 's/^- Deployment ID:[[:space:]]*([0-9a-f-]{36})[[:space:]]*$/\1/p' <<<"$body")"
