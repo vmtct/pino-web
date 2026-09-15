@@ -28,6 +28,15 @@ jobs:
           PINO_PR_BODY: ${{ github.event.pull_request.body }}
           PINO_PR_CREATED_AT: ${{ github.event.pull_request.created_at }}
         run: node scripts/verify-pr-project-code.mjs
+      - name: Verify private Core release-read credential
+        if: "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}"
+        env:
+          CORE_RELEASE_GH_TOKEN: ${{ secrets.PINO_CORE_RELEASE_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          [ -n "${CORE_RELEASE_GH_TOKEN:-}" ] || { echo "PINO_CORE_RELEASE_READ_TOKEN unavailable for private Core release authority" >&2; exit 1; }
+          GH_TOKEN="$CORE_RELEASE_GH_TOKEN" gh api /repos/vmtct/pino-core/actions/workflows/core-production-release.yml >/dev/null
+          GH_TOKEN="$CORE_RELEASE_GH_TOKEN" gh api "/repos/vmtct/pino-core/issues?per_page=1" >/dev/null
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:

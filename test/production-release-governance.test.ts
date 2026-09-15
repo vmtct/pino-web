@@ -26,6 +26,10 @@ test("main CI validates an immutable candidate without promoting production", ()
   assert.doesNotMatch(ci, /wrangler versions deploy/);
   assert.doesNotMatch(ci, /Verify deployed Worker identity/);
   assert.doesNotMatch(ci, /Run production smoke tests/);
+  assert.match(ci, /Verify private Core release-read credential/);
+  assert.match(ci, /PINO_CORE_RELEASE_READ_TOKEN/);
+  assert.match(ci, /actions\/workflows\/core-production-release\.yml/);
+  assert.match(ci, /issues\?per_page=1/);
 });
 
 test("production release requires Founder exact-SHA provenance and explicit confirmation", () => {
