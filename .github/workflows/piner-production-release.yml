@@ -27,6 +27,7 @@ jobs:
       PINER_WORKER: piner
       CF_ACCOUNT_ID: 952c3c8a236f8e4cbcf6ee10b86ad70c
       CORE_RELEASE_GH_TOKEN: ${{ secrets.PINO_CORE_RELEASE_READ_TOKEN }}
+      TOPPI_RELEASE_GH_TOKEN: ${{ secrets.PINO_TOPPI_RELEASE_READ_TOKEN }}
 
     steps:
       - name: Checkout exact event source for authority tooling
@@ -51,8 +52,15 @@ jobs:
           grep -Eq '^CONFIRM:[[:space:]]*RELEASE_PINER_PRODUCTION[[:space:]]*$' <<<"$ISSUE_BODY" || fail_request "CONFIRM: RELEASE_PINER_PRODUCTION is required."
           mapfile -t core_issue_lines < <(printf '%s\n' "$ISSUE_BODY" | sed -nE 's/^CORE_RELEASE_ISSUE:[[:space:]]*([1-9][0-9]*)[[:space:]]*$/\1/p')
           mapfile -t core_run_lines < <(printf '%s\n' "$ISSUE_BODY" | sed -nE 's/^CORE_RELEASE_RUN_ID:[[:space:]]*([1-9][0-9]*)[[:space:]]*$/\1/p')
+          mapfile -t toppi_sha_lines < <(printf '%s\n' "$ISSUE_BODY" | sed -nE 's/^TOPPI_SHA:[[:space:]]*([0-9a-fA-F]{40})[[:space:]]*$/\1/p')
+          mapfile -t toppi_run_lines < <(printf '%s\n' "$ISSUE_BODY" | sed -nE 's/^TOPPI_DEPLOY_RUN_ID:[[:space:]]*([1-9][0-9]*)[[:space:]]*$/\1/p')
+          mapfile -t toppi_attempt_lines < <(printf '%s\n' "$ISSUE_BODY" | sed -nE 's/^TOPPI_DEPLOY_RUN_ATTEMPT:[[:space:]]*([1-9][0-9]*)[[:space:]]*$/\1/p')
           [ "${#core_issue_lines[@]}" -eq 1 ] && [ "${#core_run_lines[@]}" -eq 1 ] || fail_request "Issue body must bind exactly one Core release issue and run."
+          [ "${#toppi_sha_lines[@]}" -eq 1 ] && [ "${#toppi_run_lines[@]}" -eq 1 ] && [ "${#toppi_attempt_lines[@]}" -eq 1 ] || fail_request "Issue body must bind exactly one Toppi source/deploy run/attempt."
+          toppi_sha="$(tr 'A-F' 'a-f' <<<"${toppi_sha_lines[0]}")"
           [ -n "${CORE_RELEASE_GH_TOKEN:-}" ] || fail_request "PINO_CORE_RELEASE_READ_TOKEN unavailable for private Core authority."
+          [ -n "${TOPPI_RELEASE_GH_TOKEN:-}" ] || fail_request "PINO_TOPPI_RELEASE_READ_TOKEN unavailable for private Toppi authority."
+          bash scripts/assert-toppi-provider-authority.sh "$toppi_sha" "${toppi_run_lines[0]}" "${toppi_attempt_lines[0]}" >/dev/null || fail_request "Selected Toppi source/deploy authority is invalid, non-serving, or superseded."
           core_authority="$(bash scripts/assert-core-provider-authority.sh "${core_issue_lines[0]}" "${core_run_lines[0]}")" || fail_request "Selected Core release/provider authority is invalid or superseded."
           core_sha="$(jq -r '.sha' <<<"$core_authority")"; core_version="$(jq -r '.version' <<<"$core_authority")"; core_deployment="$(jq -r '.deployment' <<<"$core_authority")"
           main_sha="$(gh api "/repos/${repo}/git/ref/heads/main" --jq '.object.sha')" || fail_request "Cannot resolve current main."
@@ -63,7 +71,7 @@ jobs:
           latest_ci="$(jq -c --arg sha "$web_sha" '[.workflow_runs[] | select(.head_sha==$sha)] | sort_by(.updated_at // .run_started_at // .created_at // "") | last // empty' <<<"$ci")"
           jq -e '.status=="completed" and .conclusion=="success"' <<<"$latest_ci" >/dev/null || fail_request "Newest same-SHA Web CI is not terminal success."
           echo "web_sha=$web_sha" >> "$GITHUB_OUTPUT"
-          { echo "WEB_SHA=$web_sha"; echo "CORE_SHA=$core_sha"; echo "CORE_VERSION=$core_version"; echo "CORE_DEPLOYMENT_ID=$core_deployment"; echo "CORE_RELEASE_ISSUE=${core_issue_lines[0]}"; echo "CORE_RELEASE_RUN_ID=${core_run_lines[0]}"; } >> "$GITHUB_ENV"
+          { echo "WEB_SHA=$web_sha"; echo "CORE_SHA=$core_sha"; echo "CORE_VERSION=$core_version"; echo "CORE_DEPLOYMENT_ID=$core_deployment"; echo "CORE_RELEASE_ISSUE=${core_issue_lines[0]}"; echo "CORE_RELEASE_RUN_ID=${core_run_lines[0]}"; echo "TOPPI_SHA=$toppi_sha"; echo "TOPPI_DEPLOY_RUN_ID=${toppi_run_lines[0]}"; echo "TOPPI_DEPLOY_RUN_ATTEMPT=${toppi_attempt_lines[0]}"; } >> "$GITHUB_ENV"
 
       - name: Check out exact approved main SHA
         uses: actions/checkout@v4
@@ -100,6 +108,7 @@ jobs:
           api="https://api.cloudflare.com/client/v4"
           auth=(-H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN:-}" -H "Content-Type: application/json")
           old_deployment_id=""; old_version=""; candidate_deployment_id=""; deployment_marker=""; promotion_attempted=0
+          toppi_deployment_id=""; toppi_version=""
           comment() { gh issue comment "$ISSUE_NUMBER" --repo "$repo" --body "$1"; }
           rollback() {
             [ "$promotion_attempted" -eq 1 ] || return 0
@@ -137,6 +146,11 @@ jobs:
           core_live="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/pino-core/deployments" "${auth[@]}")" || fail "Cannot inspect exact Core provider deployment."
           [ "$(jq -r '.result.deployments[0].id // empty' <<<"$core_live")" = "$CORE_DEPLOYMENT_ID" ] || fail "Core provider deployment no longer matches selected Core release."
           [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$core_live" | head -1)" = "$CORE_VERSION" ] || fail "Core provider version no longer matches selected Core release."
+          bash scripts/assert-toppi-provider-authority.sh "$TOPPI_SHA" "$TOPPI_DEPLOY_RUN_ID" "$TOPPI_DEPLOY_RUN_ATTEMPT" >/dev/null || fail "Toppi source/deploy authority is invalid or superseded before Piner promotion."
+          toppi_live="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/toppi-web/deployments" "${auth[@]}")" || fail "Cannot inspect exact Toppi provider deployment."
+          toppi_deployment_id="$(jq -r '.result.deployments[0].id // empty' <<<"$toppi_live")"
+          toppi_version="$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$toppi_live" | head -1)"
+          [ -n "$toppi_deployment_id" ] && [ -n "$toppi_version" ] || fail "Cannot resolve active Toppi deployment/version."
           deployments="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${PINER_WORKER}/deployments" "${auth[@]}")" || fail "Cannot inspect current Piner deployment."
           old_deployment_id="$(jq -r '.result.deployments[0].id // empty' <<<"$deployments")"
           old_version="$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$deployments" | head -1)"
@@ -156,6 +170,9 @@ jobs:
           [ "$main_predeploy" = "$WEB_SHA" ] || fail "main moved immediately before Piner promotion."
           bash scripts/assert-no-unresolved-recovery.sh || fail "Earlier Web/Piner production recovery is unresolved."
           bash scripts/assert-no-core-verification-in-flight.sh || fail "Core production verification/recovery overlaps Piner promotion."
+          bash scripts/assert-toppi-provider-authority.sh "$TOPPI_SHA" "$TOPPI_DEPLOY_RUN_ID" "$TOPPI_DEPLOY_RUN_ATTEMPT" >/dev/null || fail "Toppi authority drifted immediately before Piner promotion."
+          toppi_predeploy="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/toppi-web/deployments" "${auth[@]}")" || fail "Cannot re-check Toppi provider immediately before Piner promotion."
+          [ "$(jq -r '.result.deployments[0].id // empty' <<<"$toppi_predeploy")" = "$toppi_deployment_id" ] && [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$toppi_predeploy" | head -1)" = "$toppi_version" ] || fail "Toppi provider changed before Piner traffic promotion."
           deployment_nonce="$(cat /proc/sys/kernel/random/uuid)"
           deployment_marker="PINO_PINER_PRODUCTION_RELEASE:${WEB_SHA}:${GITHUB_RUN_ID}:${GITHUB_RUN_ATTEMPT}:${deployment_nonce}"
           comment "PINO_PINER_PRODUCTION_RELEASE: **RECOVERY_ARMED**\n\nWorkflow run: ${GITHUB_RUN_ID}\nWorkflow attempt: ${GITHUB_RUN_ATTEMPT}\nSource SHA: ${WEB_SHA}\nOld deployment ID: ${old_deployment_id}\nOld version ID: ${old_version}\nCandidate version ID: ${candidate_id}\nDeployment marker: ${deployment_marker}\n\nIndependent recovery identity persisted before Piner traffic mutation." >/dev/null || fail "Could not persist Piner recovery ownership."
@@ -180,6 +197,10 @@ jobs:
           member_status="$(curl -sS -o /tmp/piner-member-provider-smoke.json -w '%{http_code}' -H "Cookie: __Host-piner_session=${member_probe_token}" https://piner.pinohouse.art/api/piner/session)"
           [ "$member_status" = "401" ] || fail "Piner member provider smoke returned HTTP ${member_status}; expected canonical Core auth rejection."
           jq -e '.error.code=="PARENT_AUTH_SESSION_INVALID"' /tmp/piner-member-provider-smoke.json >/dev/null || fail "Piner member provider smoke did not traverse canonical Core member auth."
+          toppi_probe_token="$(printf '%043d' 0)"
+          toppi_status="$(curl -sS -o /tmp/piner-toppi-provider-smoke.json -w '%{http_code}' -H "Cookie: __Host-piner_session=${toppi_probe_token}" https://piner.pinohouse.art/api/piner/students/probe/toppi)"
+          [ "$toppi_status" = "401" ] || fail "Piner Toppi provider smoke returned HTTP ${toppi_status}; expected provider auth rejection."
+          jq -e '.error=="unauthorized"' /tmp/piner-toppi-provider-smoke.json >/dev/null || fail "Piner Toppi provider smoke did not traverse canonical Toppi binding."
           final_main="$(gh api "/repos/${repo}/git/ref/heads/main" --jq '.object.sha')" || fail "Cannot re-read main before PASS."
           [ "$final_main" = "$WEB_SHA" ] || fail "main moved during Piner promotion; rollback required."
           final_deployments="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${PINER_WORKER}/deployments" "${auth[@]}")" || fail "Cannot verify Piner deployment before PASS."
@@ -191,5 +212,8 @@ jobs:
           bash scripts/assert-core-provider-authority.sh "$CORE_RELEASE_ISSUE" "$CORE_RELEASE_RUN_ID" >/dev/null || fail "Core provider authority drifted before Piner terminal PASS."
           core_final="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/pino-core/deployments" "${auth[@]}")" || fail "Cannot re-check exact Core provider deployment before PASS."
           [ "$(jq -r '.result.deployments[0].id // empty' <<<"$core_final")" = "$CORE_DEPLOYMENT_ID" ] && [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$core_final" | head -1)" = "$CORE_VERSION" ] || fail "Core provider changed during Piner release."
+          bash scripts/assert-toppi-provider-authority.sh "$TOPPI_SHA" "$TOPPI_DEPLOY_RUN_ID" "$TOPPI_DEPLOY_RUN_ATTEMPT" >/dev/null || fail "Toppi authority drifted before Piner terminal PASS."
+          toppi_final="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/toppi-web/deployments" "${auth[@]}")" || fail "Cannot re-check exact Toppi provider before PASS."
+          [ "$(jq -r '.result.deployments[0].id // empty' <<<"$toppi_final")" = "$toppi_deployment_id" ] && [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$toppi_final" | head -1)" = "$toppi_version" ] || fail "Toppi provider changed during Piner release."
           promotion_attempted=0
-          comment "PINER_PRODUCTION_RELEASE: **PASS**\n\n- Web source: ${WEB_SHA}\n- Workflow run: ${GITHUB_RUN_ID}\n- Workflow attempt: ${GITHUB_RUN_ATTEMPT}\n- Authorization body hash: ${AUTH_BODY_HASH}\n- Trusted artifact tag: ${trusted_tag}\n- Trusted artifact message: ${trusted_message}\n- Worker: ${PINER_WORKER}\n- Worker version: ${candidate_id}\n- Deployment ID: ${candidate_deployment_id}\n- Deployment marker: ${deployment_marker}\n- Traffic: 100%\n- CI: latest exact-main terminal success required\n- Provenance: merged PR into main required\n- Candidate: trusted exact-source release-job upload\n- Core release issue/run: #${CORE_RELEASE_ISSUE} / ${CORE_RELEASE_RUN_ID}\n- Core source: ${CORE_SHA}\n- Core version: ${CORE_VERSION}\n- Core deployment: ${CORE_DEPLOYMENT_ID}\n- Core member binding: pino-core/ParentMemberControlPlane\n- Toppi binding: toppi-web\n- piner.pinohouse.art serving exact source: PASS\n\nNo route, secret, D1, schema, or application-data mutation was performed."
+          comment "PINER_PRODUCTION_RELEASE: **PASS**\n\n- Web source: ${WEB_SHA}\n- Workflow run: ${GITHUB_RUN_ID}\n- Workflow attempt: ${GITHUB_RUN_ATTEMPT}\n- Authorization body hash: ${AUTH_BODY_HASH}\n- Trusted artifact tag: ${trusted_tag}\n- Trusted artifact message: ${trusted_message}\n- Worker: ${PINER_WORKER}\n- Worker version: ${candidate_id}\n- Deployment ID: ${candidate_deployment_id}\n- Deployment marker: ${deployment_marker}\n- Traffic: 100%\n- CI: latest exact-main terminal success required\n- Provenance: merged PR into main required\n- Candidate: trusted exact-source release-job upload\n- Core release issue/run: #${CORE_RELEASE_ISSUE} / ${CORE_RELEASE_RUN_ID}\n- Core source: ${CORE_SHA}\n- Core version: ${CORE_VERSION}\n- Core deployment: ${CORE_DEPLOYMENT_ID}\n- Core member binding: pino-core/ParentMemberControlPlane\n- Toppi binding: toppi-web\n- Toppi source: ${TOPPI_SHA}\n- Toppi deploy run/attempt: ${TOPPI_DEPLOY_RUN_ID} / ${TOPPI_DEPLOY_RUN_ATTEMPT}\n- Toppi version: ${toppi_version}\n- Toppi deployment: ${toppi_deployment_id}\n- Toppi provider smoke: PASS\n- piner.pinohouse.art serving exact source: PASS\n\nNo route, secret, D1, schema, or application-data mutation was performed."
