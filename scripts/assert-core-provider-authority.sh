@@ -21,6 +21,6 @@ auth_hash="$(sed -nE 's/^- Authorization body hash:[[:space:]]*([0-9a-f]{64})[[:
 live_body="$(jq -r '.body // ""' <<<"$issue_json")"
 [ "$(printf '%s' "$live_body" | sha256sum | cut -d' ' -f1)" = "$auth_hash" ] || { echo "Core release authorization body changed after PASS" >&2; exit 1; }
 runs="$(GH_TOKEN="$token" gh api --paginate --slurp "/repos/${repo}/actions/workflows/core-production-release.yml/runs?event=issues&per_page=100")"
-latest="$(jq -r --arg sha "$sha" '[.[]?.workflow_runs[]? | select(.head_sha==$sha and .event=="issues" and .actor.login=="vmtct" and ((.display_title // "")|startswith("Core production release #")) and ((.display_title // "")|endswith(" @ "+$sha))] | sort_by(.updated_at // .run_started_at // .created_at // "") | last | .id // empty' <<<"$runs")"
+latest="$(jq -r --arg sha "$sha" '[.[]?.workflow_runs[]? | select(.head_sha==$sha and .event=="issues" and .actor.login=="vmtct" and ((.display_title // "")|startswith("Core production release #")) and ((.display_title // "")|endswith(" @ "+$sha)))] | sort_by(.updated_at // .run_started_at // .created_at // "") | last | .id // empty' <<<"$runs")"
 [ "$latest" = "$run_id" ] || { echo "Selected Core release is superseded by a newer same-SHA canonical attempt" >&2; exit 1; }
 jq -nc --arg sha "$sha" --arg version "$version" --arg deployment "$deployment" --arg issue "$issue" --arg run "$run_id" '{sha:$sha,version:$version,deployment:$deployment,issue:$issue,run:$run}'

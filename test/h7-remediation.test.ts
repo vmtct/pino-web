@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 const r=(p:string)=>readFileSync(p,"utf8");
 const flow=r(".github/workflows/piner-production-release.yml");
 const watch=r(".github/workflows/piner-production-release-recovery-watchdog.yml");
@@ -23,6 +24,14 @@ test("H7 R005 Piner has governed exact-head promotion authority",()=>{
   const memberSmokeAt=flow.indexOf('PARENT_AUTH_SESSION_INVALID');
   const finalCoreAt=flow.indexOf('assert-core-provider-authority.sh "$CORE_RELEASE_ISSUE"');
   assert.ok(deployAt>0 && memberSmokeAt>deployAt && finalCoreAt>memberSmokeAt);
+});
+
+test("H7 Core provider same-SHA jq filter is executable",()=>{
+  const match=coreAuthority.match(/latest="\$\(jq -r --arg sha "\$sha" '([^']+)' <<<"\$runs"\)"/);
+  const filter=match?.[1] ?? "";
+  assert.ok(filter,"latest same-SHA jq filter missing");
+  const result=spawnSync("jq",["-n","--arg","sha","a".repeat(40),filter],{encoding:"utf8"});
+  assert.equal(result.status,0,result.stderr || result.stdout);
 });
 
 test("H7 R005 Piner hard-kill recovery is durable and cross-fenced",()=>{
