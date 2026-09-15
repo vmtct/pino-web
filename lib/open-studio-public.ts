@@ -1,4 +1,4 @@
-import { getConfig } from "./web-config";
+import { getConfig } from "./web-config.ts";
 
 type Env = {
   NOTION_TOKEN: string;

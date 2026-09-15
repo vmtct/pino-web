@@ -21,7 +21,7 @@ export type CoreSession = {
   endsAt: string;
   bookingClosesAt: string;
   timezone: string;
-  availability: { remainingSeats: number; isFull: boolean };
+  availability: { remainingSeats: number | null; isFull: boolean };
   access: { kind: string; trialPremium: boolean };
   syllabus: PublicSyllabus;
 };
@@ -77,7 +77,7 @@ export const formatAgeRange = (ageMin: number | null, ageMax: number | null, loc
   return "Mọi độ tuổi";
 };
 
-export const isSessionFull = (session: CoreSession) => session.availability.isFull || session.availability.remainingSeats <= 0;
+export const isSessionFull = (session: CoreSession) => session.availability.isFull || (typeof session.availability.remainingSeats === "number" && session.availability.remainingSeats <= 0);
 
 export const groupSessionsByLocalDate = (sessions: CoreSession[]) => {
   const sorted = [...sessions].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
@@ -143,7 +143,7 @@ export function isCoreSession(value: unknown): value is CoreSession {
     && typeof session.path?.displayName === "string"
     && typeof session.startsAt === "string"
     && typeof session.endsAt === "string"
-    && typeof session.availability?.remainingSeats === "number"
+    && (session.availability?.remainingSeats === null || typeof session.availability?.remainingSeats === "number")
     && typeof session.availability?.isFull === "boolean"
     && typeof session.syllabus?.title === "string";
 }

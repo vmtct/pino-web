@@ -1,0 +1,73 @@
+name: Piner Production Release Recovery Watchdog
+
+on:
+  workflow_run:
+    workflows: ["Piner Production Release"]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+concurrency:
+  group: web-production-release-recovery
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    if: github.event.workflow_run.conclusion != 'success' && github.event.workflow_run.actor.login == 'vmtct'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CF_ACCOUNT_ID: 952c3c8a236f8e4cbcf6ee10b86ad70c
+      CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CORE_RELEASE_GH_TOKEN: ${{ secrets.PINO_CORE_RELEASE_READ_TOKEN }}
+    steps:
+      - name: Check out exact failed Piner release source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+
+      - name: Reconcile run-owned Piner traffic promotion
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+          run_id='${{ github.event.workflow_run.id }}'
+          run_attempt='${{ github.event.workflow_run.run_attempt }}'
+          sha='${{ github.event.workflow_run.head_sha }}'
+          display='${{ github.event.workflow_run.display_title }}'
+          issue="$(sed -nE "s/^Piner production release \#([1-9][0-9]*) @ ${sha}$/\1/p" <<<"$display")"
+          [ -n "$issue" ] || { echo "Cannot resolve Piner release issue from canonical run-name" >&2; exit 1; }
+          comments="$(gh api --paginate --slurp "/repos/${repo}/issues/${issue}/comments?per_page=100")"
+          marker="$(jq -c --arg run "$run_id" --arg attempt "$run_attempt" '[.[][] | select(.user.login=="github-actions[bot]" and ((.body // "") | startswith("PINO_PINER_PRODUCTION_RELEASE: **RECOVERY_ARMED**")) and ((.body // "") | contains("Workflow run: " + $run)) and ((.body // "") | contains("Workflow attempt: " + $attempt)))] | sort_by(.created_at) | last // empty' <<<"$comments")"
+          [ -n "$marker" ] || { echo "No durable Piner traffic recovery marker; no promotion was authorized"; exit 0; }
+          terminal="$(jq -c --arg run "$run_id" --arg attempt "$run_attempt" '[.[][] | select(.user.login=="github-actions[bot]" and ((.body // "") | startswith("PINER_PRODUCTION_RELEASE: **FAIL_SAFE**")) and ((.body // "") | contains("Workflow run: " + $run)) and ((.body // "") | contains("Workflow attempt: " + $attempt)) and (((.body // "") | contains("version was restored")) or ((.body // "") | contains("baseline remained active"))))] | last // empty' <<<"$comments")"
+          if [ -n "$terminal" ]; then
+            gh issue comment "$issue" --repo "$repo" --body "PINER_PRODUCTION_RELEASE: **WATCHDOG_RECOVERY_CONFIRMED**\n\nWorkflow run: ${run_id}\nWorkflow attempt: ${run_attempt}\nIndependent watchdog confirmed same-run rollback receipt; no second traffic mutation was attempted."
+            exit 0
+          fi
+          body="$(jq -r '.body | gsub("\\\\n"; "\n")' <<<"$marker")"
+          old_deployment="$(sed -nE 's/^Old deployment ID:[[:space:]]*([0-9a-f-]{36})[[:space:]]*$/\1/p' <<<"$body")"
+          old_version="$(sed -nE 's/^Old version ID:[[:space:]]*([0-9a-f-]{36})[[:space:]]*$/\1/p' <<<"$body")"
+          candidate_version="$(sed -nE 's/^Candidate version ID:[[:space:]]*([0-9a-f-]{36})[[:space:]]*$/\1/p' <<<"$body")"
+          deployment_marker="$(sed -nE 's/^Deployment marker:[[:space:]]*(PINO_PINER_PRODUCTION_RELEASE:[^[:space:]]+)[[:space:]]*$/\1/p' <<<"$body")"
+          [ -n "$old_deployment" ] && [ -n "$old_version" ] && [ -n "$candidate_version" ] && [ -n "$deployment_marker" ] || { echo "Malformed Piner recovery marker" >&2; exit 1; }
+          overlap_clear=0
+          for _ in $(seq 1 12); do
+            if bash scripts/assert-no-core-verification-in-flight.sh; then overlap_clear=1; break; fi
+            sleep 5
+          done
+          [ "$overlap_clear" -eq 1 ] || { echo "Core production mutation/recovery remained active; refusing overlapping Piner recovery" >&2; exit 1; }
+          set +e
+          result="$(bash scripts/recover-worker-promotion.sh 'piner' "$old_deployment" "$old_version" "$candidate_version" "$deployment_marker" 'web' 2>&1)"
+          rc=$?
+          set -e
+          if [ "$rc" -ne 0 ]; then
+            gh issue comment "$issue" --repo "$repo" --body "PINER_PRODUCTION_RELEASE: **WATCHDOG_HOLD**\n\nWorkflow run: ${run_id}\nWorkflow attempt: ${run_attempt}\nRecovery refused because exact failed-promotion ownership could not be proven (${result}). No traffic was overwritten."
+            exit 1
+          fi
+          gh issue comment "$issue" --repo "$repo" --body "PINER_PRODUCTION_RELEASE: **WATCHDOG_RECOVERED**\n\nWorkflow run: ${run_id}\nWorkflow attempt: ${run_attempt}\nRecovery result: ${result}.\nIndependent watchdog reconciled only the exact run-owned Piner production promotion."

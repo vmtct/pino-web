@@ -17,7 +17,7 @@ import {
   sessionThumbnail,
   validateRegistration,
 } from "../../../lib/open-studio-funnel";
-import { buildOpenStudioFallbackSessions, isFallbackSession } from "../fallback-sessions";
+
 import "./detail.css";
 
 const SCHEDULE_ENDPOINT = "/api/pino-core/open-studio/sessions";
@@ -170,17 +170,13 @@ export default function SessionDetailPage() {
         setStatus(found ? "success" : "error");
         return;
       }
-      const fallback = buildOpenStudioFallbackSessions();
-      const found = fallback.find((item) => matchesTarget(item, target)) || fallback[0] || null;
-      setSession(found);
-      setUsingFallback(Boolean(found));
-      setStatus(found ? "success" : "error");
+      setSession(null);
+      setUsingFallback(false);
+      setStatus("error");
     } catch {
-      const fallback = buildOpenStudioFallbackSessions();
-      const found = fallback.find((item) => matchesTarget(item, target)) || fallback[0] || null;
-      setSession(found);
-      setUsingFallback(Boolean(found));
-      setStatus(found ? "success" : "error");
+      setSession(null);
+      setUsingFallback(false);
+      setStatus("error");
     }
   }, []);
 

@@ -22,7 +22,7 @@ import {
 } from "../../lib/open-studio-funnel";
 import { useLocale } from "../localization";
 import { CmsText } from "../cms-hydrator";
-import { buildOpenStudioFallbackSessions, isFallbackSession } from "./fallback-sessions";
+
 import "./page.css";
 
 const SCHEDULE_ENDPOINT = "/api/pino-core/open-studio/sessions";
@@ -58,7 +58,7 @@ const COPY = {
     hero: "Khám phá, sáng tạo và lớn lên — mỗi tuần tại PINO House.", heroLink: "Xem lịch tuần này", heroAlt: "Khoảng sân và ngôi nhà sáng tạo của PINO House",
     upNext: "SẮP TỚI TẠI PINO", demoSchedule: "LỊCH MINH HOẠ", loading: "Đang mở lịch Open Studio…", loadError: "Lịch đang tạm nghỉ một chút.", retry: "Thử tải lại", noSchedule: "Lịch mới đang được chuẩn bị.", checkBack: "Hãy quay lại sau để xem buổi Open Studio gần nhất.",
     fallbackDescription: "Một buổi trải nghiệm nhẹ nhàng để con thử, làm và khám phá điều mình tò mò.", seatsLeft: "Chỗ còn lại", full: "Đã đủ chỗ", time: "Thời gian", registerNow: "Đăng ký ngay", detail: "Xem chi tiết",
-    schedule: "LỊCH OPEN STUDIO", demoData: "DỮ LIỆU MẪU", filterDate: "Lọc theo ngày", all: "Tất cả", filterPath: "Lọc theo lộ trình", noFiltered: "Chưa có buổi phù hợp với bộ lọc này.", seatsRemaining: "chỗ còn lại", fullShort: "Đã đủ", vietnamTime: "Giờ Việt Nam",
+    schedule: "LỊCH OPEN STUDIO", demoData: "DỮ LIỆU MẪU", filterDate: "Lọc theo ngày", all: "Tất cả", filterPath: "Lọc theo lộ trình", noFiltered: "Chưa có buổi phù hợp với bộ lọc này.", seatsRemaining: "chỗ còn lại", available: "Còn chỗ", fullShort: "Đã đủ", vietnamTime: "Giờ Việt Nam",
     exploreHeading: "Con sẽ khám phá", demoTitle: "Đây là lịch minh hoạ", demoCopy: "Các buổi mẫu đang dùng asset thật để kiểm thử UI/UX. Khi API trả về ít nhất một session thật, toàn bộ lịch minh hoạ sẽ tự động được thay thế.", registrationSoon: "Đăng ký trực tuyến sắp mở", registrationSoonCopy: "Ba mẹ vẫn có thể xem lịch. PINO sẽ mở nhận đăng ký khi hệ thống sẵn sàng.", registerSession: "Đăng ký buổi này",
     familyInfo: "Thông tin gia đình", familyInfoCopy: "PINO sẽ liên hệ để xác nhận chỗ. Một đăng ký dành cho một bé.", parentName: "Họ tên phụ huynh", phone: "Số điện thoại", childName: "Tên của con", childBirth: "Ngày sinh của con", missing: "Ba mẹ vui lòng kiểm tra các thông tin còn thiếu.", sending: "Đang gửi…", submit: "Gửi đăng ký",
     weekAtPino: "TUẦN NÀY TẠI PINO", architectureCopy: "Trẻ quan sát, phác thảo và biến ý tưởng không gian thành mô hình bằng đôi tay của mình.", viewSchedule: "Xem lịch", how: "OPEN STUDIO HOẠT ĐỘNG THẾ NÀO", choose: "Chọn một buổi", reserve: "Giữ chỗ", arrive: "Đến và tận hưởng", tryExplore: "Thử & khám phá",
@@ -70,7 +70,7 @@ const COPY = {
     hero: "Explore, create and grow — every week at PINO House.", heroLink: "See this week's schedule", heroAlt: "The PINO House creative courtyard",
     upNext: "UP NEXT AT PINO", demoSchedule: "DEMO SCHEDULE", loading: "Opening the Open Studio schedule…", loadError: "The schedule is taking a short break.", retry: "Try again", noSchedule: "A new schedule is being prepared.", checkBack: "Check back soon for the next Open Studio session.",
     fallbackDescription: "A gentle session to try, make and discover something your child is curious about.", seatsLeft: "Seats left", full: "Full", time: "Time", registerNow: "Register now", detail: "View details",
-    schedule: "OPEN STUDIO SCHEDULE", demoData: "DEMO DATA", filterDate: "Filter by date", all: "All", filterPath: "Filter by path", noFiltered: "No sessions match these filters yet.", seatsRemaining: "seats left", fullShort: "Full", vietnamTime: "Vietnam time",
+    schedule: "OPEN STUDIO SCHEDULE", demoData: "DEMO DATA", filterDate: "Filter by date", all: "All", filterPath: "Filter by path", noFiltered: "No sessions match these filters yet.", seatsRemaining: "seats left", available: "Available", fullShort: "Full", vietnamTime: "Vietnam time",
     exploreHeading: "What your child will explore", demoTitle: "This is a demo schedule", demoCopy: "These sample sessions use real assets to validate the experience. As soon as the API returns a real session, the demo schedule is replaced automatically.", registrationSoon: "Online registration is opening soon", registrationSoonCopy: "You can still browse the schedule. PINO will open registrations when the system is ready.", registerSession: "Register for this session",
     familyInfo: "Family information", familyInfoCopy: "PINO will contact you to confirm the place. One registration is for one child.", parentName: "Parent / guardian name", phone: "Phone number", childName: "Child's name", childBirth: "Child's date of birth", missing: "Please check the missing information above.", sending: "Sending…", submit: "Send registration",
     weekAtPino: "THIS WEEK AT PINO", architectureCopy: "Children observe, sketch and turn a spatial idea into a model with their own hands.", viewSchedule: "View schedule", how: "HOW OPEN STUDIO WORKS", choose: "Choose a session", reserve: "Reserve a place", arrive: "Come and enjoy", tryExplore: "Try & explore",
@@ -146,11 +146,11 @@ export default function OpenStudioPage() {
       const data = await response.json() as ScheduleResponse;
       if (!data || !Array.isArray(data.sessions)) throw new Error("Invalid schedule response");
       const realSessions = data.sessions.filter(isCoreSession).sort((a, b) => a.startsAt.localeCompare(b.startsAt));
-      setSessions(realSessions.length > 0 ? realSessions : buildOpenStudioFallbackSessions(locale));
+      setSessions(realSessions);
       setStatus("success");
     } catch {
-      setSessions(buildOpenStudioFallbackSessions(locale));
-      setStatus("success");
+      setSessions([]);
+      setStatus("error");
     }
   }, [locale]);
 
@@ -164,8 +164,8 @@ export default function OpenStudioPage() {
     return () => { cancelled = true; };
   }, []);
 
-  const usingFallback = sessions.length > 0 && sessions.every(isFallbackSession);
-  const canRegister = registrationEnabled && !usingFallback;
+  const usingFallback = false;
+  const canRegister = registrationEnabled;
   const selectedSession = sessions.find((session) => session.id === selectedId) || null;
   const featuredSession = useMemo(() => sessions.find((session) => !isSessionFull(session)) || sessions[0] || null, [sessions]);
   const dateOptions = useMemo(() => Array.from(new Set(sessions.map((session) => localDateKey(session.startsAt)))), [sessions]);
@@ -231,7 +231,7 @@ export default function OpenStudioPage() {
           {status === "success" && featuredSession ? <div className="os-featured-grid">
             <img className="os-featured-image" src={activityImage(featuredSession)} alt={sessionImageAlt(featuredSession)} />
             <div className="os-featured-copy"><span className="os-time-label">{formatLocalTimeRange(featuredSession.startsAt, featuredSession.endsAt, locale)}</span><h2 id="sessions-title">{publicSyllabusTitle(featuredSession.syllabus.title)}</h2><div className="os-pills"><span>{formatAgeRange(featuredSession.syllabus.ageMin, featuredSession.syllabus.ageMax, locale)}</span><span>{pathLabel(featuredSession)}</span></div><p>{featuredSession.syllabus.shortDescription || t.fallbackDescription}</p></div>
-            <div className="os-featured-meta"><dl><div><dt>Path</dt><dd>{pathLabel(featuredSession)}</dd></div><div><dt>{t.seatsLeft}</dt><dd>{isSessionFull(featuredSession) ? t.full : featuredSession.availability.remainingSeats}</dd></div><div><dt>{t.time}</dt><dd>{formatLocalDate(featuredSession.startsAt, locale)}</dd></div></dl><button className="os-book-button" type="button" disabled={isSessionFull(featuredSession)} onClick={() => selectSession(featuredSession, true)}>{isSessionFull(featuredSession) ? t.full : t.registerNow}<span>→</span></button><button className="os-detail-link" type="button" disabled={isSessionFull(featuredSession)} onClick={() => selectSession(featuredSession)}>{t.detail}</button></div>
+            <div className="os-featured-meta"><dl><div><dt>Path</dt><dd>{pathLabel(featuredSession)}</dd></div><div><dt>{t.seatsLeft}</dt><dd>{isSessionFull(featuredSession) ? t.full : featuredSession.availability.remainingSeats ?? t.available}</dd></div><div><dt>{t.time}</dt><dd>{formatLocalDate(featuredSession.startsAt, locale)}</dd></div></dl><button className="os-book-button" type="button" disabled={isSessionFull(featuredSession)} onClick={() => selectSession(featuredSession, true)}>{isSessionFull(featuredSession) ? t.full : t.registerNow}<span>→</span></button><button className="os-detail-link" type="button" disabled={isSessionFull(featuredSession)} onClick={() => selectSession(featuredSession)}>{t.detail}</button></div>
           </div> : null}
         </div>
 
@@ -239,7 +239,7 @@ export default function OpenStudioPage() {
 
         {status === "loading" ? <div className="os-card-grid os-skeleton-grid">{[0, 1, 2, 3, 4, 5].map((item) => <div className="os-session-card os-skeleton-card" key={item}><span /><i /><i /><i /></div>)}</div> : null}
         {status === "success" && visibleSessions.length === 0 ? <div className="os-empty">{t.noFiltered}</div> : null}
-        {status === "success" && visibleSessions.length > 0 ? <div className="os-card-grid">{visibleSessions.slice(0, 9).map((session, index) => { const full = isSessionFull(session); return <article className={`os-session-card${selectedId === session.id ? " is-selected" : ""}`} key={session.id}><img src={activityImage(session, index)} alt={sessionImageAlt(session)} /><div className="os-session-body"><span className="os-time-label">{formatLocalTimeRange(session.startsAt, session.endsAt, locale)}</span><h3>{publicSyllabusTitle(session.syllabus.title)}</h3><div className="os-pills"><span>{formatAgeRange(session.syllabus.ageMin, session.syllabus.ageMax, locale)}</span><span>{pathLabel(session)}</span></div><div className="os-session-bottom"><strong className={session.availability.remainingSeats <= 3 ? "is-low" : ""}>{full ? t.full : `${session.availability.remainingSeats} ${t.seatsRemaining}`}</strong><button type="button" disabled={full} onClick={() => selectSession(session)}>{full ? t.fullShort : t.detail}<span>{full ? "" : "→"}</span></button></div></div></article>; })}</div> : null}
+        {status === "success" && visibleSessions.length > 0 ? <div className="os-card-grid">{visibleSessions.slice(0, 9).map((session, index) => { const full = isSessionFull(session); return <article className={`os-session-card${selectedId === session.id ? " is-selected" : ""}`} key={session.id}><img src={activityImage(session, index)} alt={sessionImageAlt(session)} /><div className="os-session-body"><span className="os-time-label">{formatLocalTimeRange(session.startsAt, session.endsAt, locale)}</span><h3>{publicSyllabusTitle(session.syllabus.title)}</h3><div className="os-pills"><span>{formatAgeRange(session.syllabus.ageMin, session.syllabus.ageMax, locale)}</span><span>{pathLabel(session)}</span></div><div className="os-session-bottom"><strong className={typeof session.availability.remainingSeats === "number" && session.availability.remainingSeats <= 3 ? "is-low" : ""}>{full ? t.full : session.availability.remainingSeats === null ? t.available : `${session.availability.remainingSeats} ${t.seatsRemaining}`}</strong><button type="button" disabled={full} onClick={() => selectSession(session)}>{full ? t.fullShort : t.detail}<span>{full ? "" : "→"}</span></button></div></div></article>; })}</div> : null}
 
         {selectedSession ? <div className="os-session-detail" ref={detailRef} tabIndex={-1} aria-labelledby="session-detail-title">
           <img src={activityImage(selectedSession)} alt={sessionImageAlt(selectedSession)} />
