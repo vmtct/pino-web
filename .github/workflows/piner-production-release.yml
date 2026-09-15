@@ -49,6 +49,12 @@ jobs:
           [ "${#sha_lines[@]}" -eq 1 ] || fail_request "Exactly one WEB_SHA is required."
           web_sha="$(tr 'A-F' 'a-f' <<<"${sha_lines[0]}")"
           grep -Eq '^CONFIRM:[[:space:]]*RELEASE_PINER_PRODUCTION[[:space:]]*$' <<<"$ISSUE_BODY" || fail_request "CONFIRM: RELEASE_PINER_PRODUCTION is required."
+          mapfile -t core_issue_lines < <(printf '%s\n' "$ISSUE_BODY" | sed -nE 's/^CORE_RELEASE_ISSUE:[[:space:]]*([1-9][0-9]*)[[:space:]]*$/\1/p')
+          mapfile -t core_run_lines < <(printf '%s\n' "$ISSUE_BODY" | sed -nE 's/^CORE_RELEASE_RUN_ID:[[:space:]]*([1-9][0-9]*)[[:space:]]*$/\1/p')
+          [ "${#core_issue_lines[@]}" -eq 1 ] && [ "${#core_run_lines[@]}" -eq 1 ] || fail_request "Issue body must bind exactly one Core release issue and run."
+          [ -n "${CORE_RELEASE_GH_TOKEN:-}" ] || fail_request "PINO_CORE_RELEASE_READ_TOKEN unavailable for private Core authority."
+          core_authority="$(bash scripts/assert-core-provider-authority.sh "${core_issue_lines[0]}" "${core_run_lines[0]}")" || fail_request "Selected Core release/provider authority is invalid or superseded."
+          core_sha="$(jq -r '.sha' <<<"$core_authority")"; core_version="$(jq -r '.version' <<<"$core_authority")"; core_deployment="$(jq -r '.deployment' <<<"$core_authority")"
           main_sha="$(gh api "/repos/${repo}/git/ref/heads/main" --jq '.object.sha')" || fail_request "Cannot resolve current main."
           [ "$web_sha" = "$main_sha" ] || fail_request "Requested Web SHA is not exact current main."
           prs="$(gh api -H 'Accept: application/vnd.github+json' "/repos/${repo}/commits/${web_sha}/pulls")" || fail_request "Cannot resolve merged-PR provenance."
@@ -57,7 +63,7 @@ jobs:
           latest_ci="$(jq -c --arg sha "$web_sha" '[.workflow_runs[] | select(.head_sha==$sha)] | sort_by(.updated_at // .run_started_at // .created_at // "") | last // empty' <<<"$ci")"
           jq -e '.status=="completed" and .conclusion=="success"' <<<"$latest_ci" >/dev/null || fail_request "Newest same-SHA Web CI is not terminal success."
           echo "web_sha=$web_sha" >> "$GITHUB_OUTPUT"
-          echo "WEB_SHA=$web_sha" >> "$GITHUB_ENV"
+          { echo "WEB_SHA=$web_sha"; echo "CORE_SHA=$core_sha"; echo "CORE_VERSION=$core_version"; echo "CORE_DEPLOYMENT_ID=$core_deployment"; echo "CORE_RELEASE_ISSUE=${core_issue_lines[0]}"; echo "CORE_RELEASE_RUN_ID=${core_run_lines[0]}"; } >> "$GITHUB_ENV"
 
       - name: Check out exact approved main SHA
         uses: actions/checkout@v4
@@ -128,6 +134,9 @@ jobs:
           git cat-file -e "${current_sha}^{commit}" 2>/dev/null || fail "Current Piner SHA is outside repository history."
           git merge-base --is-ancestor "$current_sha" "$WEB_SHA" || fail "Piner promotion must be forward-only."
           [ "$current_sha" != "$WEB_SHA" ] || fail "Piner already serves this SHA; retroactive authorization is forbidden."
+          core_live="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/pino-core/deployments" "${auth[@]}")" || fail "Cannot inspect exact Core provider deployment."
+          [ "$(jq -r '.result.deployments[0].id // empty' <<<"$core_live")" = "$CORE_DEPLOYMENT_ID" ] || fail "Core provider deployment no longer matches selected Core release."
+          [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$core_live" | head -1)" = "$CORE_VERSION" ] || fail "Core provider version no longer matches selected Core release."
           deployments="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${PINER_WORKER}/deployments" "${auth[@]}")" || fail "Cannot inspect current Piner deployment."
           old_deployment_id="$(jq -r '.result.deployments[0].id // empty' <<<"$deployments")"
           old_version="$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$deployments" | head -1)"
@@ -167,6 +176,10 @@ jobs:
           [ "$(jq -r '.commit // empty' <<<"$deployed_info")" = "$WEB_SHA" ] || fail "Piner serving artifact does not match approved exact SHA."
           status="$(curl -sS -o /tmp/piner-home.html -w '%{http_code}' https://piner.pinohouse.art/)"
           [ "$status" = "200" ] || fail "Piner root smoke failed with HTTP ${status}."
+          member_probe_token="$(printf '%043d' 0)"
+          member_status="$(curl -sS -o /tmp/piner-member-provider-smoke.json -w '%{http_code}' -H "Cookie: __Host-piner_session=${member_probe_token}" https://piner.pinohouse.art/api/piner/session)"
+          [ "$member_status" = "401" ] || fail "Piner member provider smoke returned HTTP ${member_status}; expected canonical Core auth rejection."
+          jq -e '.error.code=="PARENT_AUTH_SESSION_INVALID"' /tmp/piner-member-provider-smoke.json >/dev/null || fail "Piner member provider smoke did not traverse canonical Core member auth."
           final_main="$(gh api "/repos/${repo}/git/ref/heads/main" --jq '.object.sha')" || fail "Cannot re-read main before PASS."
           [ "$final_main" = "$WEB_SHA" ] || fail "main moved during Piner promotion; rollback required."
           final_deployments="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${PINER_WORKER}/deployments" "${auth[@]}")" || fail "Cannot verify Piner deployment before PASS."
@@ -175,5 +188,8 @@ jobs:
           [ "$(jq -r '.result.deployments[0].annotations["workers/message"] // empty' <<<"$final_deployments")" = "$deployment_marker" ] || fail "Piner deployment marker changed before PASS."
           bash scripts/assert-live-issue-authority.sh "$repo" "$ISSUE_NUMBER" "[GPT] Piner production release" "$AUTH_BODY_HASH" || fail "Founder authorization changed before PASS."
           bash scripts/assert-no-core-verification-in-flight.sh || fail "Core production verification/recovery overlaps Piner terminal PASS."
+          bash scripts/assert-core-provider-authority.sh "$CORE_RELEASE_ISSUE" "$CORE_RELEASE_RUN_ID" >/dev/null || fail "Core provider authority drifted before Piner terminal PASS."
+          core_final="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/pino-core/deployments" "${auth[@]}")" || fail "Cannot re-check exact Core provider deployment before PASS."
+          [ "$(jq -r '.result.deployments[0].id // empty' <<<"$core_final")" = "$CORE_DEPLOYMENT_ID" ] && [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$core_final" | head -1)" = "$CORE_VERSION" ] || fail "Core provider changed during Piner release."
           promotion_attempted=0
-          comment "PINER_PRODUCTION_RELEASE: **PASS**\n\n- Web source: ${WEB_SHA}\n- Workflow run: ${GITHUB_RUN_ID}\n- Workflow attempt: ${GITHUB_RUN_ATTEMPT}\n- Authorization body hash: ${AUTH_BODY_HASH}\n- Trusted artifact tag: ${trusted_tag}\n- Trusted artifact message: ${trusted_message}\n- Worker: ${PINER_WORKER}\n- Worker version: ${candidate_id}\n- Deployment ID: ${candidate_deployment_id}\n- Deployment marker: ${deployment_marker}\n- Traffic: 100%\n- CI: latest exact-main terminal success required\n- Provenance: merged PR into main required\n- Candidate: trusted exact-source release-job upload\n- Core member binding: pino-core/ParentMemberControlPlane\n- Toppi binding: toppi-web\n- piner.pinohouse.art serving exact source: PASS\n\nNo route, secret, D1, schema, or application-data mutation was performed."
+          comment "PINER_PRODUCTION_RELEASE: **PASS**\n\n- Web source: ${WEB_SHA}\n- Workflow run: ${GITHUB_RUN_ID}\n- Workflow attempt: ${GITHUB_RUN_ATTEMPT}\n- Authorization body hash: ${AUTH_BODY_HASH}\n- Trusted artifact tag: ${trusted_tag}\n- Trusted artifact message: ${trusted_message}\n- Worker: ${PINER_WORKER}\n- Worker version: ${candidate_id}\n- Deployment ID: ${candidate_deployment_id}\n- Deployment marker: ${deployment_marker}\n- Traffic: 100%\n- CI: latest exact-main terminal success required\n- Provenance: merged PR into main required\n- Candidate: trusted exact-source release-job upload\n- Core release issue/run: #${CORE_RELEASE_ISSUE} / ${CORE_RELEASE_RUN_ID}\n- Core source: ${CORE_SHA}\n- Core version: ${CORE_VERSION}\n- Core deployment: ${CORE_DEPLOYMENT_ID}\n- Core member binding: pino-core/ParentMemberControlPlane\n- Toppi binding: toppi-web\n- piner.pinohouse.art serving exact source: PASS\n\nNo route, secret, D1, schema, or application-data mutation was performed."
