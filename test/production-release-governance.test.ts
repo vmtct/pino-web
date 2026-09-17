@@ -146,8 +146,10 @@ test("Web release rebuilds and uploads the exact approved source under the trust
   assert.match(release, /External Web build UUID \(signal only\)/);
   assert.match(release, /Candidate: trusted exact-source release-job upload/);
   assert.doesNotMatch(release, /Candidate Worker version is not immutably joined to the authorized Cloudflare build UUID/);
-  assert.match(release, /builds\/workers\/\$\{worker_tag\}\/triggers/);
+  assert.doesNotMatch(release, /builds\/workers\/\$\{worker_tag\}\/triggers/);
+  assert.match(release, /automaticTrafficPromotion/);
   assert.match(release, /canonical non-serving candidate command/);
+  assert.match(release, /Exact successful Cloudflare candidate build is already serving/);
   assert.match(release, /retroactive production authorization is forbidden/);
 });
 

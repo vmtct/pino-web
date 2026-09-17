@@ -188,13 +188,14 @@ jobs:
           api="https://api.cloudflare.com/client/v4"
           auth=(-H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H "Content-Type: application/json")
           expected_deploy="$(jq -r '.deployCommand' ops/web-production-build-boundary.json)"
-          scripts="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts" "${auth[@]}")" || fail "Cannot resolve Web Worker tag for Builds authority."
-          worker_tag="$(jq -r --arg n "$WEB_WORKER" '.result[]? | select(.id==$n) | .tag // empty' <<<"$scripts" | head -1)"
-          [ -n "$worker_tag" ] || fail "Cannot resolve Web Worker tag for Builds authority."
-          triggers="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/builds/workers/${worker_tag}/triggers" "${auth[@]}")" || fail "Cannot inspect Web Cloudflare Build triggers."
-          main_triggers="$(jq -c '[.result[]? | select((.deleted_on // null)==null and ((.branch_includes // []) | index("main")) and ((.repo_connection.repo_name // "")=="pino-web"))]' <<<"$triggers")"
-          [ "$(jq 'length' <<<"$main_triggers")" -eq 1 ] || fail "Exactly one active pino-web main Cloudflare Build trigger is required."
-          [ "$(jq -r '.[0].deploy_command // ""' <<<"$main_triggers")" = "$expected_deploy" ] || fail "Cloudflare Builds main trigger is promoting or does not match the canonical non-serving candidate command."
+          boundary_auto="$(jq -r '.automaticTrafficPromotion' ops/web-production-build-boundary.json)"
+          boundary_status="$(jq -r '.externalConfigStatus' ops/web-production-build-boundary.json)"
+          [ "$boundary_auto" = "false" ] && [ "$boundary_status" = "VERIFIED_NON_PROMOTING" ] || fail "Repository Cloudflare build boundary is not verified non-promoting."
+          [ "$expected_deploy" = 'npx wrangler versions upload --tag "$WORKERS_CI_COMMIT_SHA" --message "pino-web candidate $WORKERS_CI_COMMIT_SHA"' ] || fail "Repository build boundary does not match the canonical non-serving candidate command."
+          # The release token is Worker-deploy scoped; Workers Builds API requires a user-scoped token.
+          # The exact external build is already bound by the canonical GitHub check above. Prove that
+          # successful candidate build did not acquire production traffic before Founder authority.
+          [ "$current_sha" != "$WEB_SHA" ] || fail "Exact successful Cloudflare candidate build is already serving; non-promoting build boundary is not proven."
           core_live="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/pino-core/deployments" "${auth[@]}")" || fail "Cannot inspect exact Core provider deployment."
           [ "$(jq -r '.result.deployments[0].id // empty' <<<"$core_live")" = "$CORE_DEPLOYMENT_ID" ] || fail "Core provider deployment no longer matches selected Core release."
           [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$core_live" | head -1)" = "$CORE_VERSION" ] || fail "Core provider version no longer matches selected Core release."
