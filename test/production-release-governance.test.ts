@@ -80,7 +80,11 @@ test("promotion is forward-only, SHA-tagged, config-preserving, rollback-capable
   assert.match(release, /forbidden dev-Core URL binding/);
   assert.match(release, /changes production bindings outside the one approved Core service-binding cutover/);
   assert.match(release, /rollback\(\)/);
-  assert.match(release, /Production identity does not match the approved SHA/);
+  assert.match(release, /Production identity did not converge to the approved SHA within the bounded verification window/);
+  assert.match(release, /build-info\.json\?pino-release-proof=\$\{GITHUB_RUN_ID\}-\$\{GITHUB_RUN_ATTEMPT\}-preflight/);
+  assert.match(release, /for identity_attempt in \$\(seq 1 12\); do/);
+  assert.match(release, /pino-release-proof=\$\{candidate_deployment_id\}-\$\{identity_attempt\}/);
+  assert.match(release, /sleep 5/);
   assert.match(release, /main moved during Web release verification; rollback/);
   assert.match(release, /X-PINO-Schedule-Source/);
   assert.match(release, /pinohouse\.art\/artchitect/);
@@ -210,7 +214,8 @@ test("Web hard-kill recovery is durable and terminal ingress proves immutable st
   const recovery = readFileSync("scripts/recover-worker-promotion.sh", "utf8");
   const armedAt = release.indexOf("PINO_WEB_PRODUCTION_RELEASE: **RECOVERY_ARMED**");
   const deployAt = release.indexOf('versions deploy "${candidate_id}@100%"');
-  assert.ok(armedAt > 0 && deployAt > armedAt);
+  const identityPollAt = release.indexOf("for identity_attempt in $(seq 1 12); do");
+  assert.ok(armedAt > 0 && deployAt > armedAt && identityPollAt > deployAt);
   assert.match(watchdog, /workflow_run:/);
   assert.match(watchdog, /Web Production Release/);
   assert.match(watchdog, /recover-worker-promotion\.sh/);

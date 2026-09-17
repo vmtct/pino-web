@@ -173,7 +173,8 @@ jobs:
           [ "$current_main" = "$WEB_SHA" ] \
             || fail "main moved after release approval; re-authorize the new exact SHA."
 
-          current_info="$(curl -fsS https://pino-web.minhtri-van42.workers.dev/build-info.json)" \
+          current_identity_url="https://pino-web.minhtri-van42.workers.dev/build-info.json?pino-release-proof=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-preflight"
+          current_info="$(curl -fsS "$current_identity_url")" \
             || fail "Cannot inspect current production identity."
           current_sha="$(jq -r '.commit // empty' <<<"$current_info")"
           [[ "$current_sha" =~ ^[0-9a-f]{40}$ ]] || fail "Current production SHA is not trustworthy."
@@ -306,11 +307,17 @@ jobs:
             [ "$active_marker" = "$deployment_marker" ] || fail "Exact marked Web deployment is not active at 100%."
           fi
 
-          deployed_info="$(curl -fsS https://pino-web.minhtri-van42.workers.dev/build-info.json)" \
-            || fail "Cannot verify deployed Worker identity."
-          deployed_sha="$(jq -r '.commit // empty' <<<"$deployed_info")"
+          deployed_sha=""
+          for identity_attempt in $(seq 1 12); do
+            identity_url="https://pino-web.minhtri-van42.workers.dev/build-info.json?pino-release-proof=${candidate_deployment_id}-${identity_attempt}"
+            if deployed_info="$(curl -fsS "$identity_url" 2>/dev/null)"; then
+              deployed_sha="$(jq -r '.commit // empty' <<<"$deployed_info")"
+              [ "$deployed_sha" = "$WEB_SHA" ] && break
+            fi
+            sleep 5
+          done
           [ "$deployed_sha" = "$WEB_SHA" ] \
-            || fail "Production identity does not match the approved SHA after release verification."
+            || fail "Production identity did not converge to the approved SHA within the bounded verification window."
 
           status="$(curl -sS -o /tmp/home.html -w '%{http_code}' https://pino-web.minhtri-van42.workers.dev/)"
           [ "$status" = "200" ] || fail "Production root smoke failed with HTTP ${status}."
