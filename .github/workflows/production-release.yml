@@ -80,27 +80,19 @@ jobs:
 
           checks="$(gh api "/repos/${repo}/commits/${web_sha}/check-runs?per_page=100")" \
             || fail_request "Cannot inspect candidate build checks."
-          latest_build_check="$(jq -c '[.check_runs[] | select(.name=="Workers Builds: pino-web")] | sort_by(.started_at // .completed_at // "", .id) | last // empty' <<<"$checks")"
-          jq -e '.status=="completed" and .conclusion=="success" and .app.slug=="cloudflare-workers-and-pages"' <<<"$latest_build_check" >/dev/null \
-            || fail_request "Newest Cloudflare Workers Build check is not terminal success from the canonical Cloudflare app."
-          web_build_uuid="$(jq -r '.external_id // empty' <<<"$latest_build_check")"
-          [[ "$web_build_uuid" =~ ^[0-9a-f-]{36}$ ]] || fail_request "Newest Cloudflare build check lacks immutable build UUID."
-          details_url="$(jq -r '.details_url // empty' <<<"$latest_build_check")"
-          [[ "$details_url" == *"/pino-web/production/builds/${web_build_uuid}" ]] || fail_request "Cloudflare build check details URL does not bind the same build UUID."
-          build_summary="$(jq -r '.output.summary // empty' <<<"$latest_build_check")"
-          mapfile -t candidate_version_lines < <(sed -nE 's/^Version ID:[[:space:]]*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})[[:space:]]*$/\1/p' <<<"$build_summary")
-          [ "${#candidate_version_lines[@]}" -eq 1 ] || fail_request "Canonical Cloudflare build check must expose exactly one immutable Worker Version ID."
-          web_candidate_version="${candidate_version_lines[0]}"
-          candidate_prefix="${web_candidate_version%%-*}"
-          grep -Fq "Preview URL: https://${candidate_prefix}-pino-web.minhtri-van42.workers.dev" <<<"$build_summary" \
-            || fail_request "Cloudflare build check summary does not bind the immutable version to the expected pino-web preview URL."
+          candidate_identity="$(node --experimental-strip-types scripts/web-production-candidate-check.ts "$web_sha" "$CF_ACCOUNT_ID" "$WEB_WORKER" <<<"$checks")" \
+            || fail_request "Canonical Cloudflare candidate identity is invalid or ambiguous."
+          web_build_uuid="$(jq -r '.buildUuid' <<<"$candidate_identity")"
+          web_candidate_version="$(jq -r '.candidateVersion' <<<"$candidate_identity")"
+          web_candidate_preview="$(jq -r '.previewUrl' <<<"$candidate_identity")"
 
           echo "web_sha=$web_sha" >> "$GITHUB_OUTPUT"
           echo "web_build_uuid=$web_build_uuid" >> "$GITHUB_OUTPUT"
           echo "web_candidate_version=$web_candidate_version" >> "$GITHUB_OUTPUT"
+          echo "web_candidate_preview=$web_candidate_preview" >> "$GITHUB_OUTPUT"
           echo "core_release_issue=${core_issue_lines[0]}" >> "$GITHUB_OUTPUT"
           echo "core_release_run=${core_run_lines[0]}" >> "$GITHUB_OUTPUT"
-          { echo "WEB_SHA=$web_sha"; echo "WEB_BUILD_UUID=$web_build_uuid"; echo "WEB_CANDIDATE_VERSION=$web_candidate_version"; echo "CORE_SHA=$core_sha"; echo "CORE_VERSION=$core_version"; echo "CORE_DEPLOYMENT_ID=$core_deployment"; echo "CORE_RELEASE_ISSUE=${core_issue_lines[0]}"; echo "CORE_RELEASE_RUN_ID=${core_run_lines[0]}"; } >> "$GITHUB_ENV"
+          { echo "WEB_SHA=$web_sha"; echo "WEB_BUILD_UUID=$web_build_uuid"; echo "WEB_CANDIDATE_VERSION=$web_candidate_version"; echo "WEB_CANDIDATE_PREVIEW=$web_candidate_preview"; echo "CORE_SHA=$core_sha"; echo "CORE_VERSION=$core_version"; echo "CORE_DEPLOYMENT_ID=$core_deployment"; echo "CORE_RELEASE_ISSUE=${core_issue_lines[0]}"; echo "CORE_RELEASE_RUN_ID=${core_run_lines[0]}"; } >> "$GITHUB_ENV"
 
       - name: Check out exact approved main SHA
         uses: actions/checkout@v4
@@ -224,7 +216,10 @@ jobs:
           [ "$(jq -r '.annotations["workers/message"] // empty' <<<"$candidate_detail")" = "$candidate_message" ] \
             || fail "Canonical Cloudflare candidate message does not bind the exact approved Web SHA."
           candidate_prefix="${candidate_id%%-*}"
-          candidate_preview="https://${candidate_prefix}-${WEB_WORKER}.minhtri-van42.workers.dev"
+          expected_candidate_preview="https://${candidate_prefix}-${WEB_WORKER}.minhtri-van42.workers.dev"
+          [ "$WEB_CANDIDATE_PREVIEW" = "$expected_candidate_preview" ] \
+            || fail "Canonical Cloudflare candidate preview identity drifted after authorization."
+          candidate_preview="$WEB_CANDIDATE_PREVIEW"
           preview_info="$(curl -fsS "${candidate_preview}/build-info.json")" \
             || fail "Cannot inspect canonical Cloudflare candidate preview identity."
           [ "$(jq -r '.commit // empty' <<<"$preview_info")" = "$WEB_SHA" ] \
