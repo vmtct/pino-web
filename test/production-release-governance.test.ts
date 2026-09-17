@@ -263,6 +263,7 @@ test("production Web source no longer points Open Studio at dev Core", () => {
   const wrangler = readFileSync("wrangler.toml", "utf8");
   const adapter = readFileSync("lib/pino-core-public-adapter.ts", "utf8");
   assert.doesNotMatch(wrangler, /pino-core-dev|PINO_CORE_BASE_URL/);
+  assert.match(wrangler, /^keep_vars = false$/m);
   assert.match(wrangler, /binding = "PINO_CORE_PUBLIC"/);
   assert.match(wrangler, /service = "pino-core"/);
   assert.match(wrangler, /entrypoint = "PublicOpenStudioControlPlane"/);
