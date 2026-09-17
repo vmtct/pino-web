@@ -261,21 +261,31 @@ test("candidate resolver fails closed on the newest exact-head Cloudflare attemp
   ), /not terminal success/);
 });
 
-test("production Wrangler diff permits only the approved keep_vars true-to-false transition", () => {
-  assert.doesNotThrow(() => assertApprovedProductionWranglerDiff("-keep_vars = true\n+keep_vars = false\n"));
-  assert.throws(() => assertApprovedProductionWranglerDiff("-keep_vars = false\n+keep_vars = true\n"), /approved true-to-false/);
-  assert.throws(() => assertApprovedProductionWranglerDiff("+keep_vars = false\n"), /approved true-to-false/);
-  assert.throws(() => assertApprovedProductionWranglerDiff("+compatibility_date = \"2099-01-01\"\n"), /unapproved production Wrangler config delta/);
-});
-
-test("production Wrangler diff preserves the canonical Core cutover allowance", () => {
-  assert.doesNotThrow(() => assertApprovedProductionWranglerDiff([
-    '-PINO_CORE_BASE_URL = "https://pino-core-dev.example"',
-    '+[[services]]',
+test("production Wrangler diff permits only the exact atomic approved cutover", () => {
+  const exact = [
+    "-keep_vars = true",
+    "+keep_vars = false",
+    '-PINO_CORE_BASE_URL = "https://pino-core-dev.minhtri-van42.workers.dev"',
+    "-# Keep false while production pino-web reads from pino-core-dev. Change only after",
+    "-# an explicitly approved production pino-core cutover.",
+    "+[[services]]",
     '+binding = "PINO_CORE_PUBLIC"',
     '+service = "pino-core"',
     '+entrypoint = "PublicOpenStudioControlPlane"',
-  ].join("\n")));
+  ].join("\n");
+  assert.doesNotThrow(() => assertApprovedProductionWranglerDiff(""));
+  assert.doesNotThrow(() => assertApprovedProductionWranglerDiff(exact));
+  for (const invalid of [
+    "-keep_vars = false\n+keep_vars = true",
+    "+keep_vars = false",
+    `${exact}\n+compatibility_date = "2099-01-01"`,
+    '+binding = "PINO_CORE_PUBLIC"',
+    '+UNRELATED = "PINO_CORE_BASE_URL"',
+    exact.replace('+binding = "PINO_CORE_PUBLIC"', '-binding = "PINO_CORE_PUBLIC"'),
+    exact.replace('+binding = "PINO_CORE_PUBLIC"', '+binding = "PINO_CORE_PUBLIC"\n+binding = "PINO_CORE_PUBLIC"'),
+  ]) {
+    assert.throws(() => assertApprovedProductionWranglerDiff(invalid), /unapproved production Wrangler config delta/);
+  }
 });
 
 test("production Web source no longer points Open Studio at dev Core", () => {

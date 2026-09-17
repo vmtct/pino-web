@@ -1,30 +1,24 @@
 import { readFileSync } from "node:fs";
 
-const ALLOWED_CORE_CUTOVER = [
-  /PINO_CORE_BASE_URL/,
-  /Keep false while production pino-web reads from pino-core-dev/,
-  /explicitly approved production pino-core cutover/,
-  /^[-+]\[\[services\]\]$/,
-  /^[-+]binding = "PINO_CORE_PUBLIC"$/,
-  /^[-+]service = "pino-core"$/,
-  /^[-+]entrypoint = "PublicOpenStudioControlPlane"$/,
-];
+const APPROVED_PRODUCTION_CUTOVER = [
+  "-keep_vars = true",
+  "+keep_vars = false",
+  '-PINO_CORE_BASE_URL = "https://pino-core-dev.minhtri-van42.workers.dev"',
+  "-# Keep false while production pino-web reads from pino-core-dev. Change only after",
+  "-# an explicitly approved production pino-core cutover.",
+  "+[[services]]",
+  '+binding = "PINO_CORE_PUBLIC"',
+  '+service = "pino-core"',
+  '+entrypoint = "PublicOpenStudioControlPlane"',
+] as const;
 
 export function assertApprovedProductionWranglerDiff(diff: string): void {
   const changes = diff.split(/\r?\n/).filter((line) => /^[-+][^-+]/.test(line));
-  const keepVars = changes.filter((line) => /^[-+]keep_vars\s*=/.test(line));
-  if (keepVars.length > 0) {
-    const exactTransition = keepVars.length === 2
-      && keepVars.includes("-keep_vars = true")
-      && keepVars.includes("+keep_vars = false");
-    if (!exactTransition) throw new Error("Production keep_vars delta is not the approved true-to-false transition.");
-  }
-  const unexpected = changes.filter((line) => {
-    if (line === "-keep_vars = true" || line === "+keep_vars = false") return false;
-    return !ALLOWED_CORE_CUTOVER.some((pattern) => pattern.test(line));
-  });
-  if (unexpected.length > 0) {
-    throw new Error(`Candidate contains an unapproved production Wrangler config delta: ${unexpected.join(" | ")}`);
+  if (changes.length === 0) return;
+  const exactCutover = changes.length === APPROVED_PRODUCTION_CUTOVER.length
+    && APPROVED_PRODUCTION_CUTOVER.every((line, index) => changes[index] === line);
+  if (!exactCutover) {
+    throw new Error(`Candidate contains an unapproved production Wrangler config delta: ${changes.join(" | ")}`);
   }
 }
 
