@@ -182,8 +182,8 @@ jobs:
 
           config_diff="$RUNNER_TEMP/web-production-config.diff"
           git diff --unified=0 "$current_sha" "$WEB_SHA" -- wrangler.toml wrangler.piner.production.toml > "$config_diff" || true
-          unexpected_config="$(grep -E '^[+-][^+-]' "$config_diff" | grep -Ev 'PINO_CORE_BASE_URL|Keep false while production pino-web reads from pino-core-dev|explicitly approved production pino-core cutover|^[-+]\[\[services\]\]$|^[-+]binding = "PINO_CORE_PUBLIC"$|^[-+]service = "pino-core"$|^[-+]entrypoint = "PublicOpenStudioControlPlane"$' || true)"
-          [ -z "$unexpected_config" ] || fail "Candidate contains an unapproved production Wrangler config delta."
+          node --experimental-strip-types scripts/web-production-config-diff-check.ts < "$config_diff" \
+            || fail "Candidate contains an unapproved production Wrangler config delta."
 
           api="https://api.cloudflare.com/client/v4"
           auth=(-H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H "Content-Type: application/json")

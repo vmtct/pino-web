@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import test from "node:test";
 import { resolveWebProductionCandidate } from "../scripts/web-production-candidate-check.ts";
+import { assertApprovedProductionWranglerDiff } from "../scripts/web-production-config-diff-check.ts";
 
 const ci = readFileSync(".github/workflows/ci.yml", "utf8");
 const release = readFileSync(".github/workflows/production-release.yml", "utf8");
@@ -72,6 +73,7 @@ test("promotion is forward-only, SHA-tagged, config-preserving, rollback-capable
   assert.match(release, /git merge-base --is-ancestor "\$current_sha" "\$WEB_SHA"/);
   assert.match(release, /versions deploy "\$\{candidate_id\}@100%"/);
   assert.match(release, /unapproved production Wrangler config delta/);
+  assert.match(release, /web-production-config-diff-check\.ts/);
   assert.match(release, /PINO_CORE_PUBLIC -> pino-core\/PublicOpenStudioControlPlane/);
   assert.match(release, /forbidden dev-Core URL binding/);
   assert.match(release, /changes production bindings outside the one approved Core service-binding cutover/);
@@ -257,6 +259,23 @@ test("candidate resolver fails closed on the newest exact-head Cloudflare attemp
     { check_runs: [older, newerFailed] },
     { webSha: candidateWebSha, accountId: candidateAccount },
   ), /not terminal success/);
+});
+
+test("production Wrangler diff permits only the approved keep_vars true-to-false transition", () => {
+  assert.doesNotThrow(() => assertApprovedProductionWranglerDiff("-keep_vars = true\n+keep_vars = false\n"));
+  assert.throws(() => assertApprovedProductionWranglerDiff("-keep_vars = false\n+keep_vars = true\n"), /approved true-to-false/);
+  assert.throws(() => assertApprovedProductionWranglerDiff("+keep_vars = false\n"), /approved true-to-false/);
+  assert.throws(() => assertApprovedProductionWranglerDiff("+compatibility_date = \"2099-01-01\"\n"), /unapproved production Wrangler config delta/);
+});
+
+test("production Wrangler diff preserves the canonical Core cutover allowance", () => {
+  assert.doesNotThrow(() => assertApprovedProductionWranglerDiff([
+    '-PINO_CORE_BASE_URL = "https://pino-core-dev.example"',
+    '+[[services]]',
+    '+binding = "PINO_CORE_PUBLIC"',
+    '+service = "pino-core"',
+    '+entrypoint = "PublicOpenStudioControlPlane"',
+  ].join("\n")));
 });
 
 test("production Web source no longer points Open Studio at dev Core", () => {
