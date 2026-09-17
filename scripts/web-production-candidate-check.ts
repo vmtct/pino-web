@@ -53,15 +53,14 @@ export function resolveWebProductionCandidate(
 
   const summary: string = typeof check.output?.summary === "string" ? check.output.summary : "";
   const lines = summary.split(/\r?\n/);
-  const versionIds = lines.flatMap((line) => {
-    const match = /^Version ID:\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s*$/.exec(line);
-    return match ? [match[1]] : [];
-  });
-  if (versionIds.length !== 1) fail("Cloudflare build summary must expose exactly one immutable Worker Version ID.");
-  const candidateVersion = versionIds[0];
+  const versionLines = lines.filter((line) => line.trimStart().startsWith("Version ID:"));
+  if (versionLines.length !== 1) fail("Cloudflare build summary must expose exactly one Worker Version ID claim.");
+  const versionMatch = /^Version ID:\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s*$/.exec(versionLines[0].trim());
+  if (!versionMatch) fail("Cloudflare build summary contains a malformed Worker Version ID claim.");
+  const candidateVersion = versionMatch[1];
   const prefix = candidateVersion.slice(0, 8);
   const previewUrl = `https://${prefix}-${worker}.${previewAccount}.workers.dev`;
-  const previewLines = lines.filter((line) => line.startsWith("Preview URL:"));
+  const previewLines = lines.filter((line) => line.trimStart().startsWith("Preview URL:"));
   if (previewLines.length !== 1 || previewLines[0].trim() !== `Preview URL: ${previewUrl}`) {
     fail("Cloudflare build summary must bind exactly one expected immutable preview URL.");
   }

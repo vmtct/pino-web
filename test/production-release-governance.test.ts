@@ -169,12 +169,19 @@ test("Web release consumes only a semantically validated canonical Cloudflare ca
   assert.match(release, /Candidate: exact immutable version from canonical Cloudflare Workers Build check/);
   assert.match(release, /Candidate preview exact-SHA\/Core smoke: PASS/);
 
-  const uploadLines = release.split("\n")
-    .map((line) => line.trim())
-    .filter((line) => /\bversions\s+upload\b/.test(line));
-  assert.deepEqual(uploadLines, [
-    `[ "$expected_deploy" = 'npx wrangler versions upload --tag "$WORKERS_CI_COMMIT_SHA" --message "pino-web candidate $WORKERS_CI_COMMIT_SHA"' ] || fail "Repository build boundary does not match the canonical non-serving candidate command."`,
-  ]);
+  const normalizeShellContinuations = (source: string) => source.replace(/\\\r?\n[ \t]*/g, " ");
+  const countVersionUploads = (source: string) =>
+    (normalizeShellContinuations(source).match(/\bversions\s+upload\b/g) ?? []).length;
+  const allowedBoundary = `[ "$expected_deploy" = 'npx wrangler versions upload --tag "$WORKERS_CI_COMMIT_SHA" --message "pino-web candidate $WORKERS_CI_COMMIT_SHA"' ] || fail "Repository build boundary does not match the canonical non-serving candidate command."`;
+  const normalizedRelease = normalizeShellContinuations(release);
+  assert.equal(countVersionUploads(release), 1);
+  assert.ok(normalizedRelease.includes(allowedBoundary));
+
+  const splitUploadBypass = release.replace(
+    'WRANGLER_OUTPUT_FILE_PATH="$deploy_output" npx wrangler versions deploy',
+    'npx wrangler versions \\\n            upload -c wrangler.toml >/dev/null\n          WRANGLER_OUTPUT_FILE_PATH="$deploy_output" npx wrangler versions deploy',
+  );
+  assert.equal(countVersionUploads(splitUploadBypass), 2);
 
   const resolverAt = release.indexOf("web-production-candidate-check.ts");
   const previewAt = release.indexOf('preview_info="$(curl -fsS');
@@ -212,7 +219,19 @@ test("candidate resolver rejects duplicate or mismatched immutable summary ident
   assert.throws(() => resolveWebProductionCandidate(
     { check_runs: [cloudflareCheck({ output: { summary: duplicateVersion } })] },
     { webSha: candidateWebSha, accountId: candidateAccount },
-  ), /exactly one immutable Worker Version ID/);
+  ), /exactly one Worker Version ID claim/);
+
+  const malformedAndValidVersion = `  Version ID: not-a-uuid\nVersion ID: ${candidateVersion}\nPreview URL: ${candidatePreview}\n`;
+  assert.throws(() => resolveWebProductionCandidate(
+    { check_runs: [cloudflareCheck({ output: { summary: malformedAndValidVersion } })] },
+    { webSha: candidateWebSha, accountId: candidateAccount },
+  ), /exactly one Worker Version ID claim/);
+
+  const malformedOnlyVersion = `Version ID: not-a-uuid\nPreview URL: ${candidatePreview}\n`;
+  assert.throws(() => resolveWebProductionCandidate(
+    { check_runs: [cloudflareCheck({ output: { summary: malformedOnlyVersion } })] },
+    { webSha: candidateWebSha, accountId: candidateAccount },
+  ), /malformed Worker Version ID claim/);
 
   const duplicatePreview = `Version ID: ${candidateVersion}\nPreview URL: ${candidatePreview}\nPreview URL: ${candidatePreview}\n`;
   assert.throws(() => resolveWebProductionCandidate(
