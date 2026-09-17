@@ -261,8 +261,19 @@ test("candidate resolver fails closed on the newest exact-head Cloudflare attemp
   ), /not terminal success/);
 });
 
-test("production Wrangler diff permits only the exact atomic approved cutover", () => {
-  const exact = [
+function wranglerUnifiedDiff(path: string, changes: string[]): string {
+  return [
+    `diff --git a/${path} b/${path}`,
+    "index 1111111..2222222 100644",
+    `--- a/${path}`,
+    `+++ b/${path}`,
+    "@@ -1 +1 @@",
+    ...changes,
+  ].join("\n");
+}
+
+test("production Wrangler diff permits only the exact file-aware atomic approved cutover", () => {
+  const exactChanges = [
     "-keep_vars = true",
     "+keep_vars = false",
     '-PINO_CORE_BASE_URL = "https://pino-core-dev.minhtri-van42.workers.dev"',
@@ -272,17 +283,34 @@ test("production Wrangler diff permits only the exact atomic approved cutover", 
     '+binding = "PINO_CORE_PUBLIC"',
     '+service = "pino-core"',
     '+entrypoint = "PublicOpenStudioControlPlane"',
-  ].join("\n");
+  "+",
+  ];
+  const exact = wranglerUnifiedDiff("wrangler.toml", exactChanges);
   assert.doesNotThrow(() => assertApprovedProductionWranglerDiff(""));
   assert.doesNotThrow(() => assertApprovedProductionWranglerDiff(exact));
+
+  const splitAcrossFiles = [
+    wranglerUnifiedDiff("wrangler.toml", exactChanges.slice(0, 2)),
+    wranglerUnifiedDiff("wrangler.piner.production.toml", exactChanges.slice(2)),
+  ].join("\n");
+  const duplicateSection = `${exact}\n${wranglerUnifiedDiff("wrangler.toml", [])}`;
+  const renamedHeader = exact.replace(
+    "diff --git a/wrangler.toml b/wrangler.toml",
+    "diff --git a/wrangler.toml b/wrangler.piner.production.toml",
+  );
+
   for (const invalid of [
-    "-keep_vars = false\n+keep_vars = true",
-    "+keep_vars = false",
-    `${exact}\n+compatibility_date = "2099-01-01"`,
-    '+binding = "PINO_CORE_PUBLIC"',
-    '+UNRELATED = "PINO_CORE_BASE_URL"',
-    exact.replace('+binding = "PINO_CORE_PUBLIC"', '-binding = "PINO_CORE_PUBLIC"'),
-    exact.replace('+binding = "PINO_CORE_PUBLIC"', '+binding = "PINO_CORE_PUBLIC"\n+binding = "PINO_CORE_PUBLIC"'),
+    wranglerUnifiedDiff("wrangler.toml", ["-keep_vars = false", "+keep_vars = true"]),
+    wranglerUnifiedDiff("wrangler.toml", ["+keep_vars = false"]),
+    wranglerUnifiedDiff("wrangler.toml", [...exactChanges, '+compatibility_date = "2099-01-01"']),
+    wranglerUnifiedDiff("wrangler.piner.production.toml", exactChanges),
+    splitAcrossFiles,
+    duplicateSection,
+    renamedHeader,
+    wranglerUnifiedDiff("wrangler.toml", exactChanges.map((line) =>
+      line === '+binding = "PINO_CORE_PUBLIC"' ? '-binding = "PINO_CORE_PUBLIC"' : line)),
+    wranglerUnifiedDiff("wrangler.toml", exactChanges.flatMap((line) =>
+      line === '+binding = "PINO_CORE_PUBLIC"' ? [line, line] : [line])),
   ]) {
     assert.throws(() => assertApprovedProductionWranglerDiff(invalid), /unapproved production Wrangler config delta/);
   }
