@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import test from "node:test";
 import { resolveWebProductionCandidate } from "../scripts/web-production-candidate-check.ts";
+import { assertApprovedProductionWranglerDiff } from "../scripts/web-production-config-diff-check.ts";
 
 const ci = readFileSync(".github/workflows/ci.yml", "utf8");
 const release = readFileSync(".github/workflows/production-release.yml", "utf8");
@@ -72,6 +73,7 @@ test("promotion is forward-only, SHA-tagged, config-preserving, rollback-capable
   assert.match(release, /git merge-base --is-ancestor "\$current_sha" "\$WEB_SHA"/);
   assert.match(release, /versions deploy "\$\{candidate_id\}@100%"/);
   assert.match(release, /unapproved production Wrangler config delta/);
+  assert.match(release, /web-production-config-diff-check\.ts/);
   assert.match(release, /PINO_CORE_PUBLIC -> pino-core\/PublicOpenStudioControlPlane/);
   assert.match(release, /forbidden dev-Core URL binding/);
   assert.match(release, /changes production bindings outside the one approved Core service-binding cutover/);
@@ -257,6 +259,61 @@ test("candidate resolver fails closed on the newest exact-head Cloudflare attemp
     { check_runs: [older, newerFailed] },
     { webSha: candidateWebSha, accountId: candidateAccount },
   ), /not terminal success/);
+});
+
+function wranglerUnifiedDiff(path: string, changes: string[]): string {
+  return [
+    `diff --git a/${path} b/${path}`,
+    "index 1111111..2222222 100644",
+    `--- a/${path}`,
+    `+++ b/${path}`,
+    "@@ -1 +1 @@",
+    ...changes,
+  ].join("\n");
+}
+
+test("production Wrangler diff permits only the exact file-aware atomic approved cutover", () => {
+  const exactChanges = [
+    "-keep_vars = true",
+    "+keep_vars = false",
+    '-PINO_CORE_BASE_URL = "https://pino-core-dev.minhtri-van42.workers.dev"',
+    "-# Keep false while production pino-web reads from pino-core-dev. Change only after",
+    "-# an explicitly approved production pino-core cutover.",
+    "+[[services]]",
+    '+binding = "PINO_CORE_PUBLIC"',
+    '+service = "pino-core"',
+    '+entrypoint = "PublicOpenStudioControlPlane"',
+  "+",
+  ];
+  const exact = wranglerUnifiedDiff("wrangler.toml", exactChanges);
+  assert.doesNotThrow(() => assertApprovedProductionWranglerDiff(""));
+  assert.doesNotThrow(() => assertApprovedProductionWranglerDiff(exact));
+
+  const splitAcrossFiles = [
+    wranglerUnifiedDiff("wrangler.toml", exactChanges.slice(0, 2)),
+    wranglerUnifiedDiff("wrangler.piner.production.toml", exactChanges.slice(2)),
+  ].join("\n");
+  const duplicateSection = `${exact}\n${wranglerUnifiedDiff("wrangler.toml", [])}`;
+  const renamedHeader = exact.replace(
+    "diff --git a/wrangler.toml b/wrangler.toml",
+    "diff --git a/wrangler.toml b/wrangler.piner.production.toml",
+  );
+
+  for (const invalid of [
+    wranglerUnifiedDiff("wrangler.toml", ["-keep_vars = false", "+keep_vars = true"]),
+    wranglerUnifiedDiff("wrangler.toml", ["+keep_vars = false"]),
+    wranglerUnifiedDiff("wrangler.toml", [...exactChanges, '+compatibility_date = "2099-01-01"']),
+    wranglerUnifiedDiff("wrangler.piner.production.toml", exactChanges),
+    splitAcrossFiles,
+    duplicateSection,
+    renamedHeader,
+    wranglerUnifiedDiff("wrangler.toml", exactChanges.map((line) =>
+      line === '+binding = "PINO_CORE_PUBLIC"' ? '-binding = "PINO_CORE_PUBLIC"' : line)),
+    wranglerUnifiedDiff("wrangler.toml", exactChanges.flatMap((line) =>
+      line === '+binding = "PINO_CORE_PUBLIC"' ? [line, line] : [line])),
+  ]) {
+    assert.throws(() => assertApprovedProductionWranglerDiff(invalid), /unapproved production Wrangler config delta/);
+  }
 });
 
 test("production Web source no longer points Open Studio at dev Core", () => {
