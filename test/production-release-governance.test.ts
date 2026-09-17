@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import test from "node:test";
 import { resolveWebProductionCandidate } from "../scripts/web-production-candidate-check.ts";
 import { assertApprovedProductionWranglerDiff } from "../scripts/web-production-config-diff-check.ts";
+import { validateServingRebindProof } from "../scripts/web-production-serving-rebind.ts";
 
 const ci = readFileSync(".github/workflows/ci.yml", "utf8");
 const release = readFileSync(".github/workflows/production-release.yml", "utf8");
@@ -79,7 +81,7 @@ test("promotion is forward-only, SHA-tagged, config-preserving, rollback-capable
   assert.match(release, /changes production bindings outside the one approved Core service-binding cutover/);
   assert.match(release, /rollback\(\)/);
   assert.match(release, /Production identity does not match the approved SHA/);
-  assert.match(release, /main moved during promotion; rollback/);
+  assert.match(release, /main moved during Web release verification; rollback/);
   assert.match(release, /X-PINO-Schedule-Source/);
   assert.match(release, /pinohouse\.art\/artchitect/);
   assert.match(release, /www\.pinohouse\.art\/little-piner/);
@@ -133,10 +135,74 @@ test("Web production workflow binds terminal PASS to immutable deployment identi
     "old_deployment_id", "candidate_deployment_id", "deployment_marker",
     "promotion_attempted=1", "main_predeploy", "final_deployments",
     "PINO_WEB_PRODUCTION_RELEASE:", "web-production-release-fence.mjs",
+    "CANONICAL_REBIND_NO_TRAFFIC_MUTATION", "web-production-serving-rebind.ts",
   ]) assert.ok(release.includes(token), `missing ${token}`);
   assert.ok(release.indexOf("promotion_attempted=1") < release.indexOf("WRANGLER_OUTPUT_FILE_PATH=\"$deploy_output\""));
-  assert.match(release, /retroactive production authorization is forbidden/);
+  assert.match(release, /if \[ "\$rebind_mode" -eq 0 \]; then/);
+  assert.match(release, /Serving candidate is not bound to an exact prior canonical Web PASS receipt/);
+  assert.doesNotMatch(release, /retroactive production authorization is forbidden/);
   assert.doesNotMatch(release, /PASS_ALREADY_ACTIVE/);
+});
+
+const priorWebIssueBody = [
+  `WEB_SHA: ${candidateWebSha}`,
+  "CORE_RELEASE_ISSUE: 746",
+  "CORE_RELEASE_RUN_ID: 35165095880",
+  "CONFIRM: RELEASE_PRODUCTION",
+].join("\n");
+const priorWebIssueHash = createHash("sha256").update(priorWebIssueBody, "utf8").digest("hex");
+const priorWebDeployment = "33333333-3333-4333-8333-333333333333";
+const priorWebRunId = 35244398333;
+const currentWebRunId = 35266012759;
+const priorWebRun = {
+  id: priorWebRunId,
+  repository: { full_name: "vmtct/pino-web" },
+  event: "issues", run_attempt: 1, status: "completed", conclusion: "success",
+  actor: { login: "vmtct" }, triggering_actor: { login: "vmtct" },
+  path: ".github/workflows/production-release.yml", head_sha: candidateWebSha,
+  display_title: `Web production release #99 @ ${candidateWebSha}`,
+};
+const priorWebIssue = { number: 99, user: { login: "vmtct" }, title: "[GPT] Web production release", body: priorWebIssueBody };
+function priorWebReceipt(overrides: { runId?: number; deployment?: string; version?: string; hash?: string } = {}) {
+  const runId = overrides.runId ?? priorWebRunId;
+  const deployment = overrides.deployment ?? priorWebDeployment;
+  const version = overrides.version ?? candidateVersion;
+  const hash = overrides.hash ?? priorWebIssueHash;
+  return {
+    id: 1, created_at: "2026-09-17T16:10:00Z", user: { login: "github-actions[bot]" },
+    body: [
+      "WEB_PRODUCTION_RELEASE: **PASS**", "",
+      `- Web source: ${candidateWebSha}`, `- Workflow run: ${runId}`,
+      "- Workflow attempt: 1", `- Authorization body hash: ${hash}`,
+      `- Canonical Cloudflare candidate version: ${version}`,
+      `- Worker version: ${version}`, `- Deployment ID: ${deployment}`,
+      "- Traffic: 100%",
+    ].join("\n"),
+  };
+}
+function validRebindInput() {
+  return {
+    webSha: candidateWebSha, candidateVersion, activeVersion: candidateVersion,
+    activeDeploymentId: priorWebDeployment, currentRunId: currentWebRunId,
+    priorRun: priorWebRun, priorIssue: priorWebIssue, priorComments: [priorWebReceipt()],
+  };
+}
+
+test("already-serving Web candidate rebind requires exact prior canonical release proof", () => {
+  assert.deepEqual(validateServingRebindProof(validRebindInput()), {
+    priorIssueNumber: 99, priorRunId: priorWebRunId,
+    priorDeploymentId: priorWebDeployment, priorAuthorizationHash: priorWebIssueHash,
+  });
+  assert.throws(() => validateServingRebindProof({ ...validRebindInput(), activeDeploymentId: "44444444-4444-4444-8444-444444444444" }), /RECEIPT_DEPLOYMENT_MISMATCH/);
+  assert.throws(() => validateServingRebindProof({ ...validRebindInput(), activeVersion: "55555555-5555-4555-8555-555555555555" }), /ACTIVE_VERSION_NOT_CANDIDATE/);
+  assert.throws(() => validateServingRebindProof({ ...validRebindInput(), priorRun: { ...priorWebRun, display_title: `Web production release #98 @ ${candidateWebSha}` } }), /INVALID_PRIOR_ISSUE/);
+  assert.throws(() => validateServingRebindProof({ ...validRebindInput(), priorComments: [priorWebReceipt({ runId: priorWebRunId + 1 })] }), /RECEIPT_RUN_MISMATCH/);
+  assert.throws(() => validateServingRebindProof({ ...validRebindInput(), priorComments: [priorWebReceipt({ hash: "f".repeat(64) })] }), /RECEIPT_AUTH_HASH_MISMATCH/);
+});
+
+test("already-serving Web candidate rebind fails closed on a newer non-PASS terminal receipt", () => {
+  const rejected = { id: 2, created_at: "2026-09-17T16:11:00Z", user: { login: "github-actions[bot]" }, body: "WEB_PRODUCTION_RELEASE: **FAIL_SAFE**\n\nnewer terminal" };
+  assert.throws(() => validateServingRebindProof({ ...validRebindInput(), priorComments: [priorWebReceipt(), rejected] }), /PRIOR_TERMINAL_NOT_PASS/);
 });
 
 test("Web hard-kill recovery is durable and terminal ingress proves immutable static assets", () => {
