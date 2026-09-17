@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import test from "node:test";
+import { resolveWebProductionCandidate } from "../scripts/web-production-candidate-check.ts";
 
 const ci = readFileSync(".github/workflows/ci.yml", "utf8");
 const release = readFileSync(".github/workflows/production-release.yml", "utf8");
@@ -14,6 +15,28 @@ const buildBoundary = JSON.parse(
   promotionAuthority: string;
   externalConfigStatus: string;
 };
+
+const candidateWebSha = "a".repeat(40);
+const candidateAccount = "9".repeat(32);
+const candidateBuildUuid = "11111111-1111-4111-8111-111111111111";
+const candidateVersion = "22222222-2222-4222-8222-222222222222";
+const candidatePreview = "https://22222222-pino-web.minhtri-van42.workers.dev";
+
+function cloudflareCheck(overrides: Record<string, any> = {}) {
+  const base = {
+    id: 100,
+    name: "Workers Builds: pino-web",
+    head_sha: candidateWebSha,
+    status: "completed",
+    conclusion: "success",
+    started_at: "2026-09-17T10:14:57Z",
+    app: { slug: "cloudflare-workers-and-pages" },
+    external_id: candidateBuildUuid,
+    details_url: `https://dash.cloudflare.com/${candidateAccount}/workers/services/view/pino-web/production/builds/${candidateBuildUuid}`,
+    output: { summary: `Version ID: ${candidateVersion}\nPreview URL: ${candidatePreview}\n` },
+  };
+  return { ...base, ...overrides, output: { ...base.output, ...(overrides.output || {}) } };
+}
 
 const boundedReleaseTest =
   "node --test --experimental-strip-types test/production-release-governance.test.ts";
@@ -38,7 +61,7 @@ test("production release requires Founder exact-SHA provenance and explicit conf
   assert.match(release, /CONFIRM:\[\[:space:\]\]\*RELEASE_PRODUCTION/);
   assert.match(release, /merge_commit_sha == \$sha/);
   assert.match(release, /Newest same-SHA Web CI attempt is not terminal success/);
-  assert.match(release, /Workers Builds: pino-web/);
+  assert.match(release, /web-production-candidate-check\.ts/);
   assert.match(release, new RegExp(boundedReleaseTest.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.doesNotMatch(release, /bun run test/);
   assert.doesNotMatch(release, /workflow_dispatch:/);
@@ -135,22 +158,105 @@ test("Web hard-kill recovery is durable and terminal ingress proves immutable st
   assert.match(release, /immutable Next static asset routes: PASS/);
 });
 
-test("Web release rebuilds and uploads the exact approved source under the trusted release recipe", () => {
-  assert.match(release, /latest_build_check/);
-  assert.match(release, /external_id/);
-  assert.match(release, /bun install --frozen-lockfile/);
-  assert.match(release, /bun run build/);
-  assert.match(release, /wrangler@4\.126\.0 versions upload -c wrangler\.toml/);
-  assert.match(release, /pino-web-trusted-\$\{WEB_SHA\}/);
-  assert.match(release, /PINO trusted Web release/);
-  assert.match(release, /External Web build UUID \(signal only\)/);
-  assert.match(release, /Candidate: trusted exact-source release-job upload/);
-  assert.doesNotMatch(release, /Candidate Worker version is not immutably joined to the authorized Cloudflare build UUID/);
-  assert.doesNotMatch(release, /builds\/workers\/\$\{worker_tag\}\/triggers/);
-  assert.match(release, /automaticTrafficPromotion/);
-  assert.match(release, /canonical non-serving candidate command/);
-  assert.match(release, /Exact successful Cloudflare candidate build is already serving/);
-  assert.match(release, /retroactive production authorization is forbidden/);
+test("Web release consumes only a semantically validated canonical Cloudflare candidate", () => {
+  assert.match(release, /node --experimental-strip-types scripts\/web-production-candidate-check\.ts/);
+  assert.match(release, /WEB_CANDIDATE_VERSION/);
+  assert.match(release, /WEB_CANDIDATE_PREVIEW/);
+  assert.doesNotMatch(release, /candidate_version_lines|build_summary=/);
+  assert.match(release, /wrangler@4\.126\.0 versions view "\$candidate_id"/);
+  assert.match(release, /Canonical Cloudflare candidate tag does not bind the exact approved Web SHA/);
+  assert.match(release, /candidate preview did not execute against the exact Core release version/);
+  assert.match(release, /Candidate: exact immutable version from canonical Cloudflare Workers Build check/);
+  assert.match(release, /Candidate preview exact-SHA\/Core smoke: PASS/);
+
+  const normalizeShellContinuations = (source: string) => source.replace(/\\\r?\n[ \t]*/g, " ");
+  const countVersionUploads = (source: string) =>
+    (normalizeShellContinuations(source).match(/\bversions\s+upload\b/g) ?? []).length;
+  const allowedBoundary = `[ "$expected_deploy" = 'npx wrangler versions upload --tag "$WORKERS_CI_COMMIT_SHA" --message "pino-web candidate $WORKERS_CI_COMMIT_SHA"' ] || fail "Repository build boundary does not match the canonical non-serving candidate command."`;
+  const normalizedRelease = normalizeShellContinuations(release);
+  assert.equal(countVersionUploads(release), 1);
+  assert.ok(normalizedRelease.includes(allowedBoundary));
+
+  const splitUploadBypass = release.replace(
+    'WRANGLER_OUTPUT_FILE_PATH="$deploy_output" npx wrangler versions deploy',
+    'npx wrangler versions \\\n            upload -c wrangler.toml >/dev/null\n          WRANGLER_OUTPUT_FILE_PATH="$deploy_output" npx wrangler versions deploy',
+  );
+  assert.equal(countVersionUploads(splitUploadBypass), 2);
+
+  const resolverAt = release.indexOf("web-production-candidate-check.ts");
+  const previewAt = release.indexOf('preview_info="$(curl -fsS');
+  const armedAt = release.indexOf("PINO_WEB_PRODUCTION_RELEASE: **RECOVERY_ARMED**");
+  const deployAt = release.indexOf('versions deploy "${candidate_id}@100%"');
+  assert.ok(resolverAt > 0 && previewAt > resolverAt && armedAt > previewAt && deployAt > armedAt);
+});
+
+test("candidate resolver binds exact head, canonical app, build UUID, version, and preview", () => {
+  const result = resolveWebProductionCandidate(
+    { check_runs: [cloudflareCheck()] },
+    { webSha: candidateWebSha, accountId: candidateAccount },
+  );
+  assert.deepEqual(result, {
+    buildUuid: candidateBuildUuid,
+    candidateVersion,
+    previewUrl: candidatePreview,
+  });
+  assert.throws(() => resolveWebProductionCandidate(
+    { check_runs: [cloudflareCheck({ head_sha: "b".repeat(40) })] },
+    { webSha: candidateWebSha, accountId: candidateAccount },
+  ), /No exact-head/);
+  assert.throws(() => resolveWebProductionCandidate(
+    { check_runs: [cloudflareCheck({ app: { slug: "github-actions" } })] },
+    { webSha: candidateWebSha, accountId: candidateAccount },
+  ), /canonical Cloudflare app/);
+  assert.throws(() => resolveWebProductionCandidate(
+    { check_runs: [cloudflareCheck({ details_url: "https://example.invalid/build" })] },
+    { webSha: candidateWebSha, accountId: candidateAccount },
+  ), /details URL/);
+});
+
+test("candidate resolver rejects duplicate or mismatched immutable summary identity", () => {
+  const duplicateVersion = `Version ID: ${candidateVersion}\nVersion ID: ${candidateVersion}\nPreview URL: ${candidatePreview}\n`;
+  assert.throws(() => resolveWebProductionCandidate(
+    { check_runs: [cloudflareCheck({ output: { summary: duplicateVersion } })] },
+    { webSha: candidateWebSha, accountId: candidateAccount },
+  ), /exactly one Worker Version ID claim/);
+
+  const malformedAndValidVersion = `  Version ID: not-a-uuid\nVersion ID: ${candidateVersion}\nPreview URL: ${candidatePreview}\n`;
+  assert.throws(() => resolveWebProductionCandidate(
+    { check_runs: [cloudflareCheck({ output: { summary: malformedAndValidVersion } })] },
+    { webSha: candidateWebSha, accountId: candidateAccount },
+  ), /exactly one Worker Version ID claim/);
+
+  const malformedOnlyVersion = `Version ID: not-a-uuid\nPreview URL: ${candidatePreview}\n`;
+  assert.throws(() => resolveWebProductionCandidate(
+    { check_runs: [cloudflareCheck({ output: { summary: malformedOnlyVersion } })] },
+    { webSha: candidateWebSha, accountId: candidateAccount },
+  ), /malformed Worker Version ID claim/);
+
+  const duplicatePreview = `Version ID: ${candidateVersion}\nPreview URL: ${candidatePreview}\nPreview URL: ${candidatePreview}\n`;
+  assert.throws(() => resolveWebProductionCandidate(
+    { check_runs: [cloudflareCheck({ output: { summary: duplicatePreview } })] },
+    { webSha: candidateWebSha, accountId: candidateAccount },
+  ), /exactly one expected immutable preview URL/);
+
+  const wrongPreview = `Version ID: ${candidateVersion}\nPreview URL: https://deadbeef-pino-web.minhtri-van42.workers.dev\n`;
+  assert.throws(() => resolveWebProductionCandidate(
+    { check_runs: [cloudflareCheck({ output: { summary: wrongPreview } })] },
+    { webSha: candidateWebSha, accountId: candidateAccount },
+  ), /expected immutable preview URL/);
+});
+
+test("candidate resolver fails closed on the newest exact-head Cloudflare attempt", () => {
+  const older = cloudflareCheck({ id: 99, started_at: "2026-09-17T10:14:56Z" });
+  const newerFailed = cloudflareCheck({
+    id: 101,
+    started_at: "2026-09-17T10:14:58Z",
+    conclusion: "failure",
+  });
+  assert.throws(() => resolveWebProductionCandidate(
+    { check_runs: [older, newerFailed] },
+    { webSha: candidateWebSha, accountId: candidateAccount },
+  ), /not terminal success/);
 });
 
 test("production Web source no longer points Open Studio at dev Core", () => {
