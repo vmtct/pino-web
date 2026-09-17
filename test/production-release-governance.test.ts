@@ -135,18 +135,24 @@ test("Web hard-kill recovery is durable and terminal ingress proves immutable st
   assert.match(release, /immutable Next static asset routes: PASS/);
 });
 
-test("Web release rebuilds and uploads the exact approved source under the trusted release recipe", () => {
+test("Web release rebuilds and consumes the exact canonical Cloudflare candidate", () => {
   assert.match(release, /latest_build_check/);
   assert.match(release, /external_id/);
+  assert.match(release, /output\.summary/);
+  assert.match(release, /WEB_CANDIDATE_VERSION/);
+  assert.match(release, /Canonical Cloudflare build check must expose exactly one immutable Worker Version ID/);
+  assert.match(release, /Preview URL: https:\/\/\$\{candidate_prefix\}-pino-web\.minhtri-van42\.workers\.dev/);
   assert.match(release, /bun install --frozen-lockfile/);
   assert.match(release, /bun run build/);
-  assert.match(release, /wrangler@4\.126\.0 versions upload -c wrangler\.toml/);
-  assert.match(release, /pino-web-trusted-\$\{WEB_SHA\}/);
-  assert.match(release, /PINO trusted Web release/);
-  assert.match(release, /External Web build UUID \(signal only\)/);
-  assert.match(release, /Candidate: trusted exact-source release-job upload/);
-  assert.doesNotMatch(release, /Candidate Worker version is not immutably joined to the authorized Cloudflare build UUID/);
-  assert.doesNotMatch(release, /builds\/workers\/\$\{worker_tag\}\/triggers/);
+  assert.match(release, /wrangler@4\.126\.0 versions view "\$candidate_id"/);
+  assert.match(release, /Canonical Cloudflare candidate tag does not bind the exact approved Web SHA/);
+  assert.match(release, /pino-web candidate \$\{WEB_SHA\}/);
+  assert.match(release, /candidate_preview/);
+  assert.match(release, /candidate preview did not execute against the exact Core release version/);
+  assert.match(release, /Candidate: exact immutable version from canonical Cloudflare Workers Build check/);
+  assert.match(release, /Candidate preview exact-SHA\/Core smoke: PASS/);
+  assert.doesNotMatch(release, /wrangler@4\.126\.0 versions upload -c wrangler\.toml/);
+  assert.doesNotMatch(release, /pino-web-trusted-\$\{WEB_SHA\}/);
   assert.match(release, /automaticTrafficPromotion/);
   assert.match(release, /canonical non-serving candidate command/);
   assert.match(release, /Exact successful Cloudflare candidate build is already serving/);
