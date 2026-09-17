@@ -51,7 +51,7 @@ export function resolveWebProductionCandidate(
   const expectedDetails = `https://dash.cloudflare.com/${options.accountId}/workers/services/view/${worker}/production/builds/${buildUuid}`;
   if (check.details_url !== expectedDetails) fail("Cloudflare build details URL does not bind the same build UUID.");
 
-  const summary = typeof check.output?.summary === "string" ? check.output.summary : "";
+  const summary: string = typeof check.output?.summary === "string" ? check.output.summary : "";
   const lines = summary.split(/\r?\n/);
   const versionIds = lines.flatMap((line) => {
     const match = /^Version ID:\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s*$/.exec(line);
