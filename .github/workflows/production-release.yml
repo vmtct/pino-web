@@ -131,6 +131,10 @@ jobs:
           deployment_marker=""
           promotion_attempted=0
           already_active=0
+          rebind_mode=0
+          rebind_prior_issue=""
+          rebind_prior_run=""
+          release_mode="PROMOTION"
           comment() { gh issue comment "$ISSUE_NUMBER" --repo "$repo" --body "$1"; }
           rollback() {
             [ "$promotion_attempted" -eq 1 ] || return 0
@@ -193,9 +197,9 @@ jobs:
           [ "$boundary_auto" = "false" ] && [ "$boundary_status" = "VERIFIED_NON_PROMOTING" ] || fail "Repository Cloudflare build boundary is not verified non-promoting."
           [ "$expected_deploy" = 'npx wrangler versions upload --tag "$WORKERS_CI_COMMIT_SHA" --message "pino-web candidate $WORKERS_CI_COMMIT_SHA"' ] || fail "Repository build boundary does not match the canonical non-serving candidate command."
           # The release token is Worker-deploy scoped; Workers Builds API requires a user-scoped token.
-          # The exact external build is already bound by the canonical GitHub check above. Prove that
-          # successful candidate build did not acquire production traffic before Founder authority.
-          [ "$current_sha" != "$WEB_SHA" ] || fail "Exact successful Cloudflare candidate build is already serving; non-promoting build boundary is not proven."
+          # The exact external build is already bound by the canonical GitHub check above. If the exact
+          # candidate is already serving, a no-traffic-mutation rebind is allowed only after proving the
+          # active deployment/version came from a prior successful canonical Web release receipt.
           core_live="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/pino-core/deployments" "${auth[@]}")" || fail "Cannot inspect exact Core provider deployment."
           [ "$(jq -r '.result.deployments[0].id // empty' <<<"$core_live")" = "$CORE_DEPLOYMENT_ID" ] || fail "Core provider deployment no longer matches selected Core release."
           [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$core_live" | head -1)" = "$CORE_VERSION" ] || fail "Core provider version no longer matches selected Core release."
@@ -246,44 +250,67 @@ jobs:
             || fail "Candidate changes production bindings outside the one approved Core service-binding cutover."
 
           if [ "$already_active" -eq 1 ]; then
-            fail "Candidate Web Worker was already serving before this canonical release acquired mutation ownership; retroactive production authorization is forbidden."
+            [ "$old_version" = "$candidate_id" ] || fail "Serving Web SHA matches the candidate but active immutable version does not."
+            prior_pages="$(gh api --paginate --slurp "/repos/${repo}/actions/workflows/production-release.yml/runs?event=issues&per_page=100")" \
+              || fail "Cannot enumerate prior canonical Web release runs for serving-authority proof."
+            prior_run_id="$(jq -r --arg sha "$WEB_SHA" --argjson current "$GITHUB_RUN_ID" '[.[]?.workflow_runs[]? | select(.id != $current and .head_sha==$sha and .event=="issues" and .run_attempt==1 and .status=="completed" and .conclusion=="success" and .actor.login=="vmtct" and .triggering_actor.login=="vmtct" and .path==".github/workflows/production-release.yml" and ((.display_title // "") | startswith("Web production release #")) and ((.display_title // "") | endswith(" @ " + $sha)))] | sort_by(.updated_at // .run_started_at // .created_at // "") | last | .id // empty' <<<"$prior_pages")"
+            [ -n "$prior_run_id" ] || fail "Serving candidate has no prior successful canonical Web release run."
+            prior_run="$(gh api "/repos/${repo}/actions/runs/${prior_run_id}")" || fail "Cannot resolve prior canonical Web release run."
+            prior_display="$(jq -r '.display_title // empty' <<<"$prior_run")"
+            prior_issue_number="$(sed -nE "s/^Web production release #([1-9][0-9]*) @ ${WEB_SHA}$/\1/p" <<<"$prior_display")"
+            [ -n "$prior_issue_number" ] || fail "Prior canonical Web release run is not bound to one exact issue."
+            prior_issue="$(gh api "/repos/${repo}/issues/${prior_issue_number}")" || fail "Cannot resolve prior canonical Web release issue."
+            prior_comments="$(gh api --paginate --slurp "/repos/${repo}/issues/${prior_issue_number}/comments?per_page=100" | jq '[.[][]]')" || fail "Cannot resolve prior canonical Web release receipt comments."
+            rebind_input="$(jq -nc --arg webSha "$WEB_SHA" --arg candidateVersion "$candidate_id" --arg activeVersion "$old_version" --arg activeDeploymentId "$old_deployment_id" --argjson currentRunId "$GITHUB_RUN_ID" --argjson priorRun "$prior_run" --argjson priorIssue "$prior_issue" --argjson priorComments "$prior_comments" '{webSha:$webSha,candidateVersion:$candidateVersion,activeVersion:$activeVersion,activeDeploymentId:$activeDeploymentId,currentRunId:$currentRunId,priorRun:$priorRun,priorIssue:$priorIssue,priorComments:$priorComments}')"
+            rebind_proof="$(node --experimental-strip-types scripts/web-production-serving-rebind.ts <<<"$rebind_input")" || fail "Serving candidate is not bound to an exact prior canonical Web PASS receipt."
+            rebind_prior_issue="$(jq -r '.priorIssueNumber' <<<"$rebind_proof")"
+            rebind_prior_run="$(jq -r '.priorRunId' <<<"$rebind_proof")"
+            candidate_deployment_id="$old_deployment_id"
+            rebind_mode=1
+            release_mode="CANONICAL_REBIND_NO_TRAFFIC_MUTATION"
           fi
 
-          deployments_predeploy="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${WEB_WORKER}/deployments" "${auth[@]}")" || fail "Cannot re-read Web deployment immediately before promotion."
-          [ "$(jq -r '.result.deployments[0].id // empty' <<<"$deployments_predeploy")" = "$old_deployment_id" ] || fail "Web deployment drifted after preflight and before promotion."
-          [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id // empty' <<<"$deployments_predeploy" | head -1)" = "$old_version" ] || fail "Web version drifted after preflight and before promotion."
-          main_predeploy="$(gh api "/repos/${repo}/git/ref/heads/main" --jq '.object.sha')" || fail "Cannot re-read main immediately before promotion."
-          [ "$main_predeploy" = "$WEB_SHA" ] || fail "main moved immediately before Web promotion."
+          deployments_predeploy="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${WEB_WORKER}/deployments" "${auth[@]}")" || fail "Cannot re-read Web deployment immediately before release boundary."
+          [ "$(jq -r '.result.deployments[0].id // empty' <<<"$deployments_predeploy")" = "$old_deployment_id" ] || fail "Web deployment drifted after preflight and before release boundary."
+          [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id // empty' <<<"$deployments_predeploy" | head -1)" = "$old_version" ] || fail "Web version drifted after preflight and before release boundary."
+          main_predeploy="$(gh api "/repos/${repo}/git/ref/heads/main" --jq '.object.sha')" || fail "Cannot re-read main immediately before release boundary."
+          [ "$main_predeploy" = "$WEB_SHA" ] || fail "main moved immediately before Web release boundary."
           bash scripts/assert-no-unresolved-recovery.sh || fail "An earlier Web production mutation has unresolved recovery authority."
-          bash scripts/assert-no-core-verification-in-flight.sh || fail "Core PRE_GA verification/recovery overlaps Web promotion."
+          bash scripts/assert-no-core-verification-in-flight.sh || fail "Core PRE_GA verification/recovery overlaps Web release boundary."
 
-          deployment_nonce="$(cat /proc/sys/kernel/random/uuid)"
-          [[ "$deployment_nonce" =~ ^[0-9a-f-]{36}$ ]] || fail "Cannot create Web deployment proof nonce."
-          deployment_marker="PINO_WEB_PRODUCTION_RELEASE:${WEB_SHA}:${GITHUB_RUN_ID}:${GITHUB_RUN_ATTEMPT}:${deployment_nonce}"
-          recovery_body="PINO_WEB_PRODUCTION_RELEASE: **RECOVERY_ARMED**\n\nWorkflow run: ${GITHUB_RUN_ID}\nWorkflow attempt: ${GITHUB_RUN_ATTEMPT}\nSource SHA: ${WEB_SHA}\nOld deployment ID: ${old_deployment_id}\nOld version ID: ${old_version}\nCandidate version ID: ${candidate_id}\nDeployment marker: ${deployment_marker}\n\nIndependent recovery identity persisted before traffic mutation."
-          comment "$recovery_body" >/dev/null || fail "Could not persist production traffic recovery identity before promotion."
-          promotion_attempted=1
-          deploy_output="$RUNNER_TEMP/web-version-deploy.ndjson"; rm -f "$deploy_output"
-          set +e
-          WRANGLER_OUTPUT_FILE_PATH="$deploy_output" npx wrangler versions deploy "${candidate_id}@100%" --name "$WEB_WORKER" --message "$deployment_marker" -y >/dev/null
-          deploy_rc=$?
-          set -e
-          if [ -s "$deploy_output" ]; then candidate_deployment_id="$(jq -r 'select(.type == "version-deploy") | .deployment_id // empty' "$deploy_output" | tail -1)"; fi
-          [ "$deploy_rc" -eq 0 ] || fail "Exact tagged candidate promotion failed after traffic mutation may have started."
-          [ -n "$candidate_deployment_id" ] || fail "Web promotion succeeded but no immutable deployment ID was returned."
+          if [ "$rebind_mode" -eq 0 ]; then
+            deployment_nonce="$(cat /proc/sys/kernel/random/uuid)"
+            [[ "$deployment_nonce" =~ ^[0-9a-f-]{36}$ ]] || fail "Cannot create Web deployment proof nonce."
+            deployment_marker="PINO_WEB_PRODUCTION_RELEASE:${WEB_SHA}:${GITHUB_RUN_ID}:${GITHUB_RUN_ATTEMPT}:${deployment_nonce}"
+            recovery_body="PINO_WEB_PRODUCTION_RELEASE: **RECOVERY_ARMED**\n\nWorkflow run: ${GITHUB_RUN_ID}\nWorkflow attempt: ${GITHUB_RUN_ATTEMPT}\nSource SHA: ${WEB_SHA}\nOld deployment ID: ${old_deployment_id}\nOld version ID: ${old_version}\nCandidate version ID: ${candidate_id}\nDeployment marker: ${deployment_marker}\n\nIndependent recovery identity persisted before traffic mutation."
+            comment "$recovery_body" >/dev/null || fail "Could not persist production traffic recovery identity before promotion."
+            promotion_attempted=1
+            deploy_output="$RUNNER_TEMP/web-version-deploy.ndjson"; rm -f "$deploy_output"
+            set +e
+            WRANGLER_OUTPUT_FILE_PATH="$deploy_output" npx wrangler versions deploy "${candidate_id}@100%" --name "$WEB_WORKER" --message "$deployment_marker" -y >/dev/null
+            deploy_rc=$?
+            set -e
+            if [ -s "$deploy_output" ]; then candidate_deployment_id="$(jq -r 'select(.type == "version-deploy") | .deployment_id // empty' "$deploy_output" | tail -1)"; fi
+            [ "$deploy_rc" -eq 0 ] || fail "Exact tagged candidate promotion failed after traffic mutation may have started."
+            [ -n "$candidate_deployment_id" ] || fail "Web promotion succeeded but no immutable deployment ID was returned."
+
+          fi
 
           current="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${WEB_WORKER}/deployments" "${auth[@]}")" \
-            || fail "Cannot verify post-deploy traffic."
+            || fail "Cannot verify release traffic state."
           active_deployment="$(jq -r '.result.deployments[0].id // empty' <<<"$current")"
           active_marker="$(jq -r '.result.deployments[0].annotations["workers/message"] // empty' <<<"$current")"
           active="$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id // empty' <<<"$current" | head -1)"
-          [ "$active_deployment" = "$candidate_deployment_id" ] && [ "$active_marker" = "$deployment_marker" ] && [ "$active" = "$candidate_id" ] || fail "Exact marked Web deployment is not active at 100%."
+          [ "$active_deployment" = "$candidate_deployment_id" ] && [ "$active" = "$candidate_id" ] || fail "Exact Web candidate is not active at 100%."
+          if [ "$rebind_mode" -eq 0 ]; then
+            [ "$active_marker" = "$deployment_marker" ] || fail "Exact marked Web deployment is not active at 100%."
+          fi
 
           deployed_info="$(curl -fsS https://pino-web.minhtri-van42.workers.dev/build-info.json)" \
             || fail "Cannot verify deployed Worker identity."
           deployed_sha="$(jq -r '.commit // empty' <<<"$deployed_info")"
           [ "$deployed_sha" = "$WEB_SHA" ] \
-            || fail "Production identity does not match the approved SHA after promotion."
+            || fail "Production identity does not match the approved SHA after release verification."
 
           status="$(curl -sS -o /tmp/home.html -w '%{http_code}' https://pino-web.minhtri-van42.workers.dev/)"
           [ "$status" = "200" ] || fail "Production root smoke failed with HTTP ${status}."
@@ -310,17 +337,19 @@ jobs:
           done
 
           final_main="$(gh api "/repos/${repo}/git/ref/heads/main" --jq '.object.sha')" \
-            || fail "Cannot verify main after promotion."
+            || fail "Cannot verify main after release verification."
           [ "$final_main" = "$WEB_SHA" ] \
-            || fail "main moved during promotion; rollback to prior 100% version."
+            || fail "main moved during Web release verification; rollback to prior 100% version if this run owned a promotion."
           final_deployments="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${WEB_WORKER}/deployments" "${auth[@]}")" || fail "Cannot verify immutable Web deployment before terminal PASS."
           [ "$(jq -r '.result.deployments[0].id // empty' <<<"$final_deployments")" = "$candidate_deployment_id" ] || fail "Web deployment identity changed before terminal PASS."
-          [ "$(jq -r '.result.deployments[0].annotations["workers/message"] // empty' <<<"$final_deployments")" = "$deployment_marker" ] || fail "Web deployment marker changed before terminal PASS."
           [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id // empty' <<<"$final_deployments" | head -1)" = "$candidate_id" ] || fail "Web candidate stopped serving before terminal PASS."
+          if [ "$rebind_mode" -eq 0 ]; then
+            [ "$(jq -r '.result.deployments[0].annotations["workers/message"] // empty' <<<"$final_deployments")" = "$deployment_marker" ] || fail "Web deployment marker changed before terminal PASS."
+          fi
 
           bash scripts/assert-live-issue-authority.sh "$repo" "$ISSUE_NUMBER" "[GPT] Web production release" "$AUTH_BODY_HASH"
           bash scripts/assert-core-provider-authority.sh "$CORE_RELEASE_ISSUE" "$CORE_RELEASE_RUN_ID" >/dev/null || fail "Core provider authority drifted before terminal PASS."
           core_final="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/pino-core/deployments" "${auth[@]}")" || fail "Cannot re-read Core provider before terminal PASS."
           [ "$(jq -r '.result.deployments[0].id // empty' <<<"$core_final")" = "$CORE_DEPLOYMENT_ID" ] && [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$core_final" | head -1)" = "$CORE_VERSION" ] || fail "Core provider changed during Web release."
           promotion_attempted=0
-          comment "WEB_PRODUCTION_RELEASE: **PASS**\n\n- Web source: ${WEB_SHA}\n- Workflow run: ${GITHUB_RUN_ID}\n- Workflow attempt: ${GITHUB_RUN_ATTEMPT}\n- Authorization body hash: ${AUTH_BODY_HASH}\n- External Web build UUID: ${WEB_BUILD_UUID}\n- Canonical Cloudflare candidate version: ${candidate_id}\n- Canonical candidate message: ${candidate_message}\n- Core release issue/run: #${CORE_RELEASE_ISSUE} / ${CORE_RELEASE_RUN_ID}\n- Core source: ${CORE_SHA}\n- Core version: ${CORE_VERSION}\n- Core deployment: ${CORE_DEPLOYMENT_ID}\n- Worker version: ${candidate_id}\n- Deployment ID: ${candidate_deployment_id}\n- Traffic: 100%\n- CI: successful main run required\n- Provenance: merged PR into main required\n- Candidate: exact immutable version from canonical Cloudflare Workers Build check\n- Candidate preview exact-SHA/Core smoke: PASS\n- Production config: exact Core service-binding cutover only\n- Web->Core production Open Studio proxy: PASS\n- pinohouse.art/www Artchitect + Little Piner routed ingress: PASS\n- pinohouse.art/www immutable Next static asset routes: PASS\n\nNo route, binding, secret, D1, or application-data mutation was performed."
+          comment "WEB_PRODUCTION_RELEASE: **PASS**\n\n- Web source: ${WEB_SHA}\n- Workflow run: ${GITHUB_RUN_ID}\n- Workflow attempt: ${GITHUB_RUN_ATTEMPT}\n- Authorization body hash: ${AUTH_BODY_HASH}\n- Release mode: ${release_mode}\n- Prior canonical Web release issue/run: ${rebind_prior_issue:-none} / ${rebind_prior_run:-none}\n- External Web build UUID: ${WEB_BUILD_UUID}\n- Canonical Cloudflare candidate version: ${candidate_id}\n- Canonical candidate message: ${candidate_message}\n- Core release issue/run: #${CORE_RELEASE_ISSUE} / ${CORE_RELEASE_RUN_ID}\n- Core source: ${CORE_SHA}\n- Core version: ${CORE_VERSION}\n- Core deployment: ${CORE_DEPLOYMENT_ID}\n- Worker version: ${candidate_id}\n- Deployment ID: ${candidate_deployment_id}\n- Traffic: 100%\n- CI: successful main run required\n- Provenance: merged PR into main required\n- Candidate: exact immutable version from canonical Cloudflare Workers Build check\n- Candidate preview exact-SHA/Core smoke: PASS\n- Production config: exact Core service-binding cutover only\n- Web->Core production Open Studio proxy: PASS\n- pinohouse.art/www Artchitect + Little Piner routed ingress: PASS\n- pinohouse.art/www immutable Next static asset routes: PASS\n\nNo route, binding, secret, D1, or application-data mutation was performed."
