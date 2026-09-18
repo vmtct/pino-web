@@ -79,7 +79,7 @@ jobs:
         run: |
           set -euo pipefail
           [ -n "${CLOUDFLARE_API_TOKEN:-}" ] || { echo "CLOUDFLARE_API_TOKEN unavailable" >&2; exit 1; }
-          npx --yes wrangler@4.130.0 deploy -c wrangler.staging.toml --tag "staging-${WEB_SHA:0:12}" --message "Web staging ${WEB_SHA}"
+          npx --yes wrangler@4.134.0 deploy -c wrangler.staging.toml --tag "staging-${WEB_SHA:0:12}" --message "Web staging ${WEB_SHA}"
       - name: Smoke exact staging runtime
         shell: bash
         run: |
