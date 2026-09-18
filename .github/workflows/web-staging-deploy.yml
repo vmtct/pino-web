@@ -49,11 +49,10 @@ jobs:
         with:
           ref: ${{ steps.gate.outputs.web_sha }}
           persist-credentials: false
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 22
-          cache: npm
+          bun-version: 1.2.15
 
       - name: Re-run source validation
         shell: bash
@@ -61,10 +60,10 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$WEB_SHA"
           test -z "$(git status --porcelain)"
-          npm ci
-          npm run typecheck
-          npm test
-          npm run build
+          bun install --frozen-lockfile
+          bun run typecheck
+          bun test
+          bun run build
 
       - name: Assert staging-only boundary
         shell: bash
