@@ -58,7 +58,7 @@ jobs:
           [ -n "$old_deployment" ] && [ -n "$old_version" ] && [ -n "$candidate_version" ] && [ -n "$deployment_marker" ] || { echo "Malformed Piner recovery marker" >&2; exit 1; }
           overlap_clear=0
           for _ in $(seq 1 12); do
-            if bash scripts/assert-no-core-verification-in-flight.sh; then overlap_clear=1; break; fi
+            if bash scripts/assert-no-core-production-mutation-in-flight.sh; then overlap_clear=1; break; fi
             sleep 5
           done
           [ "$overlap_clear" -eq 1 ] || { echo "Core production mutation/recovery remained active; refusing overlapping Piner recovery" >&2; exit 1; }

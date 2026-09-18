@@ -2,14 +2,14 @@
 set -euo pipefail
 repo=vmtct/pino-core; core_token="${CORE_RELEASE_GH_TOKEN:?PINO_CORE_RELEASE_READ_TOKEN unavailable}"
 gh_core(){ GH_TOKEN="$core_token" gh api "$@"; }
-workflows=(core-production-release.yml production-release-recovery-watchdog.yml pre-ga-production-reset.yml pre-ga-production-local-auth-verification.yml pre-ga-recovery-watchdog.yml)
+workflows=(core-production-release.yml production-release-recovery-watchdog.yml)
 for workflow in "${workflows[@]}"; do
  for status in queued in_progress; do
   runs="$(gh_core "/repos/${repo}/actions/workflows/${workflow}/runs?status=${status}&per_page=100")"
   jq -e '[.workflow_runs[]?] | length==0' <<<"$runs" >/dev/null || { echo "Core production mutation/recovery workflow ${workflow} is ${status}" >&2; exit 1; }
  done
 done
-specs=('core-production-release.yml|Core production release #|PINO_CORE_PRODUCTION_RELEASE|CORE_PRODUCTION_RELEASE' 'pre-ga-production-reset.yml|PRE_GA production reset #|PRE_GA_PRODUCTION_RESET|PRE_GA_PRODUCTION_RESET' 'pre-ga-production-local-auth-verification.yml|PRE_GA production local-auth verification #|PRE_GA_PRODUCTION_LOCAL_AUTH_VERIFICATION|PRE_GA_PRODUCTION_LOCAL_AUTH_VERIFICATION')
+specs=('core-production-release.yml|Core production release #|PINO_CORE_PRODUCTION_RELEASE|CORE_PRODUCTION_RELEASE')
 for spec in "${specs[@]}"; do
  IFS='|' read -r workflow display_prefix marker_prefix terminal_prefix <<<"$spec"
  runs="$(GH_TOKEN="$core_token" gh api --paginate --slurp "/repos/${repo}/actions/workflows/${workflow}/runs?event=issues&status=completed&per_page=100")"

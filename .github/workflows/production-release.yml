@@ -255,7 +255,7 @@ jobs:
           main_predeploy="$(gh api "/repos/${repo}/git/ref/heads/main" --jq '.object.sha')" || fail "Cannot re-read main immediately before promotion."
           [ "$main_predeploy" = "$WEB_SHA" ] || fail "main moved immediately before Web promotion."
           bash scripts/assert-no-unresolved-recovery.sh || fail "An earlier Web production mutation has unresolved recovery authority."
-          bash scripts/assert-no-core-verification-in-flight.sh || fail "Core PRE_GA verification/recovery overlaps Web promotion."
+          bash scripts/assert-no-core-production-mutation-in-flight.sh || fail "Core production mutation/recovery overlaps Web promotion."
 
           deployment_nonce="$(cat /proc/sys/kernel/random/uuid)"
           [[ "$deployment_nonce" =~ ^[0-9a-f-]{36}$ ]] || fail "Cannot create Web deployment proof nonce."
