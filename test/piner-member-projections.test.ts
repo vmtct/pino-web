@@ -3,6 +3,8 @@ import test from "node:test";
 import {
   parseHomeProjection,
   parseJourneyProjection,
+  parseMemberOpenStudioProjection,
+  parseOwnerOpenStudioCancellation,
   projectionResponseIsCurrent,
 } from "../lib/piner-member-projections.ts";
 
@@ -99,4 +101,40 @@ test("validates member session, Student list, and OWNER admission envelopes", as
     claimStatus: "RESERVED", listingId, session: { id: sessionTarget }, participantMode: "OWNER",
   }, listingId, sessionTarget));
   assert.equal(parseOwnerOpenStudioAdmission({ claimId: "bad" }, listingId, sessionTarget), null);
+});
+test("accepts canonical Open Studio opportunities and active OWNER reservations", () => {
+  const listingId = "018f7f5a-4321-7abc-8def-333333333333";
+  const sessionTarget = "018f7f5a-4321-7abc-8def-444444444444";
+  const item = {
+    passId: "018f7f5a-4321-7abc-8def-777777777777",
+    listingId,
+    experienceType: "KHAM_PHA",
+    session: { id: sessionTarget, localDate: "2026-09-12", scheduledStartsAt: "2026-09-12T10:00:00.000Z", scheduledEndsAt: "2026-09-12T11:30:00.000Z" },
+    path: { id: "018f7f5a-4321-7abc-8def-888888888888", code: "PIANO", displayName: "PianoHouse" },
+    syllabus: { id: "018f7f5a-4321-7abc-8def-999999999999", title: "Always With Me" },
+  };
+  const result = parseMemberOpenStudioProjection({
+    student,
+    opportunities: [item],
+    reservations: [{ ...item, claimId: "018f7f5a-4321-7abc-8def-aaaaaaaaaaaa", reservation: { id: "018f7f5a-4321-7abc-8def-bbbbbbbbbbbb", type: "BOOKING", status: "CONFIRMED" }, claimStatus: "RESERVED" }],
+    asOf: "2026-08-29T06:00:00.000Z",
+  }, studentId);
+  assert.equal(result?.opportunities[0]?.syllabus.title, "Always With Me");
+  assert.equal(result?.reservations[0]?.claimStatus, "RESERVED");
+});
+
+test("validates bounded OWNER Open Studio cancellation result", () => {
+  const claimId = "018f7f5a-4321-7abc-8def-aaaaaaaaaaaa";
+  const listingId = "018f7f5a-4321-7abc-8def-333333333333";
+  const sessionTarget = "018f7f5a-4321-7abc-8def-444444444444";
+  assert.ok(parseOwnerOpenStudioCancellation({
+    claimId,
+    reservation: { id: "018f7f5a-4321-7abc-8def-bbbbbbbbbbbb", type: "BOOKING", status: "CANCELLED" },
+    claimStatus: "RELEASED",
+    listingId,
+    session: { id: sessionTarget },
+    participantMode: "OWNER",
+    cancellationResult: "RELEASED_CANCELLED",
+  }, claimId, listingId, sessionTarget));
+  assert.equal(parseOwnerOpenStudioCancellation({ claimId, claimStatus: "RESERVED" }, claimId, listingId, sessionTarget), null);
 });

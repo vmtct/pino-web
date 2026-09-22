@@ -63,6 +63,11 @@ function routeFor(pathname: string): RouteContract | null {
   const exact = STATIC_ROUTES[pathname];
   if (exact) return exact;
 
+  const explore = /^\/api\/piner\/students\/([^/]+)\/open-studio$/.exec(pathname);
+  if (explore) {
+    return { method: "GET", upstreamPath: `/v1/member/students/${explore[1]}/open-studio`, auth: "session", result: "none", body: "none" };
+  }
+
   const admission = /^\/api\/piner\/students\/([^/]+)\/open-studio\/admissions$/.exec(pathname);
   if (admission) {
     return {
@@ -73,6 +78,11 @@ function routeFor(pathname: string): RouteContract | null {
       body: "forward",
     };
   }
+  const cancellation = /^\/api\/piner\/students\/([^/]+)\/open-studio\/claims\/([^/]+)\/cancel$/.exec(pathname);
+  if (cancellation) {
+    return { method: "POST", upstreamPath: `/v1/member/students/${cancellation[1]}/open-studio/claims/${cancellation[2]}/cancel`, auth: "session", result: "none", body: "forward" };
+  }
+
   const pianoLibrary = /^\/api\/piner\/students\/([0-9a-f-]{36})\/piano\/library$/.exec(pathname);
   if (pianoLibrary) {
     return { method: "GET", upstreamPath: pathname.replace(/^\/api\/piner/, "/v1/member"), auth: "session", result: "none", body: "none" };
