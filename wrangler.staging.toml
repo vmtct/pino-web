@@ -13,6 +13,11 @@ binding = "PINO_CORE_PUBLIC"
 service = "pino-core-staging"
 entrypoint = "PublicOpenStudioControlPlane"
 
+[[services]]
+binding = "PINO_MEMBER_CORE"
+service = "pino-core-staging"
+entrypoint = "ParentMemberControlPlane"
+
 [assets]
 directory = "./out"
 binding = "ASSETS"
