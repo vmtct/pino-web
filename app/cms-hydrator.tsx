@@ -11,6 +11,9 @@ type CmsState = {
 };
 
 const CmsContext = createContext<CmsState>({ content: {}, images: {} });
+const LEGACY_CMS_ALIASES: Readonly<Record<string, string>> = {
+  os_v2_calendar_label: "os_v2_schedule_label",
+};
 
 export default function CmsHydrator({ children }: { children: ReactNode }) {
   const [state, setState] = useState<CmsState>({ content: {}, images: {} });
@@ -42,8 +45,9 @@ export default function CmsHydrator({ children }: { children: ReactNode }) {
 export function CmsText({ contentKey, fallback }: { contentKey: string; fallback: string }) {
   const { content } = useContext(CmsContext);
   const { locale } = useLocale();
-  const localized = content[`${contentKey}__${locale}`]?.trim();
-  const legacyVi = locale === "vi" ? content[contentKey]?.trim() : undefined;
+  const legacyKey = LEGACY_CMS_ALIASES[contentKey];
+  const localized = content[`${contentKey}__${locale}`]?.trim() || (legacyKey ? content[`${legacyKey}__${locale}`]?.trim() : undefined);
+  const legacyVi = locale === "vi" ? (content[contentKey]?.trim() || (legacyKey ? content[legacyKey]?.trim() : undefined)) : undefined;
   const staticFallback = locale === "en" ? PUBLIC_COPY_EN[contentKey] || fallback : fallback;
   const value = localized || legacyVi || staticFallback;
   return <span data-cms-key={contentKey} data-locale={locale}>{value}</span>;
