@@ -1,0 +1,222 @@
+{
+  "schemaVersion": 1,
+  "site": "PINOHOUSE",
+  "slots": [
+    {
+      "page": "global",
+      "key": "site_nav_why_pino",
+      "kind": "LABEL",
+      "fallback": {
+        "type": "TEXT",
+        "values": {
+          "vi": "Vì sao PINO",
+          "en": "Why PINO"
+        }
+      }
+    },
+    {
+      "page": "global",
+      "key": "site_nav_paths",
+      "kind": "LABEL",
+      "fallback": {
+        "type": "TEXT",
+        "values": {
+          "vi": "Bốn lộ trình",
+          "en": "Four paths"
+        }
+      }
+    },
+    {
+      "page": "global",
+      "key": "site_nav_premium",
+      "kind": "LABEL",
+      "fallback": {
+        "type": "TEXT",
+        "values": {
+          "vi": "Premium Journey",
+          "en": "Premium Journey"
+        }
+      }
+    },
+    {
+      "page": "global",
+      "key": "site_nav_open_studio",
+      "kind": "CTA_LABEL",
+      "fallback": {
+        "type": "TEXT",
+        "values": {
+          "vi": "Khám phá Open Studio",
+          "en": "Explore Open Studio"
+        }
+      }
+    },
+    {
+      "page": "global",
+      "key": "site_footer_note",
+      "kind": "BODY",
+      "fallback": {
+        "type": "TEXT",
+        "values": {
+          "vi": "Một ngôi nhà sáng tạo cho trẻ em.",
+          "en": "A creative house for children."
+        }
+      }
+    },
+    {
+      "page": "global",
+      "key": "site_footer_open_studio",
+      "kind": "CTA_LABEL",
+      "fallback": {
+        "type": "TEXT",
+        "values": {
+          "vi": "Open Studio",
+          "en": "Open Studio"
+        }
+      }
+    },
+    {
+      "page": "home",
+      "key": "homepage_v2_hero_title_line_1",
+      "kind": "HEADING",
+      "fallback": {
+        "type": "TEXT",
+        "values": {
+          "vi": "Một ngôi nhà cho",
+          "en": "A house for"
+        }
+      }
+    },
+    {
+      "page": "home",
+      "key": "homepage_v2_hero_title_line_2",
+      "kind": "HEADING",
+      "fallback": {
+        "type": "TEXT",
+        "values": {
+          "vi": "những tâm trí",
+          "en": "growing curious"
+        }
+      }
+    },
+    {
+      "page": "home",
+      "key": "homepage_v2_hero_title_line_3",
+      "kind": "HEADING",
+      "fallback": {
+        "type": "TEXT",
+        "values": {
+          "vi": "tò mò lớn lên.",
+          "en": "minds."
+        }
+      }
+    },
+    {
+      "page": "home",
+      "key": "homepage_v2_hero_description",
+      "kind": "BODY",
+      "fallback": {
+        "type": "TEXT",
+        "values": {
+          "vi": "Nơi trẻ cùng nhau khám phá nghệ thuật, âm nhạc và lớn lên sáng tạo.",
+          "en": "Where children explore art, music, and creative growth — together."
+        }
+      }
+    },
+    {
+      "page": "home",
+      "key": "homepage_v2_hero_secondary_cta",
+      "kind": "CTA_LABEL",
+      "fallback": {
+        "type": "TEXT",
+        "values": {
+          "vi": "Khám phá PINO House",
+          "en": "Explore the House"
+        }
+      }
+    },
+    {
+      "page": "open-studio",
+      "key": "os_v2_hero_description",
+      "kind": "BODY",
+      "fallback": {
+        "type": "TEXT",
+        "values": {
+          "vi": "Khám phá, sáng tạo và lớn lên — mỗi tuần tại PINO House.",
+          "en": "Explore, create and grow — every week at PINO House."
+        }
+      }
+    },
+    {
+      "page": "open-studio",
+      "key": "os_v2_hero_cta",
+      "kind": "CTA_LABEL",
+      "fallback": {
+        "type": "TEXT",
+        "values": {
+          "vi": "Xem lịch tuần này",
+          "en": "See this week's schedule"
+        }
+      }
+    },
+    {
+      "page": "open-studio",
+      "key": "os_v2_up_next_label",
+      "kind": "LABEL",
+      "fallback": {
+        "type": "TEXT",
+        "values": {
+          "vi": "SẮP TỚI TẠI PINO",
+          "en": "UP NEXT AT PINO"
+        }
+      }
+    },
+    {
+      "page": "open-studio",
+      "key": "os_v2_calendar_label",
+      "kind": "LABEL",
+      "fallback": {
+        "type": "TEXT",
+        "values": {
+          "vi": "LỊCH OPEN STUDIO",
+          "en": "OPEN STUDIO SCHEDULE"
+        }
+      }
+    },
+    {
+      "page": "open-studio",
+      "key": "os_v2_final_title",
+      "kind": "HEADING",
+      "fallback": {
+        "type": "TEXT",
+        "values": {
+          "vi": "Sẵn sàng khám phá hôm nay?",
+          "en": "Ready to explore today?"
+        }
+      }
+    },
+    {
+      "page": "open-studio",
+      "key": "os_v2_final_description",
+      "kind": "BODY",
+      "fallback": {
+        "type": "TEXT",
+        "values": {
+          "vi": "Mỗi buổi chỉ có một số chỗ nhỏ — chọn một trải nghiệm và cùng con tạo nên một buổi chiều đáng nhớ.",
+          "en": "Each session has only a few places — choose an experience and make the afternoon memorable together."
+        }
+      }
+    },
+    {
+      "page": "open-studio",
+      "key": "os_v2_final_cta",
+      "kind": "CTA_LABEL",
+      "fallback": {
+        "type": "TEXT",
+        "values": {
+          "vi": "Khám phá Open Studio",
+          "en": "Explore Open Studio"
+        }
+      }
+    }
+  ]
+}
