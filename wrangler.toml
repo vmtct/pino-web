@@ -7,17 +7,12 @@ keep_vars = false
 # still use pino-web.minhtri-van42.workers.dev.
 workers_dev = true
 
-# Incremental production cutover: Artchitect and Little Piner are served by
-# pino-web while the remaining pinohouse.art pages continue to resolve to
-# Webflow. Next static assets are routed separately because exported pages
-# reference /_next/*.
+# Canonical public-site ownership: Webflow is retired. Route the full
+# pinohouse.art surface through pino-web so homepage, legal pages, and
+# all exported Next.js assets share one production authority.
 routes = [
-  { pattern = "pinohouse.art/artchitect*", zone_name = "pinohouse.art" },
-  { pattern = "www.pinohouse.art/artchitect*", zone_name = "pinohouse.art" },
-  { pattern = "pinohouse.art/little-piner*", zone_name = "pinohouse.art" },
-  { pattern = "www.pinohouse.art/little-piner*", zone_name = "pinohouse.art" },
-  { pattern = "pinohouse.art/_next/static/*", zone_name = "pinohouse.art" },
-  { pattern = "www.pinohouse.art/_next/static/*", zone_name = "pinohouse.art" }
+  { pattern = "pinohouse.art/*", zone_name = "pinohouse.art" },
+  { pattern = "www.pinohouse.art/*", zone_name = "pinohouse.art" }
 ]
 
 # Environment controls whether Notion Mock Data is exposed.

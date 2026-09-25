@@ -1,0 +1,15 @@
+.page { min-height: 100vh; background: #f7f1e7; color: #27211d; }
+.shell { width: min(920px, calc(100% - 40px)); margin: 0 auto; padding: 48px 0 72px; }
+.header { display: flex; justify-content: space-between; gap: 24px; align-items: center; margin-bottom: 48px; }
+.brand { font: 600 20px/1.2 Georgia, serif; text-decoration: none; color: inherit; }
+.back { color: inherit; font-size: 14px; }
+.article { background: #fffaf3; border: 1px solid rgba(39,33,29,.12); border-radius: 28px; padding: clamp(28px, 6vw, 64px); box-shadow: 0 18px 50px rgba(39,33,29,.06); }
+.article h1 { margin: 0 0 10px; font: 500 clamp(36px, 6vw, 58px)/1.05 Georgia, serif; }
+.updated { margin: 0 0 36px; color: #74695f; font-size: 14px; }
+.article h2 { margin: 34px 0 10px; font: 500 24px/1.2 Georgia, serif; }
+.article p, .article li { font-size: 16px; line-height: 1.72; }
+.article ul { padding-left: 22px; }
+.article a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.notice { margin: 28px 0; padding: 18px 20px; border-radius: 16px; background: rgba(233,109,87,.08); }
+.footer { display: flex; flex-wrap: wrap; gap: 16px 24px; margin-top: 28px; font-size: 13px; color: #74695f; }
+@media (max-width: 640px) { .shell { width: min(100% - 24px, 920px); padding-top: 28px; } .header { margin-bottom: 28px; } .article { border-radius: 20px; } }

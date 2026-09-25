@@ -14,6 +14,24 @@ const APPROVED_PRODUCTION_CUTOVER = [
   '+entrypoint = "PublicOpenStudioControlPlane"',
   "+",
 ] as const;
+const APPROVED_PUBLIC_ROUTE_RETIREMENT = [
+  "-# Incremental production cutover: Artchitect and Little Piner are served by",
+  "-# pino-web while the remaining pinohouse.art pages continue to resolve to",
+  "-# Webflow. Next static assets are routed separately because exported pages",
+  "-# reference /_next/*.",
+  "+# Canonical public-site ownership: Webflow is retired. Route the full",
+  "+# pinohouse.art surface through pino-web so homepage, legal pages, and",
+  "+# all exported Next.js assets share one production authority.",
+  '-  { pattern = "pinohouse.art/artchitect*", zone_name = "pinohouse.art" },',
+  '-  { pattern = "www.pinohouse.art/artchitect*", zone_name = "pinohouse.art" },',
+  '-  { pattern = "pinohouse.art/little-piner*", zone_name = "pinohouse.art" },',
+  '-  { pattern = "www.pinohouse.art/little-piner*", zone_name = "pinohouse.art" },',
+  '-  { pattern = "pinohouse.art/_next/static/*", zone_name = "pinohouse.art" },',
+  '-  { pattern = "www.pinohouse.art/_next/static/*", zone_name = "pinohouse.art" }',
+  '+  { pattern = "pinohouse.art/*", zone_name = "pinohouse.art" },',
+  '+  { pattern = "www.pinohouse.art/*", zone_name = "pinohouse.art" }',
+] as const;
+
 
 type DiffSection = {
   path: string;
@@ -76,7 +94,9 @@ export function assertApprovedProductionWranglerDiff(diff: string): void {
   const changes = changedSections[0].changes;
   const exactCutover = changes.length === APPROVED_PRODUCTION_CUTOVER.length
     && APPROVED_PRODUCTION_CUTOVER.every((line, index) => changes[index] === line);
-  if (!exactCutover) reject(changes.join(" | "));
+  const exactRouteRetirement = changes.length === APPROVED_PUBLIC_ROUTE_RETIREMENT.length
+    && APPROVED_PUBLIC_ROUTE_RETIREMENT.every((line, index) => changes[index] === line);
+  if (!exactCutover && !exactRouteRetirement) reject(changes.join(" | "));
 }
 
 if (process.argv[1]?.endsWith("web-production-config-diff-check.ts")) {

@@ -87,8 +87,8 @@ test("promotion is forward-only, SHA-tagged, config-preserving, rollback-capable
   assert.match(release, /sleep 5/);
   assert.match(release, /main moved during Web release verification; rollback/);
   assert.match(release, /X-PINO-Schedule-Source/);
-  assert.match(release, /pinohouse\.art\/artchitect/);
-  assert.match(release, /www\.pinohouse\.art\/little-piner/);
+  assert.match(release, /pinohouse\.art\/policy/);
+  assert.match(release, /www\.pinohouse\.art\/term/);
 });
 
 test("repository records the required external Cloudflare Builds decoupling", () => {
@@ -225,10 +225,11 @@ test("Web hard-kill recovery is durable and terminal ingress proves immutable st
   assert.match(recovery, /current_marker/);
   assert.match(recovery, /previous_deployment/);
   assert.match(recovery, /REFUSE_OWNERSHIP/);
-  assert.ok(release.includes("pinohouse.art/_next/static/*"));
-  assert.ok(release.includes("www.pinohouse.art/_next/static/*"));
+  assert.match(release, /web-production-route-transition\.ts apply/);
+  assert.match(release, /web-production-route-transition\.ts rollback/);
+  assert.match(release, /https:\/\/pinohouse\.art\/policy/);
+  assert.match(release, /homepage \+ legal \+ learning surfaces routed ingress: PASS/);
   assert.match(release, /exposed no immutable Next static asset reference/);
-  assert.match(release, /immutable Next static asset routes: PASS/);
 });
 
 test("Web release consumes only a semantically validated canonical Cloudflare candidate", () => {
@@ -343,7 +344,7 @@ function wranglerUnifiedDiff(path: string, changes: string[]): string {
   ].join("\n");
 }
 
-test("production Wrangler diff permits only the exact file-aware atomic approved cutover", () => {
+test("production Wrangler diff permits only exact approved cutover deltas", () => {
   const exactChanges = [
     "-keep_vars = true",
     "+keep_vars = false",
@@ -356,9 +357,28 @@ test("production Wrangler diff permits only the exact file-aware atomic approved
     '+entrypoint = "PublicOpenStudioControlPlane"',
   "+",
   ];
+  const routeChanges = [
+    "-# Incremental production cutover: Artchitect and Little Piner are served by",
+    "-# pino-web while the remaining pinohouse.art pages continue to resolve to",
+    "-# Webflow. Next static assets are routed separately because exported pages",
+    "-# reference /_next/*.",
+    "+# Canonical public-site ownership: Webflow is retired. Route the full",
+    "+# pinohouse.art surface through pino-web so homepage, legal pages, and",
+    "+# all exported Next.js assets share one production authority.",
+    '-  { pattern = "pinohouse.art/artchitect*", zone_name = "pinohouse.art" },',
+    '-  { pattern = "www.pinohouse.art/artchitect*", zone_name = "pinohouse.art" },',
+    '-  { pattern = "pinohouse.art/little-piner*", zone_name = "pinohouse.art" },',
+    '-  { pattern = "www.pinohouse.art/little-piner*", zone_name = "pinohouse.art" },',
+    '-  { pattern = "pinohouse.art/_next/static/*", zone_name = "pinohouse.art" },',
+    '-  { pattern = "www.pinohouse.art/_next/static/*", zone_name = "pinohouse.art" }',
+    '+  { pattern = "pinohouse.art/*", zone_name = "pinohouse.art" },',
+    '+  { pattern = "www.pinohouse.art/*", zone_name = "pinohouse.art" }',
+  ];
   const exact = wranglerUnifiedDiff("wrangler.toml", exactChanges);
+  const exactRoute = wranglerUnifiedDiff("wrangler.toml", routeChanges);
   assert.doesNotThrow(() => assertApprovedProductionWranglerDiff(""));
   assert.doesNotThrow(() => assertApprovedProductionWranglerDiff(exact));
+  assert.doesNotThrow(() => assertApprovedProductionWranglerDiff(exactRoute));
 
   const splitAcrossFiles = [
     wranglerUnifiedDiff("wrangler.toml", exactChanges.slice(0, 2)),
@@ -374,6 +394,7 @@ test("production Wrangler diff permits only the exact file-aware atomic approved
     wranglerUnifiedDiff("wrangler.toml", ["-keep_vars = false", "+keep_vars = true"]),
     wranglerUnifiedDiff("wrangler.toml", ["+keep_vars = false"]),
     wranglerUnifiedDiff("wrangler.toml", [...exactChanges, '+compatibility_date = "2099-01-01"']),
+    wranglerUnifiedDiff("wrangler.toml", [...routeChanges, '+compatibility_date = "2099-01-01"']),
     wranglerUnifiedDiff("wrangler.piner.production.toml", exactChanges),
     splitAcrossFiles,
     duplicateSection,
