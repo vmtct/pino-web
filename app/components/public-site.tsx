@@ -67,8 +67,10 @@ export function PublicFooter() {
         <a href="#paths"><CmsText contentKey="site_nav_paths" fallback="Bốn lộ trình" /></a>
         <a href="#journey"><CmsText contentKey="site_nav_premium" fallback="Premium Journey" /></a>
         <a href="/open-studio"><CmsText contentKey="site_footer_open_studio" fallback="Open Studio" /></a>
+        <a href="/policy">Privacy Policy</a>
+        <a href="/term">Terms of Service</a>
       </div>
-      <span>© {new Date().getFullYear()} PINO House</span>
+      <span>© {new Date().getFullYear()} PINO House · PINO Notifier is operated by PINO House.</span>
     </footer>
   );
 }
