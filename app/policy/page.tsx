@@ -18,11 +18,11 @@ export default function PrivacyPolicyPage() {
           <h1>Privacy Policy</h1>
           <p className={styles.updated}>Effective September 25, 2026</p>
           <p>This Privacy Policy explains how PINO House handles information when you use our website, services, and PINO Notifier, our email notification service.</p>
-          <div className={styles.notice}><strong>PINO Notifier</strong> uses your Google account only to authenticate authorized PINO operators and support the email-notification workflow they initiate. We do not sell Google user data or use it for advertising.</div>
+          <div className={styles.notice}><strong>PINO Notifier</strong> uses Google authorization only to send notification emails from an authorized Gmail account. The service requests the Gmail send permission; it does not request permission to read, modify, or delete mailbox content. We do not sell Google user data or use it for advertising.</div>
           <h2>Information we collect</h2>
           <p>Depending on the service you use, we may receive basic account information such as your name, email address, account identifier, authentication state, and operational records needed to provide PINO services.</p>
           <h2>Google account data</h2>
-          <p>When Google sign-in is used, we access only the information and permissions presented on the Google consent screen. Google account information is used to authenticate the operator, associate activity with the correct account, and perform the requested PINO Notifier workflow.</p>
+          <p>When Google authorization is used, PINO Notifier requests the Gmail send permission shown on the Google consent screen. The resulting authorization is used to send notification messages requested by the authorized PINO operator from the configured sender account. PINO Notifier does not request Gmail inbox read, modify, or delete permissions.</p>
           <h2>How we use information</h2>
           <ul>
             <li>Provide and secure PINO House services and PINO Notifier.</li>

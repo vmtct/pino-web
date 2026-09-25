@@ -21,7 +21,7 @@ export default function TermsPage() {
           <h2>Authorized use</h2>
           <p>You may use the services only for legitimate PINO House purposes and only with accounts and permissions you are authorized to use. You are responsible for keeping your account access secure.</p>
           <h2>PINO Notifier</h2>
-          <p>PINO Notifier may use Google sign-in to authenticate authorized operators. By using it, you authorize the service to use the permissions shown on the Google consent screen for the requested notification workflow.</p>
+          <p>PINO Notifier may use Google authorization to send notification emails from an authorized Gmail account. By authorizing it, you permit the service to use the Gmail send permission shown on the Google consent screen for that notification workflow.</p>
           <h2>Acceptable use</h2>
           <p>You must not misuse the services, attempt unauthorized access, interfere with service operation, or use PINO House systems to send unlawful, deceptive, or abusive communications.</p>
           <h2>Availability and changes</h2>

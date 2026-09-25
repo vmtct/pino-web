@@ -16,6 +16,8 @@ test("privacy policy describes PINO Notifier and Google account data handling", 
   assert.match(privacy, /Privacy Policy/);
   assert.match(privacy, /PINO Notifier/);
   assert.match(privacy, /Google account data/);
+  assert.match(privacy, /Gmail send permission/);
+  assert.match(privacy, /does not request permission to read, modify, or delete mailbox content/);
   assert.match(privacy, /We do not sell/);
   assert.match(privacy, /Limited Use requirements/);
 });
