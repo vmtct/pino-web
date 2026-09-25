@@ -130,6 +130,8 @@ jobs:
           candidate_deployment_id=""
           deployment_marker=""
           promotion_attempted=0
+          route_mutation_attempted=0
+          route_receipt="$RUNNER_TEMP/web-route-transition.json"
           already_active=0
           rebind_mode=0
           rebind_prior_issue=""
@@ -137,30 +139,47 @@ jobs:
           release_mode="PROMOTION"
           comment() { gh issue comment "$ISSUE_NUMBER" --repo "$repo" --body "$1"; }
           rollback() {
-            [ "$promotion_attempted" -eq 1 ] || return 0
-            [ -n "$old_deployment_id" ] && [ -n "$old_version" ] && [ -n "${candidate_id:-}" ] && [ -n "$deployment_marker" ] || return 1
-            local state current_deployment current_version current_marker previous_deployment decision after after_version
-            state="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${WEB_WORKER}/deployments" "${auth[@]}" 2>/dev/null)" || return 1
-            current_deployment="$(jq -r '.result.deployments[0].id // empty' <<<"$state")"
-            current_version="$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id // empty' <<<"$state" | head -1)"
-            current_marker="$(jq -r '.result.deployments[0].annotations["workers/message"] // empty' <<<"$state")"
-            previous_deployment="$(jq -r '.result.deployments[1].id // empty' <<<"$state")"
-            decision="$(node scripts/web-production-release-fence.mjs "$(jq -nc --arg oldDeploymentId "$old_deployment_id" --arg oldVersion "$old_version" --arg candidateDeploymentId "$candidate_deployment_id" --arg candidateVersion "$candidate_id" --arg candidateMarker "$deployment_marker" --arg currentDeploymentId "$current_deployment" --arg currentVersion "$current_version" --arg currentMarker "$current_marker" --arg previousDeploymentId "$previous_deployment" '{oldDeploymentId:$oldDeploymentId,oldVersion:$oldVersion,candidateDeploymentId:$candidateDeploymentId,candidateVersion:$candidateVersion,candidateMarker:$candidateMarker,currentDeploymentId:$currentDeploymentId,currentVersion:$currentVersion,currentMarker:$currentMarker,previousDeploymentId:$previousDeploymentId}')")" || return 1
-            case "$decision" in
-              RESTORE) npx wrangler versions deploy "${old_version}@100%" --name "$WEB_WORKER" -y >/dev/null 2>&1 || return 1 ;;
-              NOOP) ;;
-              *) return 1 ;;
-            esac
-            after="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${WEB_WORKER}/deployments" "${auth[@]}" 2>/dev/null)" || return 1
-            after_version="$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id // empty' <<<"$after" | head -1)"
-            [ "$after_version" = "$old_version" ]
+            local route_ok=1 version_ok=1
+            if [ "$route_mutation_attempted" -eq 1 ] && [ -s "$route_receipt" ]; then
+              node scripts/web-production-route-transition.ts rollback "$route_receipt" >/dev/null 2>&1 || route_ok=0
+            fi
+            if [ "$promotion_attempted" -eq 1 ]; then
+              if [ -z "$old_deployment_id" ] || [ -z "$old_version" ] || [ -z "${candidate_id:-}" ] || [ -z "$deployment_marker" ]; then
+                version_ok=0
+              else
+                local state current_deployment current_version current_marker previous_deployment decision after after_version
+                state="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${WEB_WORKER}/deployments" "${auth[@]}" 2>/dev/null)" || version_ok=0
+                if [ "$version_ok" -eq 1 ]; then
+                  current_deployment="$(jq -r '.result.deployments[0].id // empty' <<<"$state")"
+                  current_version="$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id // empty' <<<"$state" | head -1)"
+                  current_marker="$(jq -r '.result.deployments[0].annotations["workers/message"] // empty' <<<"$state")"
+                  previous_deployment="$(jq -r '.result.deployments[1].id // empty' <<<"$state")"
+                  decision="$(node scripts/web-production-release-fence.mjs "$(jq -nc --arg oldDeploymentId "$old_deployment_id" --arg oldVersion "$old_version" --arg candidateDeploymentId "$candidate_deployment_id" --arg candidateVersion "$candidate_id" --arg candidateMarker "$deployment_marker" --arg currentDeploymentId "$current_deployment" --arg currentVersion "$current_version" --arg currentMarker "$current_marker" --arg previousDeploymentId "$previous_deployment" '{oldDeploymentId:$oldDeploymentId,oldVersion:$oldVersion,candidateDeploymentId:$candidateDeploymentId,candidateVersion:$candidateVersion,candidateMarker:$candidateMarker,currentDeploymentId:$currentDeploymentId,currentVersion:$currentVersion,currentMarker:$currentMarker,previousDeploymentId:$previousDeploymentId}')")" || version_ok=0
+                  if [ "$version_ok" -eq 1 ]; then
+                    case "$decision" in
+                      RESTORE) npx wrangler versions deploy "${old_version}@100%" --name "$WEB_WORKER" -y >/dev/null 2>&1 || version_ok=0 ;;
+                      NOOP) ;;
+                      *) version_ok=0 ;;
+                    esac
+                  fi
+                fi
+                if [ "$version_ok" -eq 1 ]; then
+                  after="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${WEB_WORKER}/deployments" "${auth[@]}" 2>/dev/null)" || version_ok=0
+                  if [ "$version_ok" -eq 1 ]; then
+                    after_version="$(jq -r '.result.deployments[0].versions[]? | select(.percentage == 100) | .version_id // empty' <<<"$after" | head -1)"
+                    [ "$after_version" = "$old_version" ] || version_ok=0
+                  fi
+                fi
+              fi
+            fi
+            [ "$route_ok" -eq 1 ] && [ "$version_ok" -eq 1 ]
           }
           fail() {
             local message="$1" rollback_note="No candidate traffic promotion had started."
-            if [ "$promotion_attempted" -eq 1 ]; then
-              if rollback; then rollback_note="Prior Web version was restored or exact pinned baseline remained active."; else rollback_note="Rollback was refused or failed because exact failed-promotion ownership could not be proven; no external deployment was overwritten."; fi
+            if [ "$promotion_attempted" -eq 1 ] || [ "$route_mutation_attempted" -eq 1 ]; then
+              if rollback; then rollback_note="Run-owned Web version and route mutations were restored, or their exact prior baseline remained active."; else rollback_note="Rollback was refused or failed because exact run ownership could not be proven; no external route or deployment was overwritten."; fi
             fi
-            comment "WEB_PRODUCTION_RELEASE: **FAIL_SAFE**\n\nWorkflow run: ${GITHUB_RUN_ID}\nWorkflow attempt: ${GITHUB_RUN_ATTEMPT}\n\n${message}\n\n${rollback_note}\n\nNo route, binding, secret, D1, or application-data mutation was authorized."
+            comment "WEB_PRODUCTION_RELEASE: **FAIL_SAFE**\n\nWorkflow run: ${GITHUB_RUN_ID}\nWorkflow attempt: ${GITHUB_RUN_ATTEMPT}\n\n${message}\n\n${rollback_note}\n\nNo binding, secret, D1, or application-data mutation was authorized."
             exit 1
           }
 
@@ -319,6 +338,10 @@ jobs:
           [ "$deployed_sha" = "$WEB_SHA" ] \
             || fail "Production identity did not converge to the approved SHA within the bounded verification window."
 
+          route_mutation_attempted=1
+          node scripts/web-production-route-transition.ts apply "$route_receipt" > /tmp/web-route-transition.json \
+            || fail "Canonical pinohouse.art route transition failed."
+
           status="$(curl -sS -o /tmp/home.html -w '%{http_code}' https://pino-web.minhtri-van42.workers.dev/)"
           [ "$status" = "200" ] || fail "Production root smoke failed with HTTP ${status}."
           status="$(curl -sS -o /tmp/core-sessions.json -D /tmp/core-sessions.headers -w '%{http_code}' https://pino-web.minhtri-van42.workers.dev/api/pino-core/open-studio/sessions)"
@@ -328,11 +351,9 @@ jobs:
           core_header="$(awk 'BEGIN{IGNORECASE=1} /^X-PINO-Core-Version:/{sub(/^[^:]+:[[:space:]]*/,""); sub(/\r$/,""); print; exit}' /tmp/core-sessions.headers)"
           [ "$core_header" = "$CORE_VERSION" ] || fail "Web->Core smoke did not execute against the exact Core release version."
 
-          routes="$(curl -fsS "${api}/zones/${ZONE_ID}/workers/routes" "${auth[@]}")" || fail "Cannot inspect production Web routes."
-          for pattern in 'pinohouse.art/artchitect*' 'www.pinohouse.art/artchitect*' 'pinohouse.art/little-piner*' 'www.pinohouse.art/little-piner*' 'pinohouse.art/_next/static/*' 'www.pinohouse.art/_next/static/*'; do
-            jq -e --arg p "$pattern" --arg s "$WEB_WORKER" '[.result[]? | select(.pattern==$p and .script==$s)] | length==1' <<<"$routes" >/dev/null || fail "Required public route ${pattern} is not attached exactly once to pino-web."
-          done
-          for url in 'https://pinohouse.art/artchitect' 'https://www.pinohouse.art/artchitect' 'https://pinohouse.art/little-piner' 'https://www.pinohouse.art/little-piner'; do
+          node scripts/web-production-route-transition.ts verify \
+            || fail "Canonical full-domain pinohouse.art route verification failed."
+          for url in 'https://pinohouse.art/' 'https://www.pinohouse.art/' 'https://pinohouse.art/policy' 'https://www.pinohouse.art/policy' 'https://pinohouse.art/term' 'https://www.pinohouse.art/term' 'https://pinohouse.art/artchitect' 'https://pinohouse.art/little-piner' 'https://pinohouse.art/open-studio'; do
             status="$(curl -LsS --max-redirs 3 -o /tmp/public-route.html -w '%{http_code}' "$url")"
             [ "$status" = "200" ] || fail "Public production route ${url} failed with HTTP ${status}."
             grep -q 'PINO' /tmp/public-route.html || fail "Public production route ${url} did not return PINO content."
@@ -359,4 +380,5 @@ jobs:
           core_final="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/pino-core/deployments" "${auth[@]}")" || fail "Cannot re-read Core provider before terminal PASS."
           [ "$(jq -r '.result.deployments[0].id // empty' <<<"$core_final")" = "$CORE_DEPLOYMENT_ID" ] && [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$core_final" | head -1)" = "$CORE_VERSION" ] || fail "Core provider changed during Web release."
           promotion_attempted=0
-          comment "WEB_PRODUCTION_RELEASE: **PASS**\n\n- Web source: ${WEB_SHA}\n- Workflow run: ${GITHUB_RUN_ID}\n- Workflow attempt: ${GITHUB_RUN_ATTEMPT}\n- Authorization body hash: ${AUTH_BODY_HASH}\n- Release mode: ${release_mode}\n- Prior canonical Web release issue/run: ${rebind_prior_issue:-none} / ${rebind_prior_run:-none}\n- External Web build UUID: ${WEB_BUILD_UUID}\n- Canonical Cloudflare candidate version: ${candidate_id}\n- Canonical candidate message: ${candidate_message}\n- Core release issue/run: #${CORE_RELEASE_ISSUE} / ${CORE_RELEASE_RUN_ID}\n- Core source: ${CORE_SHA}\n- Core version: ${CORE_VERSION}\n- Core deployment: ${CORE_DEPLOYMENT_ID}\n- Worker version: ${candidate_id}\n- Deployment ID: ${candidate_deployment_id}\n- Traffic: 100%\n- CI: successful main run required\n- Provenance: merged PR into main required\n- Candidate: exact immutable version from canonical Cloudflare Workers Build check\n- Candidate preview exact-SHA/Core smoke: PASS\n- Production config: exact Core service-binding cutover only\n- Web->Core production Open Studio proxy: PASS\n- pinohouse.art/www Artchitect + Little Piner routed ingress: PASS\n- pinohouse.art/www immutable Next static asset routes: PASS\n\nNo route, binding, secret, D1, or application-data mutation was performed."
+          route_mutation_attempted=0
+          comment "WEB_PRODUCTION_RELEASE: **PASS**\n\n- Web source: ${WEB_SHA}\n- Workflow run: ${GITHUB_RUN_ID}\n- Workflow attempt: ${GITHUB_RUN_ATTEMPT}\n- Authorization body hash: ${AUTH_BODY_HASH}\n- Release mode: ${release_mode}\n- Prior canonical Web release issue/run: ${rebind_prior_issue:-none} / ${rebind_prior_run:-none}\n- External Web build UUID: ${WEB_BUILD_UUID}\n- Canonical Cloudflare candidate version: ${candidate_id}\n- Canonical candidate message: ${candidate_message}\n- Core release issue/run: #${CORE_RELEASE_ISSUE} / ${CORE_RELEASE_RUN_ID}\n- Core source: ${CORE_SHA}\n- Core version: ${CORE_VERSION}\n- Core deployment: ${CORE_DEPLOYMENT_ID}\n- Worker version: ${candidate_id}\n- Deployment ID: ${candidate_deployment_id}\n- Traffic: 100%\n- CI: successful main run required\n- Provenance: merged PR into main required\n- Candidate: exact immutable version from canonical Cloudflare Workers Build check\n- Candidate preview exact-SHA/Core smoke: PASS\n- Production config: approved full-domain pinohouse.art route retirement transition\n- Web->Core production Open Studio proxy: PASS\n- pinohouse.art/www homepage + legal + learning surfaces routed ingress: PASS\n- pinohouse.art/www immutable Next static assets through canonical route: PASS\n\nNo binding, secret, D1, or application-data mutation was performed; route mutation was bounded, receipt-backed, and rollback-capable."
