@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 const home = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
 const privacy = readFileSync(new URL("../app/policy/page.tsx", import.meta.url), "utf8");
 const terms = readFileSync(new URL("../app/term/page.tsx", import.meta.url), "utf8");
+const wrangler = readFileSync(new URL("../wrangler.toml", import.meta.url), "utf8");
 
 test("homepage exposes OAuth branding identity and legal destinations", () => {
   assert.match(home, /PINO Notifier is the email notification service operated by PINO House/);
@@ -26,4 +27,12 @@ test("terms identify PINO Notifier and link back to privacy policy", () => {
   assert.match(terms, /Terms of Service/);
   assert.match(terms, /PINO Notifier/);
   assert.match(terms, /href="\/policy"/);
+});
+
+
+test("pino-web owns the complete retired-Webflow public domain", () => {
+  assert.match(wrangler, /pattern = "pinohouse\.art\/\*"/);
+  assert.match(wrangler, /pattern = "www\.pinohouse\.art\/\*"/);
+  assert.doesNotMatch(wrangler, /pinohouse\.art\/artchitect\*/);
+  assert.doesNotMatch(wrangler, /pinohouse\.art\/little-piner\*/);
 });
