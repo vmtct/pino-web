@@ -14,6 +14,11 @@ service = "pino-core-staging"
 entrypoint = "PublicOpenStudioControlPlane"
 
 [[services]]
+binding = "PINO_WEB_CMS_CORE"
+service = "pino-core-staging"
+entrypoint = "PublicWebCmsControlPlane"
+
+[[services]]
 binding = "PINO_MEMBER_CORE"
 service = "pino-core-staging"
 entrypoint = "ParentMemberControlPlane"

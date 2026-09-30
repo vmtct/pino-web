@@ -37,6 +37,11 @@ binding = "PINO_CORE_PUBLIC"
 service = "pino-core"
 entrypoint = "PublicOpenStudioControlPlane"
 
+[[services]]
+binding = "PINO_WEB_CMS_CORE"
+service = "pino-core"
+entrypoint = "PublicWebCmsControlPlane"
+
 [[send_email]]
 name = "EMAIL"
 remote = true
