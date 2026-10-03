@@ -14,6 +14,14 @@ const APPROVED_PRODUCTION_CUTOVER = [
   '+entrypoint = "PublicOpenStudioControlPlane"',
   "+",
 ] as const;
+const APPROVED_WEB_CMS_CORE_BINDING = [
+  "+[[services]]",
+  '+binding = \"PINO_WEB_CMS_CORE\"',
+  '+service = \"pino-core\"',
+  '+entrypoint = \"PublicWebCmsControlPlane\"',
+  "+",
+] as const;
+
 const APPROVED_PUBLIC_ROUTE_RETIREMENT = [
   "-# Incremental production cutover: Artchitect and Little Piner are served by",
   "-# pino-web while the remaining pinohouse.art pages continue to resolve to",
@@ -96,7 +104,9 @@ export function assertApprovedProductionWranglerDiff(diff: string): void {
     && APPROVED_PRODUCTION_CUTOVER.every((line, index) => changes[index] === line);
   const exactRouteRetirement = changes.length === APPROVED_PUBLIC_ROUTE_RETIREMENT.length
     && APPROVED_PUBLIC_ROUTE_RETIREMENT.every((line, index) => changes[index] === line);
-  if (!exactCutover && !exactRouteRetirement) reject(changes.join(" | "));
+  const exactWebCmsCoreBinding = changes.length === APPROVED_WEB_CMS_CORE_BINDING.length
+    && APPROVED_WEB_CMS_CORE_BINDING.every((line, index) => changes[index] === line);
+  if (!exactCutover && !exactRouteRetirement && !exactWebCmsCoreBinding) reject(changes.join(" | "));
 }
 
 if (process.argv[1]?.endsWith("web-production-config-diff-check.ts")) {

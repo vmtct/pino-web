@@ -374,11 +374,20 @@ test("production Wrangler diff permits only exact approved cutover deltas", () =
     '+  { pattern = "pinohouse.art/*", zone_name = "pinohouse.art" },',
     '+  { pattern = "www.pinohouse.art/*", zone_name = "pinohouse.art" }',
   ];
+  const webCmsCoreChanges = [
+    "+[[services]]",
+    '+binding = \"PINO_WEB_CMS_CORE\"',
+    '+service = \"pino-core\"',
+    '+entrypoint = \"PublicWebCmsControlPlane\"',
+    "+",
+  ];
   const exact = wranglerUnifiedDiff("wrangler.toml", exactChanges);
   const exactRoute = wranglerUnifiedDiff("wrangler.toml", routeChanges);
+  const exactWebCmsCore = wranglerUnifiedDiff("wrangler.toml", webCmsCoreChanges);
   assert.doesNotThrow(() => assertApprovedProductionWranglerDiff(""));
   assert.doesNotThrow(() => assertApprovedProductionWranglerDiff(exact));
   assert.doesNotThrow(() => assertApprovedProductionWranglerDiff(exactRoute));
+  assert.doesNotThrow(() => assertApprovedProductionWranglerDiff(exactWebCmsCore));
 
   const splitAcrossFiles = [
     wranglerUnifiedDiff("wrangler.toml", exactChanges.slice(0, 2)),
@@ -395,6 +404,7 @@ test("production Wrangler diff permits only exact approved cutover deltas", () =
     wranglerUnifiedDiff("wrangler.toml", ["+keep_vars = false"]),
     wranglerUnifiedDiff("wrangler.toml", [...exactChanges, '+compatibility_date = "2099-01-01"']),
     wranglerUnifiedDiff("wrangler.toml", [...routeChanges, '+compatibility_date = "2099-01-01"']),
+    wranglerUnifiedDiff("wrangler.toml", [...webCmsCoreChanges, '+compatibility_date = \"2099-01-01\"']),
     wranglerUnifiedDiff("wrangler.piner.production.toml", exactChanges),
     splitAcrossFiles,
     duplicateSection,
