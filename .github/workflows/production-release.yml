@@ -264,10 +264,12 @@ jobs:
             || fail "Candidate lacks exact PINO_CORE_PUBLIC -> pino-core/PublicOpenStudioControlPlane service binding."
           jq -e '[.resources.bindings[]? | select(.name=="PINO_CORE_BASE_URL")] | length==0' <<<"$candidate_detail" >/dev/null \
             || fail "Candidate retains forbidden dev-Core URL binding."
-          old_bindings="$(jq -c '[.resources.bindings[]? | select(.name!="PINO_CORE_BASE_URL" and .name!="PINO_CORE_PUBLIC") | {name,type,text:(.text // null),service:(.service // null),entrypoint:(.entrypoint // null)}] | sort_by(.name)' <<<"$old_detail")"
-          new_bindings="$(jq -c '[.resources.bindings[]? | select(.name!="PINO_CORE_BASE_URL" and .name!="PINO_CORE_PUBLIC") | {name,type,text:(.text // null),service:(.service // null),entrypoint:(.entrypoint // null)}] | sort_by(.name)' <<<"$candidate_detail")"
+          jq -e '[.resources.bindings[]? | select(.name=="PINO_WEB_CMS_CORE" and .type=="service" and .service=="pino-core" and .entrypoint=="PublicWebCmsControlPlane")] | length==1' <<<"$candidate_detail" >/dev/null \
+            || fail "Candidate lacks exact PINO_WEB_CMS_CORE -> pino-core/PublicWebCmsControlPlane service binding."
+          old_bindings="$(jq -c '[.resources.bindings[]? | select(.name!="PINO_CORE_BASE_URL" and .name!="PINO_CORE_PUBLIC" and .name!="PINO_WEB_CMS_CORE") | {name,type,text:(.text // null),service:(.service // null),entrypoint:(.entrypoint // null)}] | sort_by(.name)' <<<"$old_detail")"
+          new_bindings="$(jq -c '[.resources.bindings[]? | select(.name!="PINO_CORE_BASE_URL" and .name!="PINO_CORE_PUBLIC" and .name!="PINO_WEB_CMS_CORE") | {name,type,text:(.text // null),service:(.service // null),entrypoint:(.entrypoint // null)}] | sort_by(.name)' <<<"$candidate_detail")"
           [ "$old_bindings" = "$new_bindings" ] \
-            || fail "Candidate changes production bindings outside the one approved Core service-binding cutover."
+            || fail "Candidate changes production bindings outside the approved Core service bindings."
 
           if [ "$already_active" -eq 1 ]; then
             [ "$old_version" = "$candidate_id" ] || fail "Serving Web SHA matches the candidate but active immutable version does not."
