@@ -78,7 +78,7 @@ test("promotion is forward-only, SHA-tagged, config-preserving, rollback-capable
   assert.match(release, /web-production-config-diff-check\.ts/);
   assert.match(release, /PINO_CORE_PUBLIC -> pino-core\/PublicOpenStudioControlPlane/);
   assert.match(release, /forbidden dev-Core URL binding/);
-  assert.match(release, /changes production bindings outside the one approved Core service-binding cutover/);
+  assert.match(release, /changes production bindings outside the approved Core service bindings/);
   assert.match(release, /rollback\(\)/);
   assert.match(release, /Production identity did not converge to the approved SHA within the bounded verification window/);
   assert.match(release, /build-info\.json\?pino-release-proof=\$\{GITHUB_RUN_ID\}-\$\{GITHUB_RUN_ATTEMPT\}-preflight/);
