@@ -384,10 +384,12 @@ test("production Wrangler diff permits only exact approved cutover deltas", () =
   const exact = wranglerUnifiedDiff("wrangler.toml", exactChanges);
   const exactRoute = wranglerUnifiedDiff("wrangler.toml", routeChanges);
   const exactWebCmsCore = wranglerUnifiedDiff("wrangler.toml", webCmsCoreChanges);
+  const exactRouteAndWebCmsCore = wranglerUnifiedDiff("wrangler.toml", [...routeChanges, ...webCmsCoreChanges]);
   assert.doesNotThrow(() => assertApprovedProductionWranglerDiff(""));
   assert.doesNotThrow(() => assertApprovedProductionWranglerDiff(exact));
   assert.doesNotThrow(() => assertApprovedProductionWranglerDiff(exactRoute));
   assert.doesNotThrow(() => assertApprovedProductionWranglerDiff(exactWebCmsCore));
+  assert.doesNotThrow(() => assertApprovedProductionWranglerDiff(exactRouteAndWebCmsCore));
 
   const splitAcrossFiles = [
     wranglerUnifiedDiff("wrangler.toml", exactChanges.slice(0, 2)),
