@@ -106,7 +106,10 @@ export function assertApprovedProductionWranglerDiff(diff: string): void {
     && APPROVED_PUBLIC_ROUTE_RETIREMENT.every((line, index) => changes[index] === line);
   const exactWebCmsCoreBinding = changes.length === APPROVED_WEB_CMS_CORE_BINDING.length
     && APPROVED_WEB_CMS_CORE_BINDING.every((line, index) => changes[index] === line);
-  if (!exactCutover && !exactRouteRetirement && !exactWebCmsCoreBinding) reject(changes.join(" | "));
+  const approvedRouteAndWebCmsCore = [...APPROVED_PUBLIC_ROUTE_RETIREMENT, ...APPROVED_WEB_CMS_CORE_BINDING];
+  const exactRouteAndWebCmsCore = changes.length === approvedRouteAndWebCmsCore.length
+    && approvedRouteAndWebCmsCore.every((line, index) => changes[index] === line);
+  if (!exactCutover && !exactRouteRetirement && !exactWebCmsCoreBinding && !exactRouteAndWebCmsCore) reject(changes.join(" | "));
 }
 
 if (process.argv[1]?.endsWith("web-production-config-diff-check.ts")) {
