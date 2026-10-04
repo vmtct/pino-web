@@ -144,6 +144,13 @@ test("Web production workflow binds terminal PASS to immutable deployment identi
   assert.ok(release.indexOf("promotion_attempted=1") < release.indexOf("WRANGLER_OUTPUT_FILE_PATH=\"$deploy_output\""));
   assert.match(release, /if \[ "\$rebind_mode" -eq 0 \]; then/);
   assert.match(release, /Serving candidate is not bound to an exact prior canonical Web PASS receipt/);
+  assert.match(release, /RECOVERY_ADOPTION_NO_TRAFFIC_MUTATION/);
+  assert.match(release, /if \[ -z "\$prior_run_id" \]; then/);
+  assert.match(release, /candidate_deployment_id="\$old_deployment_id"/);
+  const recoveryAdoptionAt = release.indexOf('release_mode="RECOVERY_ADOPTION_NO_TRAFFIC_MUTATION"');
+  assert.ok(recoveryAdoptionAt > release.indexOf('Candidate lacks exact PINO_WEB_CMS_CORE'));
+  assert.ok(recoveryAdoptionAt < release.indexOf('deployments_predeploy='));
+  assert.ok(release.indexOf('if [ "$rebind_mode" -eq 0 ]; then', recoveryAdoptionAt) < release.indexOf('versions deploy "${candidate_id}@100%"'));
   assert.doesNotMatch(release, /retroactive production authorization is forbidden/);
   assert.doesNotMatch(release, /PASS_ALREADY_ACTIVE/);
 });
