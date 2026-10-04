@@ -276,8 +276,17 @@ jobs:
             prior_pages="$(gh api --paginate --slurp "/repos/${repo}/actions/workflows/production-release.yml/runs?event=issues&per_page=100")" \
               || fail "Cannot enumerate prior canonical Web release runs for serving-authority proof."
             prior_run_id="$(jq -r --arg sha "$WEB_SHA" --argjson current "$GITHUB_RUN_ID" '[.[]?.workflow_runs[]? | select(.id != $current and .head_sha==$sha and .event=="issues" and .run_attempt==1 and .status=="completed" and .conclusion=="success" and .actor.login=="vmtct" and .triggering_actor.login=="vmtct" and .path==".github/workflows/production-release.yml" and ((.display_title // "") | startswith("Web production release #")) and ((.display_title // "") | endswith(" @ " + $sha)))] | sort_by(.updated_at // .run_started_at // .created_at // "") | last | .id // empty' <<<"$prior_pages")"
-            [ -n "$prior_run_id" ] || fail "Serving candidate has no prior successful canonical Web release run."
-            prior_run="$(gh api "/repos/${repo}/actions/runs/${prior_run_id}")" || fail "Cannot resolve prior canonical Web release run."
+            if [ -z "$prior_run_id" ]; then
+              # Recovery adoption is permitted only after this job has already revalidated exact main,
+              # exact active/candidate immutable version, candidate provenance/resources, and Core authority.
+              # It never mutates traffic; the current serving deployment is adopted for certification.
+              candidate_deployment_id="$old_deployment_id"
+              rebind_mode=1
+              release_mode="RECOVERY_ADOPTION_NO_TRAFFIC_MUTATION"
+              rebind_prior_issue="recovery-adoption"
+              rebind_prior_run="none"
+            else
+              prior_run="$(gh api "/repos/${repo}/actions/runs/${prior_run_id}")" || fail "Cannot resolve prior canonical Web release run."
             prior_display="$(jq -r '.display_title // empty' <<<"$prior_run")"
             prior_issue_number="$(sed -nE "s/^Web production release #([1-9][0-9]*) @ ${WEB_SHA}$/\1/p" <<<"$prior_display")"
             [ -n "$prior_issue_number" ] || fail "Prior canonical Web release run is not bound to one exact issue."
@@ -287,9 +296,10 @@ jobs:
             rebind_proof="$(node --experimental-strip-types scripts/web-production-serving-rebind.ts <<<"$rebind_input")" || fail "Serving candidate is not bound to an exact prior canonical Web PASS receipt."
             rebind_prior_issue="$(jq -r '.priorIssueNumber' <<<"$rebind_proof")"
             rebind_prior_run="$(jq -r '.priorRunId' <<<"$rebind_proof")"
-            candidate_deployment_id="$old_deployment_id"
-            rebind_mode=1
-            release_mode="CANONICAL_REBIND_NO_TRAFFIC_MUTATION"
+              candidate_deployment_id="$old_deployment_id"
+              rebind_mode=1
+              release_mode="CANONICAL_REBIND_NO_TRAFFIC_MUTATION"
+            fi
           fi
 
           deployments_predeploy="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${WEB_WORKER}/deployments" "${auth[@]}")" || fail "Cannot re-read Web deployment immediately before release boundary."
