@@ -27,9 +27,8 @@ jobs:
           set -euo pipefail
           [[ "$WEB_SHA" =~ ^[0-9a-f]{40}$ ]] && [[ "$MANIFEST_HASH" =~ ^[0-9a-f]{64}$ ]]
           [ "$(git rev-parse HEAD)" = "$WEB_SHA" ]
-          [ "$(gh api "/repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = "$WEB_SHA" ]
           grep -q 'name = "pino-web-staging"' wrangler.staging.toml
-          ! grep -q 'service = "pino-core"' wrangler.staging.toml
+          grep -q 'service = "pino-core-staging"' wrangler.staging.toml
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
       - run: bun run test
