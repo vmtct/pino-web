@@ -1,0 +1,51 @@
+name: Candidate Web staging deploy
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_id: {required: true, type: string}
+      manifest_hash: {required: true, type: string}
+      web_sha: {required: true, type: string}
+      core_version_id: {required: true, type: string}
+permissions: {contents: read, actions: read}
+concurrency: {group: pino-web-staging-worker-mutation, cancel-in-progress: false}
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env: {CF_ACCOUNT_ID: 952c3c8a236f8e4cbcf6ee10b86ad70c}
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: "${{ inputs.web_sha }}", persist-credentials: false}
+      - uses: oven-sh/setup-bun@v2
+        with: {bun-version: 1.2.15}
+      - name: Validate candidate boundary
+        env:
+          GH_TOKEN: "${{ github.token }}"
+          WEB_SHA: "${{ inputs.web_sha }}"
+          MANIFEST_HASH: "${{ inputs.manifest_hash }}"
+        run: |
+          set -euo pipefail
+          [[ "$WEB_SHA" =~ ^[0-9a-f]{40}$ ]] && [[ "$MANIFEST_HASH" =~ ^[0-9a-f]{64}$ ]]
+          [ "$(git rev-parse HEAD)" = "$WEB_SHA" ]
+          [ "$(gh api "/repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)" = "$WEB_SHA" ]
+          grep -q 'name = "pino-web-staging"' wrangler.staging.toml
+          ! grep -q 'service = "pino-core"' wrangler.staging.toml
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run test
+      - run: bun run build
+      - name: Deploy staging only
+        env:
+          CLOUDFLARE_API_TOKEN: "${{ secrets.CF_PINO_WEB_STAGING }}"
+          CLOUDFLARE_ACCOUNT_ID: "${{ env.CF_ACCOUNT_ID }}"
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.134.0 deploy -c wrangler.staging.toml --tag "candidate-${{ inputs.candidate_id }}" --message "candidate=${{ inputs.candidate_id }} manifest=${{ inputs.manifest_hash }} sha=${{ inputs.web_sha }} core=${{ inputs.core_version_id }}"
+          npx --yes wrangler@4.134.0 deployments list -c wrangler.staging.toml --json > deployment.json
+          version="$(jq -r '.[0].versions[]|select(.percentage==100)|.version_id' deployment.json)"
+          test -n "$version"
+          jq -n --arg c "${{ inputs.candidate_id }}" --arg m "${{ inputs.manifest_hash }}" --arg s "${{ inputs.web_sha }}" --arg v "$version" --arg cv "${{ inputs.core_version_id }}" --arg r "$GITHUB_RUN_ID" '{kind:"PINO_STAGING_RUNTIME_RECEIPT",runtime:"web",candidateId:$c,manifestHash:$m,sourceSha:$s,worker:"pino-web-staging",activeVersionId:$v,coreVersionId:$cv,runId:$r,result:"PASS",productionMutation:false}' | tee candidate-staging-receipt.json
+      - uses: actions/upload-artifact@v4
+        with: {name: candidate-staging-web-receipt, path: candidate-staging-receipt.json}
+
+# project: PLT-RELEASE-STAGING-PREPROD-V1
