@@ -232,65 +232,21 @@ test("reserves unknown Piner routes and methods instead of falling through to le
 });
 
 
-test("forwards bounded OWNER Open Studio admission through the private member binding", async () => {
-  let seen: Request | undefined;
-  const binding: ParentMemberCoreBinding = {
-    async fetch(request) {
-      seen = request;
-      return jsonResponse({ data: { claimStatus: "RESERVED" } }, 201);
-    },
-  };
-  const studentId = "018f7f5a-4321-7abc-8def-1234567890ab";
-  const body = { passId: "018f7f5a-4321-7abc-8def-111111111111", listingId: "018f7f5a-4321-7abc-8def-222222222222", participantMode: "OWNER" };
-  const response = await proxyPinerMemberRequest(new Request(`https://pinohouse.art/api/piner/students/${studentId}/open-studio/admissions`, {
-    method: "POST",
-    headers: {
-      cookie: `__Host-piner_session=${SESSION_TOKEN}`,
-      authorization: `Bearer ${SPOOFED_TOKEN}`,
-      "content-type": "application/json",
-      "idempotency-key": "piner-owner-admission-1",
-    },
-    body: JSON.stringify(body),
-  }), { PINO_MEMBER_CORE: binding });
-
-  assert.equal(response.status, 201);
-  assert.ok(seen);
-  assert.equal(seen.url, `https://pino-member-core.internal/v1/member/students/${studentId}/open-studio/admissions`);
-  assert.equal(seen.headers.get("authorization"), `Bearer ${SESSION_TOKEN}`);
-  assert.equal(seen.headers.get("idempotency-key"), "piner-owner-admission-1");
-  assert.deepEqual(await seen.json(), body);
-});
-
-test("forwards Piner Open Studio Explore read through the private member binding", async () => {
-  let seen: Request | undefined;
-  const binding: ParentMemberCoreBinding = { async fetch(request) { seen = request; return jsonResponse({ data: { opportunities: [], reservations: [] } }); } };
-  const studentId = "018f7f5a-4321-7abc-8def-1234567890ab";
-  const response = await proxyPinerMemberRequest(new Request(`https://pinohouse.art/api/piner/students/${studentId}/open-studio`, {
-    headers: { cookie: `__Host-piner_session=${SESSION_TOKEN}`, authorization: `Bearer ${SPOOFED_TOKEN}` },
-  }), { PINO_MEMBER_CORE: binding });
-  assert.equal(response.status, 200);
-  assert.ok(seen);
-  assert.equal(seen.url, `https://pino-member-core.internal/v1/member/students/${studentId}/open-studio`);
-  assert.equal(seen.headers.get("authorization"), `Bearer ${SESSION_TOKEN}`);
-});
-
-test("forwards OWNER Open Studio cancellation with session authority and idempotency", async () => {
-  let seen: Request | undefined;
-  const binding: ParentMemberCoreBinding = { async fetch(request) { seen = request; return jsonResponse({ data: { claimStatus: "RELEASED" } }); } };
+test("retired Open Studio routes are not mapped to the private member binding", async () => {
+  let calls = 0;
+  const binding: ParentMemberCoreBinding = { async fetch() { calls += 1; return jsonResponse({ data: {} }); } };
   const studentId = "018f7f5a-4321-7abc-8def-1234567890ab";
   const claimId = "018f7f5a-4321-7abc-8def-333333333333";
-  const body = { reason: "Parent cancelled Open Studio reservation from Piner" };
-  const response = await proxyPinerMemberRequest(new Request(`https://pinohouse.art/api/piner/students/${studentId}/open-studio/claims/${claimId}/cancel`, {
-    method: "POST",
-    headers: { cookie: `__Host-piner_session=${SESSION_TOKEN}`, "content-type": "application/json", "idempotency-key": "cancel-1" },
-    body: JSON.stringify(body),
-  }), { PINO_MEMBER_CORE: binding });
-  assert.equal(response.status, 200);
-  assert.ok(seen);
-  assert.equal(seen.url, `https://pino-member-core.internal/v1/member/students/${studentId}/open-studio/claims/${claimId}/cancel`);
-  assert.equal(seen.headers.get("authorization"), `Bearer ${SESSION_TOKEN}`);
-  assert.equal(seen.headers.get("idempotency-key"), "cancel-1");
-  assert.deepEqual(await seen.json(), body);
+  const requests = [
+    new Request(`https://pinohouse.art/api/piner/students/${studentId}/open-studio`),
+    new Request(`https://pinohouse.art/api/piner/students/${studentId}/open-studio/admissions`, { method: "POST" }),
+    new Request(`https://pinohouse.art/api/piner/students/${studentId}/open-studio/claims/${claimId}/cancel`, { method: "POST" }),
+  ];
+  for (const request of requests) {
+    const response = await proxyPinerMemberRequest(request, { PINO_MEMBER_CORE: binding });
+    assert.equal(response.status, 404);
+  }
+  assert.equal(calls, 0);
 });
 
 test("maps F1 member summary and piano library through the authenticated binding", async () => {

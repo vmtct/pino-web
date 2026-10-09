@@ -85,8 +85,9 @@ jobs:
           test "$(git rev-parse HEAD)" = "$WEB_SHA"
           test -z "$(git status --porcelain)"
           bun install --frozen-lockfile
+          node scripts/assert-piner-open-studio-retired.mjs
           bun run typecheck
-          node --test --experimental-strip-types test/production-release-governance.test.ts test/h7-remediation.test.ts
+          node --test --experimental-strip-types test/production-release-governance.test.ts test/h7-remediation.test.ts test/piner-open-studio-retirement.test.ts test/piner-worker.test.ts
           WORKERS_CI_COMMIT_SHA="$WEB_SHA" bun run build
           grep -Fq "$WEB_SHA" worker-build-info.ts
 

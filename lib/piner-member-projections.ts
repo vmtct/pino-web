@@ -58,45 +58,6 @@ export type HomeActionTarget =
     }
   | { kind: "MEMBER_CONTENT_LIBRARY"; pathProgramId: string };
 
-export type OwnerOpenStudioAdmissionResult = {
-  claimId: string;
-  reservation: { id: string; type: "BOOKING"; status: "CONFIRMED" };
-  claimStatus: "RESERVED";
-  listingId: string;
-  session: { id: string };
-  participantMode: "OWNER";
-};
-export type OwnerOpenStudioCancellationResult = {
-  claimId: string;
-  reservation: { id: string; type: "BOOKING"; status: "CANCELLED" };
-  claimStatus: "RELEASED";
-  listingId: string;
-  session: { id: string };
-  participantMode: "OWNER";
-  cancellationResult: "RELEASED_CANCELLED";
-};
-
-export type OpenStudioExperienceType = "KHAM_PHA" | "CAO_CAP" | "CHUYEN_DE";
-export type MemberOpenStudioExploreItem = {
-  passId: string;
-  listingId: string;
-  experienceType: OpenStudioExperienceType;
-  session: { id: string; localDate: string; scheduledStartsAt: string; scheduledEndsAt: string };
-  path: { id: string; code: string; displayName: string };
-  syllabus: { id: string; title: string };
-};
-export type MemberOpenStudioReservation = MemberOpenStudioExploreItem & {
-  claimId: string;
-  reservation: { id: string; type: "BOOKING"; status: string };
-  claimStatus: "RESERVED";
-};
-export type MemberOpenStudioProjection = {
-  student: PinerStudentSummary;
-  opportunities: MemberOpenStudioExploreItem[];
-  reservations: MemberOpenStudioReservation[];
-  asOf: string;
-};
-
 export type HomePrimaryAction = {
   kind: HomeActionKind;
   reasonCode: string;
@@ -133,48 +94,6 @@ const HOME_ACTIONS = new Set<HomeActionKind>([
   "CONTINUE_JOURNEY", "EXPLORE_RETURN", "VIEW_RETAINED_VALUE",
 ]);
 const TOUCHPOINT_COMMITMENTS = new Set(["CONFIRMED", "COMMITTED", "PENDING"]);
-
-export function parseOwnerOpenStudioAdmission(
-  value: unknown,
-  expectedListingId: string,
-  expectedSessionId: string,
-): OwnerOpenStudioAdmissionResult | null {
-  if (!isRecord(value) || !canonicalId(value.claimId)) return null;
-  if (value.claimStatus !== "RESERVED" || value.participantMode !== "OWNER") return null;
-  if (value.listingId !== expectedListingId) return null;
-  if (!isRecord(value.session) || value.session.id !== expectedSessionId) return null;
-  if (!isRecord(value.reservation) || !canonicalId(value.reservation.id)) return null;
-  if (value.reservation.type !== "BOOKING" || value.reservation.status !== "CONFIRMED") return null;
-  return value as OwnerOpenStudioAdmissionResult;
-}
-export function parseOwnerOpenStudioCancellation(
-  value: unknown,
-  expectedClaimId: string,
-  expectedListingId: string,
-  expectedSessionId: string,
-): OwnerOpenStudioCancellationResult | null {
-  if (!isRecord(value) || value.claimId !== expectedClaimId) return null;
-  if (value.claimStatus !== "RELEASED" || value.participantMode !== "OWNER") return null;
-  if (value.listingId !== expectedListingId || value.cancellationResult !== "RELEASED_CANCELLED") return null;
-  if (!isRecord(value.session) || value.session.id !== expectedSessionId) return null;
-  if (!isRecord(value.reservation) || !canonicalId(value.reservation.id)) return null;
-  if (value.reservation.type !== "BOOKING" || value.reservation.status !== "CANCELLED") return null;
-  return value as OwnerOpenStudioCancellationResult;
-}
-
-export function parseMemberOpenStudioProjection(value: unknown, expectedStudentId: string): MemberOpenStudioProjection | null {
-  if (!isRecord(value) || !sameStudent(value.student, expectedStudentId) || !isTimestamp(value.asOf)) return null;
-  if (!Array.isArray(value.opportunities) || !value.opportunities.every(isOpenStudioExploreItem)) return null;
-  if (!Array.isArray(value.reservations) || !value.reservations.every((item) => {
-    if (!isOpenStudioExploreItem(item) || !isRecord(item)) return false;
-    if (!canonicalId(item.claimId) || item.claimStatus !== "RESERVED") return false;
-    return isRecord(item.reservation)
-      && canonicalId(item.reservation.id)
-      && item.reservation.type === "BOOKING"
-      && nonEmptyString(item.reservation.status);
-  })) return null;
-  return value as MemberOpenStudioProjection;
-}
 
 export function parseParentSession(value: unknown): PinerParentSession | null {
   if (!isRecord(value) || value.principalType !== "PARENT_USER") return null;
@@ -289,15 +208,6 @@ function isHomeJourney(value: unknown): boolean {
     && nonEmptyString(value.pathDisplayName)
     && nonEmptyString(value.focusLabel)
     && (value.currentMilestoneLabel === null || typeof value.currentMilestoneLabel === "string");
-}
-
-function isOpenStudioExploreItem(value: unknown): boolean {
-  if (!isRecord(value) || !canonicalId(value.passId) || !canonicalId(value.listingId)) return false;
-  if (value.experienceType !== "KHAM_PHA" && value.experienceType !== "CAO_CAP" && value.experienceType !== "CHUYEN_DE") return false;
-  if (!isRecord(value.session) || !canonicalId(value.session.id) || !nonEmptyString(value.session.localDate)) return false;
-  if (!isTimestamp(value.session.scheduledStartsAt) || !isTimestamp(value.session.scheduledEndsAt)) return false;
-  if (!isRecord(value.path) || !canonicalId(value.path.id) || !nonEmptyString(value.path.code) || !nonEmptyString(value.path.displayName)) return false;
-  return isRecord(value.syllabus) && canonicalId(value.syllabus.id) && nonEmptyString(value.syllabus.title);
 }
 
 function sameStudent(value: unknown, expectedStudentId: string): boolean {

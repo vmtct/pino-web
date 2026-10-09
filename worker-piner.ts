@@ -37,6 +37,9 @@ const handler = {
     if (isPinerToppiPath(url.pathname)) {
       return proxyPinerToppiRequest(request, env);
     }
+    if (/^\/api\/piner\/students\/[^/]+\/open-studio(?:\/|$)/.test(url.pathname)) {
+      return noStoreJson({ error: { code: "PINER_OPEN_STUDIO_RETIRED", message: "Open Studio is retired from Piner" } }, 410);
+    }
     if (url.pathname.startsWith("/api/piner/")) {
       return proxyPinerMemberRequest(request, env);
     }

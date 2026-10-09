@@ -49,3 +49,19 @@ test("does not expose legacy pino-web APIs on the Piner host", async () => {
   assert.equal(response.headers.get("cache-control"), "no-store");
   assert.deepEqual(assetUrls, []);
 });
+
+
+test("fails closed for every retired Piner Open Studio API shape", async () => {
+  const { env, assetUrls } = fixture();
+  const paths = [
+    "/api/piner/students/018f7f5a-4321-7abc-8def-1234567890ab/open-studio",
+    "/api/piner/students/018f7f5a-4321-7abc-8def-1234567890ab/open-studio/admissions",
+    "/api/piner/students/018f7f5a-4321-7abc-8def-1234567890ab/open-studio/claims/018f7f5a-4321-7abc-8def-333333333333/cancel",
+  ];
+  for (const path of paths) {
+    const response = await pinerWorker.fetch(new Request(`https://piner.pinohouse.art${path}`, { method: path.endsWith("open-studio") ? "GET" : "POST" }), env);
+    assert.equal(response.status, 410);
+    assert.deepEqual(await response.json(), { error: { code: "PINER_OPEN_STUDIO_RETIRED", message: "Open Studio is retired from Piner" } });
+  }
+  assert.deepEqual(assetUrls, []);
+});

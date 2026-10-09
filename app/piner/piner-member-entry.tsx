@@ -5,9 +5,6 @@ import type { FormEvent, ReactNode } from "react";
 import {
   parseHomeProjection,
   parseJourneyProjection,
-  parseMemberOpenStudioProjection,
-  parseOwnerOpenStudioAdmission,
-  parseOwnerOpenStudioCancellation,
   parseParentSession,
   parseStudentList,
   projectionResponseIsCurrent,
@@ -16,9 +13,6 @@ import type {
   HomePrimaryAction,
   MemberHomeProjection,
   MemberJourneyProjection,
-  MemberOpenStudioExploreItem,
-  MemberOpenStudioProjection,
-  MemberOpenStudioReservation,
   PinerParentSession,
   PinerStudentSummary,
 } from "../../lib/piner-member-projections";
@@ -30,7 +24,7 @@ import PianoPracticePlayer from "./piano-practice-player";
 import styles from "./piner.module.css";
 
 type ViewState = "loading" | "signed-out" | "change-pin" | "ready" | "unavailable";
-type Destination = "home" | "journey" | "collection" | "explore";
+type Destination = "home" | "journey" | "collection";
 type ApiEnvelope<T> = { data?: T; error?: { code?: string; message?: string } };
 type ProjectionResult<T> =
   | { kind: "ok"; data: T }
@@ -73,7 +67,6 @@ export default function PinerMemberEntry() {
   const [error, setError] = useState("");
   const [home, setHome] = useState<MemberHomeProjection | null>(null);
   const [journey, setJourney] = useState<MemberJourneyProjection | null>(null);
-  const [explore, setExplore] = useState<MemberOpenStudioProjection | null>(null);
   const [toppi, setToppi] = useState<ToppiMemberProjection | null>(null);
   const [toppiError, setToppiError] = useState("");
   const [toppiLoading, setToppiLoading] = useState(false);
@@ -85,15 +78,10 @@ export default function PinerMemberEntry() {
   const [toppiPracticeNotice, setToppiPracticeNotice] = useState("");
   const [homeError, setHomeError] = useState("");
   const [journeyError, setJourneyError] = useState("");
-  const [exploreError, setExploreError] = useState("");
   const [projectionLoading, setProjectionLoading] = useState(false);
-  const [projectionRefreshKey, setProjectionRefreshKey] = useState(0);
-  const [actionBusy, setActionBusy] = useState(false);
-  const [actionError, setActionError] = useState("");
   const projectionVersion = useRef(0);
   const projectionAbort = useRef<AbortController | null>(null);
   const activeStudentRef = useRef("");
-  const actionReplayRef = useRef<{ signature: string; key: string } | null>(null);
   activeStudentRef.current = activeStudentId;
 
   useEffect(() => {
@@ -106,7 +94,6 @@ export default function PinerMemberEntry() {
   );
   const visibleHome = home?.student.id === activeStudentId ? home : null;
   const visibleJourney = journey?.student.id === activeStudentId ? journey : null;
-  const visibleExplore = explore?.student.id === activeStudentId ? explore : null;
   const visibleToppi = toppi?.student.id === activeStudentId ? toppi : null;
   const visibleToppiPractice = toppiPractice?.student.id === activeStudentId ? toppiPractice : null;
 
@@ -121,7 +108,6 @@ export default function PinerMemberEntry() {
     setProjectionLoading(true);
     setHome(null);
     setJourney(null);
-    setExplore(null);
     setToppi(null);
     setToppiError("");
     setToppiLoading(true);
@@ -132,7 +118,6 @@ export default function PinerMemberEntry() {
     setToppiPracticeNotice("");
     setHomeError("");
     setJourneyError("");
-    setExploreError("");
 
     void readToppiProjection(requestedStudentId, controller.signal).then((result) => {
       if (controller.signal.aborted || version !== projectionVersion.current) return;
@@ -154,22 +139,20 @@ export default function PinerMemberEntry() {
     void Promise.all([
       readHomeProjection(requestedStudentId, controller.signal),
       readJourneyProjection(requestedStudentId, controller.signal),
-      readExploreProjection(requestedStudentId, controller.signal),
-    ]).then(([homeResult, journeyResult, exploreResult]) => {
+    ]).then(([homeResult, journeyResult]) => {
       if (controller.signal.aborted || version !== projectionVersion.current) return;
-      if (homeResult.kind === "auth" || journeyResult.kind === "auth" || exploreResult.kind === "auth") {
+      if (homeResult.kind === "auth" || journeyResult.kind === "auth") {
         clearMemberContext();
         setView("signed-out");
         return;
       }
       applyHomeResult(homeResult, requestedStudentId, version);
       applyJourneyResult(journeyResult, requestedStudentId, version);
-      applyExploreResult(exploreResult, requestedStudentId, version);
       setProjectionLoading(false);
     });
 
     return () => controller.abort();
-  }, [activeStudentId, view, projectionRefreshKey]);
+  }, [activeStudentId, view]);
 
   function applyHomeResult(result: ProjectionResult<MemberHomeProjection>, studentId: string, version: number) {
     if (result.kind === "aborted") return;
@@ -203,14 +186,6 @@ export default function PinerMemberEntry() {
       projectionVersion.current,
     )) return;
     setJourney(result.data);
-  }
-
-  function applyExploreResult(result: ProjectionResult<MemberOpenStudioProjection>, studentId: string, version: number) {
-    if (result.kind === "aborted") return;
-    if (result.kind === "error") { setExploreError(result.message); return; }
-    if (result.kind !== "ok") return;
-    if (!projectionResponseIsCurrent(studentId, result.data.student.id, activeStudentRef.current, version, projectionVersion.current)) return;
-    setExplore(result.data);
   }
 
   function applyToppiResult(result: OptionalProjectionResult<ToppiMemberProjection>, studentId: string, version: number) {
@@ -307,82 +282,6 @@ export default function PinerMemberEntry() {
     setError("Piner chưa thể hoàn tất đổi PIN.");
   }
 
-  async function admitOwnerOpenStudio(action: HomePrimaryAction) {
-    if (action.kind !== "EXPLORE_RETURN" || action.target.kind !== "OPEN_STUDIO") return;
-    await admitOwnerOpenStudioTarget({ passId: action.target.passId, listingId: action.target.listingId, sessionId: action.target.sessionId });
-  }
-
-  async function admitOwnerOpenStudioTarget(target: { passId: string; listingId: string; sessionId: string }) {
-    if (!activeStudentId) return;
-    const signature = `${activeStudentId}:${target.passId}:${target.listingId}:OWNER`;
-    const replay = actionReplayRef.current?.signature === signature
-      ? actionReplayRef.current
-      : { signature, key: crypto.randomUUID() };
-    actionReplayRef.current = replay;
-    setActionBusy(true);
-    setActionError("");
-    try {
-      const response = await fetch(`/api/piner/students/${activeStudentId}/open-studio/admissions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Idempotency-Key": replay.key,
-        },
-        body: JSON.stringify({ passId: target.passId, listingId: target.listingId, participantMode: "OWNER" }),
-      });
-      if (response.status === 401) {
-        clearMemberContext();
-        setView("signed-out");
-        return;
-      }
-      if (!response.ok) {
-        if (response.status < 500) actionReplayRef.current = null;
-        setActionError(await apiMessage(response, "Chưa thể giữ chỗ Open Studio."));
-        return;
-      }
-      const envelope = await response.json() as ApiEnvelope<unknown>;
-      if (!parseOwnerOpenStudioAdmission(envelope.data, target.listingId, target.sessionId)) {
-        setActionError("Open Studio đã phản hồi nhưng dữ liệu chưa hợp lệ. Piner đang đồng bộ lại từ Core.");
-      }
-      setProjectionRefreshKey((value) => value + 1);
-    } catch {
-      setActionError("Chưa thể giữ chỗ Open Studio. Bạn có thể thử lại mà không tạo yêu cầu trùng.");
-    } finally {
-      setActionBusy(false);
-    }
-  }
-
-  async function cancelOwnerOpenStudio(reservation: MemberOpenStudioReservation) {
-    if (!activeStudentId) return;
-    const signature = `${activeStudentId}:${reservation.claimId}:CANCEL`;
-    const replay = actionReplayRef.current?.signature === signature ? actionReplayRef.current : { signature, key: crypto.randomUUID() };
-    actionReplayRef.current = replay;
-    setActionBusy(true);
-    setActionError("");
-    try {
-      const response = await fetch(`/api/piner/students/${activeStudentId}/open-studio/claims/${reservation.claimId}/cancel`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Idempotency-Key": replay.key },
-        body: JSON.stringify({ reason: "Parent cancelled Open Studio reservation from Piner" }),
-      });
-      if (response.status === 401) { clearMemberContext(); setView("signed-out"); return; }
-      if (!response.ok) {
-        if (response.status < 500) actionReplayRef.current = null;
-        setActionError(await apiMessage(response, "Chưa thể hủy chỗ Open Studio."));
-        return;
-      }
-      const envelope = await response.json() as ApiEnvelope<unknown>;
-      if (!parseOwnerOpenStudioCancellation(envelope.data, reservation.claimId, reservation.listingId, reservation.session.id)) {
-        setActionError("Open Studio đã phản hồi nhưng trạng thái hủy chưa hợp lệ. Piner đang đồng bộ lại từ Core.");
-      }
-      setProjectionRefreshKey((value) => value + 1);
-    } catch {
-      setActionError("Chưa thể hủy chỗ Open Studio. Bạn có thể thử lại an toàn.");
-    } finally {
-      setActionBusy(false);
-    }
-  }
-
   async function completeToppiPractice(practiceSetId: string, optionId: string, submission: PracticeSubmissionInput) {
     const studentId = activeStudentRef.current;
     if (!studentId || toppiPracticeBusy) return;
@@ -451,7 +350,6 @@ export default function PinerMemberEntry() {
     setActiveStudentId("");
     setHome(null);
     setJourney(null);
-    setExplore(null);
     setToppi(null);
     setToppiError("");
     setToppiLoading(false);
@@ -464,21 +362,15 @@ export default function PinerMemberEntry() {
     setHomeError("");
     setJourneyError("");
     setProjectionLoading(false);
-    setActionBusy(false);
-    setActionError("");
     setStudentPickerOpen(false);
-    actionReplayRef.current = null;
   }
 
   function selectStudent(studentId: string) {
     if (studentId === activeStudentId) { setStudentPickerOpen(false); return; }
     projectionAbort.current?.abort();
     projectionVersion.current += 1;
-    actionReplayRef.current = null;
-    setActionError("");
     setHome(null);
     setJourney(null);
-    setExplore(null);
     setToppi(null);
     setToppiError("");
     setToppiLoading(true);
@@ -527,27 +419,12 @@ export default function PinerMemberEntry() {
                     loading={projectionLoading}
                     error={homeError}
                     onDestination={setDestination}
-                    onOpenStudioAdmission={admitOwnerOpenStudio}
-                    actionBusy={actionBusy}
-                    actionError={actionError}
                   />
                 ) : null}
                 {destination === "journey" ? (
                 <JourneySurface student={activeStudent} journey={visibleJourney} loading={projectionLoading} error={journeyError} toppi={visibleToppi} toppiLoading={toppiLoading} toppiError={toppiError} toppiOpen={toppiOpen} onOpenToppi={() => setToppiOpen(true)} onCloseToppi={() => setToppiOpen(false)} practice={visibleToppiPractice} practiceLoading={toppiPracticeLoading} practiceError={toppiPracticeError} practiceBusy={toppiPracticeBusy} practiceNotice={toppiPracticeNotice} onCompletePractice={completeToppiPractice} onAuthRequired={() => { clearMemberContext(); setView("signed-out"); }} />
                 ) : null}
                 {destination === "collection" ? <CollectionSurface student={activeStudent} /> : null}
-                {destination === "explore" ? (
-                  <ExploreSurface
-                    student={activeStudent}
-                    explore={visibleExplore}
-                    loading={projectionLoading}
-                    error={exploreError}
-                    onAdmission={(item) => admitOwnerOpenStudioTarget({ passId: item.passId, listingId: item.listingId, sessionId: item.session.id })}
-                    onCancel={cancelOwnerOpenStudio}
-                    actionBusy={actionBusy}
-                    actionError={actionError}
-                  />
-                ) : null}
               </section>
             ) : (
               <div className={styles.emptyState}>
@@ -561,7 +438,6 @@ export default function PinerMemberEntry() {
             <DestinationButton icon="nav-home" active={destination === "home"} onClick={() => setDestination("home")}>Trang chủ</DestinationButton>
             <DestinationButton icon="nav-journey" active={destination === "journey"} onClick={() => setDestination("journey")}>Hành trình</DestinationButton>
             <DestinationButton icon="nav-outcomes" active={destination === "collection"} onClick={() => setDestination("collection")}>Thành quả</DestinationButton>
-            <DestinationButton icon="nav-explore" active={destination === "explore"} onClick={() => setDestination("explore")}>Khám phá</DestinationButton>
           </nav>
           {studentPickerOpen ? (
             <div className={styles.overlayBackdrop} onMouseDown={() => setStudentPickerOpen(false)}>
@@ -610,18 +486,12 @@ function HomeSurface({
   loading,
   error,
   onDestination,
-  onOpenStudioAdmission,
-  actionBusy,
-  actionError,
 }: {
   student: PinerStudentSummary;
   home: MemberHomeProjection | null;
   loading: boolean;
   error: string;
   onDestination: (destination: Destination) => void;
-  onOpenStudioAdmission: (action: HomePrimaryAction) => Promise<void>;
-  actionBusy: boolean;
-  actionError: string;
 }) {
   if (loading && !home) return <SurfaceLoading label="Đang mở không gian của con…" />;
   if (!home) return <SurfaceError title="Trang chủ chưa thể tải." message={error || "Piner chưa nhận được dữ liệu mới nhất."} />;
@@ -637,9 +507,7 @@ function HomeSurface({
         <h2>{copy.title}</h2>
         <p>{copy.note}</p>
         {action?.kind === "CONTINUE_JOURNEY" ? <button className={styles.primaryButton} type="button" onClick={() => onDestination("journey")}>Tiếp tục luyện <span className={styles.buttonIcon}><PinerIcon name="arrow-right" /></span></button> : null}
-        {action?.kind === "EXPLORE_RETURN" && action.target.kind === "OPEN_STUDIO" ? <button className={styles.primaryButton} type="button" disabled={actionBusy} onClick={() => void onOpenStudioAdmission(action)}>{actionBusy ? "Đang giữ chỗ…" : "Giữ chỗ Open Studio →"}</button> : null}
         {action?.kind === "PHYSICAL_TOUCHPOINT" ? <button className={styles.primaryButton} type="button" onClick={() => onDestination("home")}>Xem buổi hôm nay <span className={styles.buttonIcon}><PinerIcon name="arrow-right" /></span></button> : null}
-        {actionError ? <div className={styles.heroError}>{actionError}</div> : null}
       </section>
       {home.journey ? (
         <section className={styles.sectionBlock}>
@@ -656,60 +524,12 @@ function HomeSurface({
         <span className={styles.returnIcon}><PinerIcon name={home.journey ? pathIcon(home.journey.pathDisplayName) : "nav-explore"} /></span>
         <div>
           <span className={styles.eyebrow}>QUAY LẠI PINO</span>
-          <h3>{home.nextTouchpoint ? formatDateTime(home.nextTouchpoint.scheduledStartsAt) : "Khám phá một buổi phù hợp"}</h3>
-          <p>{home.nextTouchpoint ? `Kết thúc lúc ${formatTime(home.nextTouchpoint.scheduledEndsAt)}` : "Open Studio và những trải nghiệm mới đang chờ con."}</p>
+          <h3>{home.nextTouchpoint ? formatDateTime(home.nextTouchpoint.scheduledStartsAt) : "Chưa có điểm hẹn mới"}</h3>
+          <p>{home.nextTouchpoint ? `Kết thúc lúc ${formatTime(home.nextTouchpoint.scheduledEndsAt)}` : "Piner sẽ cập nhật khi có hoạt động tiếp theo."}</p>
         </div>
-        <button type="button" className={styles.circleButton} onClick={() => onDestination(home.nextTouchpoint ? "home" : "explore")} aria-label="Mở"><PinerIcon name="arrow-right" /></button>
+        <button type="button" className={styles.circleButton} onClick={() => onDestination(home.nextTouchpoint ? "home" : "journey")} aria-label="Mở"><PinerIcon name="arrow-right" /></button>
       </section>
     </div>
-  );
-}
-
-function PrimaryActionCard({
-  action,
-  home,
-  onDestination,
-  onOpenStudioAdmission,
-  actionBusy,
-  actionError,
-}: {
-  action: HomePrimaryAction | null;
-  home: MemberHomeProjection;
-  onDestination: (destination: Destination) => void;
-  onOpenStudioAdmission: (action: HomePrimaryAction) => Promise<void>;
-  actionBusy: boolean;
-  actionError: string;
-}) {
-  if (!action) {
-    return (
-      <article className={`${styles.surfaceCard} ${styles.primaryActionCard}`}>
-        <p className={styles.eyebrow}>NEXT ACTION</p>
-        <h3>Không có việc cần ưu tiên lúc này.</h3>
-        <p>Core trả về {home.state}; Piner giữ nguyên trạng thái đó.</p>
-        <span className={styles.canonicalBadge}>Canonical neutral</span>
-      </article>
-    );
-  }
-
-  const copy = primaryActionCopy(action, home);
-  return (
-    <article className={`${styles.surfaceCard} ${styles.primaryActionCard}`}>
-      <p className={styles.eyebrow}>NEXT ACTION · {action.kind}</p>
-      <h3>{copy.title}</h3>
-      <p>{copy.note}</p>
-      {action.kind === "CONTINUE_JOURNEY" ? (
-        <button className={styles.actionButton} type="button" onClick={() => onDestination("journey")}>Mở Hành trình →</button>
-      ) : null}
-      {action.kind === "EXPLORE_RETURN" && action.target.kind === "OPEN_STUDIO" ? (
-        <button className={styles.actionButton} type="button" disabled={actionBusy} onClick={() => void onOpenStudioAdmission(action)}>
-          {actionBusy ? "Đang giữ chỗ…" : "Giữ chỗ Open Studio →"}
-        </button>
-      ) : null}
-      {actionError ? <div className={styles.error}>{actionError}</div> : null}
-      {action.kind !== "CONTINUE_JOURNEY" && action.kind !== "EXPLORE_RETURN" ? (
-        <span className={styles.pending}>Action target đã được Core xác định</span>
-      ) : null}
-    </article>
   );
 }
 
@@ -720,7 +540,7 @@ function primaryActionCopy(action: HomePrimaryAction, home: MemberHomeProjection
     case "PHYSICAL_TOUCHPOINT":
       return { title: "Buổi học sắp tới", note: home.nextTouchpoint ? formatDateTime(home.nextTouchpoint.scheduledStartsAt) : "Một điểm hẹn tại PINO đang đến gần." };
     case "EXPLORE_RETURN":
-      return { title: "Một buổi Khám Phá đang mở", note: "Chọn một trải nghiệm Open Studio phù hợp để quay lại PINO." };
+      return { title: "Khám phá hiện đã khép lại", note: "Piner sẽ dẫn gia đình tới hoạt động tiếp theo khi Core có đề xuất mới." };
     case "VIEW_RETAINED_VALUE":
       return { title: "Những gì con đã làm vẫn ở đây", note: "Mở lại nội dung và thành quả đã được giữ trong Hành trình." };
     case "VIEW_FRESH_OUTCOME":
@@ -1026,54 +846,6 @@ function CollectionSurface({ student }: { student: PinerStudentSummary }) {
   );
 }
 
-function ExploreSurface({ student, explore, loading, error, onAdmission, onCancel, actionBusy, actionError }: {
-  student: PinerStudentSummary;
-  explore: MemberOpenStudioProjection | null;
-  loading: boolean;
-  error: string;
-  onAdmission: (item: MemberOpenStudioExploreItem) => Promise<void>;
-  onCancel: (reservation: MemberOpenStudioReservation) => Promise<void>;
-  actionBusy: boolean;
-  actionError: string;
-}) {
-  if (loading && !explore) return <SurfaceLoading label="Đang đọc Khám phá từ Core…" />;
-  if (!explore) return <SurfaceError title="Khám phá chưa thể tải." message={error || "Core chưa trả về cơ hội Open Studio hợp lệ cho Piner này."} />;
-  const empty = explore.opportunities.length === 0 && explore.reservations.length === 0;
-  return (
-    <div className={styles.stack}>
-      <div className={styles.pageTitle}>
-        <span className={styles.eyebrow}>KHÁM PHÁ</span>
-        <h2>Một lý do để {displayMockLabel(student.displayName)} quay lại PINO.</h2>
-        <p>{explore.opportunities.length} cơ hội · {explore.reservations.length} đã giữ</p>
-      </div>
-      {actionError ? <div className={styles.error}>{actionError}</div> : null}
-      {empty ? <section className={styles.eligibilityCard}><strong>Chưa có Open Studio phù hợp lúc này.</strong><p>Piner chỉ hiện opportunity mà Core xác nhận đủ điều kiện và capacity.</p></section> : null}
-      {explore.reservations.map((reservation) => (
-        <section className={styles.eligibilityCard} key={reservation.claimId}>
-          <span className={styles.eyebrow}>{openStudioExperienceLabel(reservation.experienceType)} · ĐÃ XÁC NHẬN</span>
-          <h3>{reservation.syllabus.title}</h3>
-          <p>{reservation.path.displayName} · {formatDateTime(reservation.session.scheduledStartsAt)}</p>
-          <button className={styles.primaryButton} type="button" disabled={actionBusy} onClick={() => void onCancel(reservation)}>{actionBusy ? "Đang cập nhật…" : "Hủy chỗ"}</button>
-        </section>
-      ))}
-      {explore.opportunities.map((item) => (
-        <section className={styles.eligibilityCard} key={item.listingId}>
-          <span className={styles.eyebrow}>{openStudioExperienceLabel(item.experienceType)}</span>
-          <h3>{item.syllabus.title}</h3>
-          <p>{item.path.displayName} · {formatDateTime(item.session.scheduledStartsAt)}</p>
-          <button className={styles.primaryButton} type="button" disabled={actionBusy} onClick={() => void onAdmission(item)}>{actionBusy ? "Đang giữ chỗ…" : "Giữ chỗ →"}</button>
-        </section>
-      ))}
-    </div>
-  );
-}
-
-function openStudioExperienceLabel(value: MemberOpenStudioExploreItem["experienceType"]): string {
-  if (value === "KHAM_PHA") return "Khám Phá";
-  if (value === "CAO_CAP") return "Premium";
-  return "Chuyên đề";
-}
-
 function SurfaceLoading({ label }: { label: string }) {
   return <div className={styles.surfaceLoading}><span className={styles.loader} /><strong>{label}</strong></div>;
 }
@@ -1207,10 +979,6 @@ async function readHomeProjection(studentId: string, signal: AbortSignal): Promi
 
 async function readJourneyProjection(studentId: string, signal: AbortSignal): Promise<ProjectionResult<MemberJourneyProjection>> {
   return readProjection(`/api/piner/students/${studentId}/journey`, studentId, signal, parseJourneyProjection, "Hành trình");
-}
-
-async function readExploreProjection(studentId: string, signal: AbortSignal): Promise<ProjectionResult<MemberOpenStudioProjection>> {
-  return readProjection(`/api/piner/students/${studentId}/open-studio`, studentId, signal, parseMemberOpenStudioProjection, "Khám phá");
 }
 
 async function readProjection<T>(
