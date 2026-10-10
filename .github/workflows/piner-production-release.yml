@@ -192,6 +192,10 @@ jobs:
           deployed_info=""
           serving_artifact_converged=0
           for serving_attempt in 1 2 3 4 5; do
+            serving_owner="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${PINER_WORKER}/deployments" "${auth[@]}")" || fail "Cannot fence Piner ownership during serving convergence."
+            [ "$(jq -r '.result.deployments[0].id // empty' <<<"$serving_owner")" = "$candidate_deployment_id" ] || fail "Piner deployment changed during serving convergence."
+            [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$serving_owner" | head -1)" = "$candidate_id" ] || fail "Piner version changed during serving convergence."
+            [ "$(jq -r '.result.deployments[0].annotations["workers/message"] // empty' <<<"$serving_owner")" = "$deployment_marker" ] || fail "Piner deployment marker changed during serving convergence."
             if deployed_info="$(curl -fsS https://piner.pinohouse.art/build-info.json 2>/dev/null)"; then
               deployed_sha="$(jq -r '.commit // empty' <<<"$deployed_info")"
               if [ "$deployed_sha" = "$WEB_SHA" ]; then
@@ -244,6 +248,10 @@ jobs:
           [ "$(jq -r '.result.deployments[0].annotations["workers/message"] // empty' <<<"$terminal_piner")" = "$deployment_marker" ] || fail "Piner deployment marker changed after provider verification."
           terminal_serving_converged=0
           for terminal_serving_attempt in 1 2 3 4 5; do
+            terminal_serving_owner="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${PINER_WORKER}/deployments" "${auth[@]}")" || fail "Cannot fence Piner ownership during terminal serving convergence."
+            [ "$(jq -r '.result.deployments[0].id // empty' <<<"$terminal_serving_owner")" = "$candidate_deployment_id" ] || fail "Piner deployment changed during terminal serving convergence."
+            [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$terminal_serving_owner" | head -1)" = "$candidate_id" ] || fail "Piner version changed during terminal serving convergence."
+            [ "$(jq -r '.result.deployments[0].annotations["workers/message"] // empty' <<<"$terminal_serving_owner")" = "$deployment_marker" ] || fail "Piner deployment marker changed during terminal serving convergence."
             if terminal_deployed_info="$(curl -fsS https://piner.pinohouse.art/build-info.json 2>/dev/null)"; then
               terminal_deployed_sha="$(jq -r '.commit // empty' <<<"$terminal_deployed_info")"
               if [ "$terminal_deployed_sha" = "$WEB_SHA" ]; then
@@ -254,11 +262,19 @@ jobs:
             [ "$terminal_serving_attempt" -lt 5 ] && sleep 2
           done
           [ "$terminal_serving_converged" -eq 1 ] || fail "Piner terminal serving artifact did not converge to approved exact SHA."
+          bash scripts/assert-live-issue-authority.sh "$repo" "$ISSUE_NUMBER" "[GPT] Piner production release" "$AUTH_BODY_HASH" || fail "Founder authorization changed after terminal serving convergence."
+          bash scripts/assert-no-core-verification-in-flight.sh || fail "Core production verification/recovery overlaps post-serving terminal PASS."
+          bash scripts/assert-core-provider-authority.sh "$CORE_RELEASE_ISSUE" "$CORE_RELEASE_RUN_ID" >/dev/null || fail "Core provider authority drifted after terminal serving convergence."
+          core_after_serving="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/pino-core/deployments" "${auth[@]}")" || fail "Cannot re-check exact Core provider after terminal serving convergence."
+          [ "$(jq -r '.result.deployments[0].id // empty' <<<"$core_after_serving")" = "$CORE_DEPLOYMENT_ID" ] && [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$core_after_serving" | head -1)" = "$CORE_VERSION" ] || fail "Core provider changed during terminal serving convergence."
+          bash scripts/assert-toppi-provider-authority.sh "$TOPPI_SHA" "$TOPPI_DEPLOY_RUN_ID" "$TOPPI_DEPLOY_RUN_ATTEMPT" >/dev/null || fail "Toppi authority drifted after terminal serving convergence."
+          toppi_after_serving="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/toppi-web/deployments" "${auth[@]}")" || fail "Cannot re-check exact Toppi provider after terminal serving convergence."
+          [ "$(jq -r '.result.deployments[0].id // empty' <<<"$toppi_after_serving")" = "$toppi_deployment_id" ] && [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$toppi_after_serving" | head -1)" = "$toppi_version" ] || fail "Toppi provider changed during terminal serving convergence."
           terminal_main_after_serving="$(gh api "/repos/${repo}/git/ref/heads/main" --jq '.object.sha')" || fail "Cannot perform post-serving terminal main fence before PASS."
           [ "$terminal_main_after_serving" = "$WEB_SHA" ] || fail "main moved during terminal Piner serving convergence; rollback required."
           terminal_piner_after_serving="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${PINER_WORKER}/deployments" "${auth[@]}")" || fail "Cannot perform post-serving terminal Piner deployment fence before PASS."
-          [ "$(jq -r '.result.deployments[0].id // empty' <<<"$terminal_piner_after_serving")" = "$candidate_deployment_id" ] || fail "Piner deployment changed during terminal serving convergence."
-          [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$terminal_piner_after_serving" | head -1)" = "$candidate_id" ] || fail "Piner version changed during terminal serving convergence."
-          [ "$(jq -r '.result.deployments[0].annotations["workers/message"] // empty' <<<"$terminal_piner_after_serving")" = "$deployment_marker" ] || fail "Piner deployment marker changed during terminal serving convergence."
+          [ "$(jq -r '.result.deployments[0].id // empty' <<<"$terminal_piner_after_serving")" = "$candidate_deployment_id" ] || fail "Piner deployment changed after terminal serving convergence."
+          [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$terminal_piner_after_serving" | head -1)" = "$candidate_id" ] || fail "Piner version changed after terminal serving convergence."
+          [ "$(jq -r '.result.deployments[0].annotations["workers/message"] // empty' <<<"$terminal_piner_after_serving")" = "$deployment_marker" ] || fail "Piner deployment marker changed after terminal serving convergence."
           promotion_attempted=0
           comment "PINER_PRODUCTION_RELEASE: **PASS**\n\n- Web source: ${WEB_SHA}\n- Workflow run: ${GITHUB_RUN_ID}\n- Workflow attempt: ${GITHUB_RUN_ATTEMPT}\n- Authorization body hash: ${AUTH_BODY_HASH}\n- Trusted artifact tag: ${trusted_tag}\n- Trusted artifact message: ${trusted_message}\n- Worker: ${PINER_WORKER}\n- Worker version: ${candidate_id}\n- Deployment ID: ${candidate_deployment_id}\n- Deployment marker: ${deployment_marker}\n- Traffic: 100%\n- CI: latest exact-main terminal success required\n- Provenance: merged PR into main required\n- Candidate: trusted exact-source release-job upload\n- Core release issue/run: #${CORE_RELEASE_ISSUE} / ${CORE_RELEASE_RUN_ID}\n- Core source: ${CORE_SHA}\n- Core version: ${CORE_VERSION}\n- Core deployment: ${CORE_DEPLOYMENT_ID}\n- Core member binding: pino-core/ParentMemberControlPlane\n- Toppi binding: toppi-web\n- Toppi source: ${TOPPI_SHA}\n- Toppi deploy run/attempt: ${TOPPI_DEPLOY_RUN_ID} / ${TOPPI_DEPLOY_RUN_ATTEMPT}\n- Toppi version: ${toppi_version}\n- Toppi deployment: ${toppi_deployment_id}\n- Toppi provider smoke: PASS\n- piner.pinohouse.art serving exact source: PASS\n\nNo route, secret, D1, schema, or application-data mutation was performed."
