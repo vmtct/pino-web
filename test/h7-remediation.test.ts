@@ -30,6 +30,9 @@ test("H7 R005 Piner has governed exact-head promotion authority",()=>{
   const memberSmokeAt=flow.indexOf('PARENT_AUTH_SESSION_INVALID');
   const finalCoreAt=flow.indexOf('assert-core-provider-authority.sh "$CORE_RELEASE_ISSUE"');
   assert.ok(deployAt>0 && memberSmokeAt>deployAt && finalCoreAt>memberSmokeAt);
+  assert.match(flow,/for serving_attempt in 1 2 3 4 5; do/);
+  assert.match(flow,/serving_artifact_converged=1/);
+  assert.match(flow,/Piner serving artifact did not converge to approved exact SHA/);
   assert.match(flow,/for convergence_attempt in 1 2 3 4 5; do/);
   assert.match(flow,/final_deployment_converged=1/);
   assert.match(flow,/Piner deployment did not converge to exact run-owned identity before PASS/);
@@ -43,8 +46,14 @@ test("H7 R005 Piner has governed exact-head promotion authority",()=>{
   const finalToppiAt=flow.indexOf('Toppi provider changed during Piner release.', convergenceAt);
   const terminalMainAt=flow.indexOf('terminal_main=', finalToppiAt);
   const terminalPinerAt=flow.indexOf('terminal_piner=', terminalMainAt);
-  const releaseDisarmAt=flow.indexOf('promotion_attempted=0', terminalPinerAt);
-  assert.ok(finalToppiAt>finalAuthorityAt && terminalMainAt>finalToppiAt && terminalPinerAt>terminalMainAt && releaseDisarmAt>terminalPinerAt);
+  const terminalServingAt=flow.indexOf('for terminal_serving_attempt in 1 2 3 4 5; do', terminalPinerAt);
+  const terminalMainAfterServingAt=flow.indexOf('terminal_main_after_serving=', terminalServingAt);
+  const terminalPinerAfterServingAt=flow.indexOf('terminal_piner_after_serving=', terminalMainAfterServingAt);
+  const releaseDisarmAt=flow.indexOf('promotion_attempted=0', terminalPinerAfterServingAt);
+  assert.match(flow,/Piner terminal serving artifact did not converge to approved exact SHA/);
+  assert.match(flow,/main moved during terminal Piner serving convergence; rollback required/);
+  assert.match(flow,/Piner deployment changed during terminal serving convergence/);
+  assert.ok(finalToppiAt>finalAuthorityAt && terminalMainAt>finalToppiAt && terminalPinerAt>terminalMainAt && terminalServingAt>terminalPinerAt && terminalMainAfterServingAt>terminalServingAt && terminalPinerAfterServingAt>terminalMainAfterServingAt && releaseDisarmAt>terminalPinerAfterServingAt);
 });
 
 test("H7 Core provider same-SHA jq filter is executable",()=>{
