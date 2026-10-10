@@ -30,6 +30,12 @@ test("H7 R005 Piner has governed exact-head promotion authority",()=>{
   const memberSmokeAt=flow.indexOf('PARENT_AUTH_SESSION_INVALID');
   const finalCoreAt=flow.indexOf('assert-core-provider-authority.sh "$CORE_RELEASE_ISSUE"');
   assert.ok(deployAt>0 && memberSmokeAt>deployAt && finalCoreAt>memberSmokeAt);
+  assert.match(flow,/for serving_attempt in 1 2 3 4 5; do/);
+  assert.match(flow,/serving_artifact_converged=1/);
+  assert.match(flow,/Piner serving artifact did not converge to approved exact SHA/);
+  assert.match(flow,/Piner deployment changed during serving convergence/);
+  assert.match(flow,/Piner version changed during serving convergence/);
+  assert.match(flow,/Piner deployment marker changed during serving convergence/);
   assert.match(flow,/for convergence_attempt in 1 2 3 4 5; do/);
   assert.match(flow,/final_deployment_converged=1/);
   assert.match(flow,/Piner deployment did not converge to exact run-owned identity before PASS/);
@@ -43,8 +49,48 @@ test("H7 R005 Piner has governed exact-head promotion authority",()=>{
   const finalToppiAt=flow.indexOf('Toppi provider changed during Piner release.', convergenceAt);
   const terminalMainAt=flow.indexOf('terminal_main=', finalToppiAt);
   const terminalPinerAt=flow.indexOf('terminal_piner=', terminalMainAt);
-  const releaseDisarmAt=flow.indexOf('promotion_attempted=0', terminalPinerAt);
-  assert.ok(finalToppiAt>finalAuthorityAt && terminalMainAt>finalToppiAt && terminalPinerAt>terminalMainAt && releaseDisarmAt>terminalPinerAt);
+  const terminalServingAt=flow.indexOf('for terminal_serving_attempt in 1 2 3 4 5; do', terminalPinerAt);
+  const founderAfterServingAt=flow.indexOf('Founder authorization changed after terminal serving convergence.', terminalServingAt);
+  const coreAuthorityAfterServingAt=flow.indexOf('Core provider authority drifted after terminal serving convergence.', founderAfterServingAt);
+  const toppiAuthorityAfterServingAt=flow.indexOf('Toppi authority drifted after terminal serving convergence.', coreAuthorityAfterServingAt);
+  const terminalMainAfterServingAt=flow.indexOf('terminal_main_after_serving=', toppiAuthorityAfterServingAt);
+  const terminalPinerAfterServingAt=flow.indexOf('terminal_piner_after_serving=', terminalMainAfterServingAt);
+  const releaseDisarmAt=flow.indexOf('promotion_attempted=0', terminalPinerAfterServingAt);
+  assert.match(flow,/Piner terminal serving artifact did not converge to approved exact SHA/);
+  assert.match(flow,/Founder authorization changed after terminal serving convergence/);
+  assert.match(flow,/Core provider authority drifted after terminal serving convergence/);
+  assert.match(flow,/Toppi authority drifted after terminal serving convergence/);
+  assert.match(flow,/main moved during terminal Piner serving convergence; rollback required/);
+  assert.match(flow,/Piner deployment changed after terminal serving convergence/);
+  assert.ok(finalToppiAt>finalAuthorityAt && terminalMainAt>finalToppiAt && terminalPinerAt>terminalMainAt && terminalServingAt>terminalPinerAt && founderAfterServingAt>terminalServingAt && coreAuthorityAfterServingAt>founderAfterServingAt && toppiAuthorityAfterServingAt>coreAuthorityAfterServingAt && terminalMainAfterServingAt>toppiAuthorityAfterServingAt && terminalPinerAfterServingAt>terminalMainAfterServingAt && releaseDisarmAt>terminalPinerAfterServingAt);
+});
+
+test("Piner serving convergence re-fences run ownership after each artifact observation", ()=>{
+  const firstLoop=flow.slice(flow.indexOf('for serving_attempt in 1 2 3 4 5; do'), flow.indexOf('[ "$serving_artifact_converged" -eq 1 ]'));
+  const firstPre=firstLoop.indexOf('serving_owner=');
+  const firstPreDeployment=firstLoop.indexOf('Piner deployment changed during serving convergence.');
+  const firstPreVersion=firstLoop.indexOf('Piner version changed during serving convergence.');
+  const firstPreMarker=firstLoop.indexOf('Piner deployment marker changed during serving convergence.');
+  const firstArtifact=firstLoop.indexOf('https://piner.pinohouse.art/build-info.json');
+  const firstPost=firstLoop.indexOf('serving_owner_after_artifact=');
+  const firstPostDeployment=firstLoop.indexOf('Piner deployment changed across serving artifact observation.');
+  const firstPostVersion=firstLoop.indexOf('Piner version changed across serving artifact observation.');
+  const firstPostMarker=firstLoop.indexOf('Piner deployment marker changed across serving artifact observation.');
+  const firstAccept=firstLoop.indexOf('serving_artifact_converged=1');
+  assert.ok(firstPre>=0 && firstPreDeployment>firstPre && firstPreVersion>firstPreDeployment && firstPreMarker>firstPreVersion && firstArtifact>firstPreMarker && firstPost>firstArtifact && firstPostDeployment>firstPost && firstPostVersion>firstPostDeployment && firstPostMarker>firstPostVersion && firstAccept>firstPostMarker);
+
+  const terminalLoop=flow.slice(flow.indexOf('for terminal_serving_attempt in 1 2 3 4 5; do'), flow.indexOf('[ "$terminal_serving_converged" -eq 1 ]'));
+  const terminalPre=terminalLoop.indexOf('terminal_serving_owner=');
+  const terminalPreDeployment=terminalLoop.indexOf('Piner deployment changed during terminal serving convergence.');
+  const terminalPreVersion=terminalLoop.indexOf('Piner version changed during terminal serving convergence.');
+  const terminalPreMarker=terminalLoop.indexOf('Piner deployment marker changed during terminal serving convergence.');
+  const terminalArtifact=terminalLoop.indexOf('https://piner.pinohouse.art/build-info.json');
+  const terminalPost=terminalLoop.indexOf('terminal_serving_owner_after_artifact=');
+  const terminalPostDeployment=terminalLoop.indexOf('Piner deployment changed across terminal serving artifact observation.');
+  const terminalPostVersion=terminalLoop.indexOf('Piner version changed across terminal serving artifact observation.');
+  const terminalPostMarker=terminalLoop.indexOf('Piner deployment marker changed across terminal serving artifact observation.');
+  const terminalAccept=terminalLoop.indexOf('terminal_serving_converged=1');
+  assert.ok(terminalPre>=0 && terminalPreDeployment>terminalPre && terminalPreVersion>terminalPreDeployment && terminalPreMarker>terminalPreVersion && terminalArtifact>terminalPreMarker && terminalPost>terminalArtifact && terminalPostDeployment>terminalPost && terminalPostVersion>terminalPostDeployment && terminalPostMarker>terminalPostVersion && terminalAccept>terminalPostMarker);
 });
 
 test("H7 Core provider same-SHA jq filter is executable",()=>{
