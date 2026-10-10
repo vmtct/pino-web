@@ -30,6 +30,21 @@ test("H7 R005 Piner has governed exact-head promotion authority",()=>{
   const memberSmokeAt=flow.indexOf('PARENT_AUTH_SESSION_INVALID');
   const finalCoreAt=flow.indexOf('assert-core-provider-authority.sh "$CORE_RELEASE_ISSUE"');
   assert.ok(deployAt>0 && memberSmokeAt>deployAt && finalCoreAt>memberSmokeAt);
+  assert.match(flow,/for convergence_attempt in 1 2 3 4 5; do/);
+  assert.match(flow,/final_deployment_converged=1/);
+  assert.match(flow,/Piner deployment did not converge to exact run-owned identity before PASS/);
+  const convergenceAt=flow.indexOf('for convergence_attempt in 1 2 3 4 5; do');
+  const finalAuthorityAt=flow.indexOf('assert-live-issue-authority.sh "$repo" "$ISSUE_NUMBER"',convergenceAt);
+  assert.ok(convergenceAt>memberSmokeAt && finalAuthorityAt>convergenceAt);
+  assert.match(flow,/terminal_main=/);
+  assert.match(flow,/terminal_piner=/);
+  assert.match(flow,/main moved after Piner convergence\/provider verification; rollback required/);
+  assert.match(flow,/Piner deployment changed after provider verification/);
+  const finalToppiAt=flow.indexOf('Toppi provider changed during Piner release.', convergenceAt);
+  const terminalMainAt=flow.indexOf('terminal_main=', finalToppiAt);
+  const terminalPinerAt=flow.indexOf('terminal_piner=', terminalMainAt);
+  const releaseDisarmAt=flow.indexOf('promotion_attempted=0', terminalPinerAt);
+  assert.ok(finalToppiAt>finalAuthorityAt && terminalMainAt>finalToppiAt && terminalPinerAt>terminalMainAt && releaseDisarmAt>terminalPinerAt);
 });
 
 test("H7 Core provider same-SHA jq filter is executable",()=>{
