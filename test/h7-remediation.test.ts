@@ -65,6 +65,24 @@ test("H7 R005 Piner has governed exact-head promotion authority",()=>{
   assert.ok(finalToppiAt>finalAuthorityAt && terminalMainAt>finalToppiAt && terminalPinerAt>terminalMainAt && terminalServingAt>terminalPinerAt && founderAfterServingAt>terminalServingAt && coreAuthorityAfterServingAt>founderAfterServingAt && toppiAuthorityAfterServingAt>coreAuthorityAfterServingAt && terminalMainAfterServingAt>toppiAuthorityAfterServingAt && terminalPinerAfterServingAt>terminalMainAfterServingAt && releaseDisarmAt>terminalPinerAfterServingAt);
 });
 
+test("Piner serving convergence re-fences run ownership after each artifact observation",()=>{
+  const firstLoop=flow.slice(flow.indexOf('for serving_attempt in 1 2 3 4 5; do'), flow.indexOf('[ "$serving_artifact_converged" -eq 1 ]'));
+  const firstPre=firstLoop.indexOf('serving_owner=');
+  const firstArtifact=firstLoop.indexOf('https://piner.pinohouse.art/build-info.json');
+  const firstPost=firstLoop.indexOf('serving_owner_after_artifact=');
+  const firstAccept=firstLoop.indexOf('serving_artifact_converged=1');
+  assert.ok(firstPre>=0 && firstArtifact>firstPre && firstPost>firstArtifact && firstAccept>firstPost);
+  for(const token of ['Piner deployment changed across serving artifact observation.','Piner version changed across serving artifact observation.','Piner deployment marker changed across serving artifact observation.']) assert.ok(firstLoop.includes(token),token);
+
+  const terminalLoop=flow.slice(flow.indexOf('for terminal_serving_attempt in 1 2 3 4 5; do'), flow.indexOf('[ "$terminal_serving_converged" -eq 1 ]'));
+  const terminalPre=terminalLoop.indexOf('terminal_serving_owner=');
+  const terminalArtifact=terminalLoop.indexOf('https://piner.pinohouse.art/build-info.json');
+  const terminalPost=terminalLoop.indexOf('terminal_serving_owner_after_artifact=');
+  const terminalAccept=terminalLoop.indexOf('terminal_serving_converged=1');
+  assert.ok(terminalPre>=0 && terminalArtifact>terminalPre && terminalPost>terminalArtifact && terminalAccept>terminalPost);
+  for(const token of ['Piner deployment changed across terminal serving artifact observation.','Piner version changed across terminal serving artifact observation.','Piner deployment marker changed across terminal serving artifact observation.']) assert.ok(terminalLoop.includes(token),token);
+});
+
 test("H7 Core provider same-SHA jq filter is executable",()=>{
   const match=coreAuthority.match(/latest="\$\(jq -r --arg sha "\$sha" '([^']+)' <<<"\$runs"\)"/);
   const filter=match?.[1] ?? "";

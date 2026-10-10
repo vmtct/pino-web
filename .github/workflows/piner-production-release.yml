@@ -196,12 +196,17 @@ jobs:
             [ "$(jq -r '.result.deployments[0].id // empty' <<<"$serving_owner")" = "$candidate_deployment_id" ] || fail "Piner deployment changed during serving convergence."
             [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$serving_owner" | head -1)" = "$candidate_id" ] || fail "Piner version changed during serving convergence."
             [ "$(jq -r '.result.deployments[0].annotations["workers/message"] // empty' <<<"$serving_owner")" = "$deployment_marker" ] || fail "Piner deployment marker changed during serving convergence."
+            deployed_sha=""
             if deployed_info="$(curl -fsS https://piner.pinohouse.art/build-info.json 2>/dev/null)"; then
               deployed_sha="$(jq -r '.commit // empty' <<<"$deployed_info")"
-              if [ "$deployed_sha" = "$WEB_SHA" ]; then
-                serving_artifact_converged=1
-                break
-              fi
+            fi
+            serving_owner_after_artifact="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${PINER_WORKER}/deployments" "${auth[@]}")" || fail "Cannot re-fence Piner ownership after serving artifact observation."
+            [ "$(jq -r '.result.deployments[0].id // empty' <<<"$serving_owner_after_artifact")" = "$candidate_deployment_id" ] || fail "Piner deployment changed across serving artifact observation."
+            [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$serving_owner_after_artifact" | head -1)" = "$candidate_id" ] || fail "Piner version changed across serving artifact observation."
+            [ "$(jq -r '.result.deployments[0].annotations["workers/message"] // empty' <<<"$serving_owner_after_artifact")" = "$deployment_marker" ] || fail "Piner deployment marker changed across serving artifact observation."
+            if [ "$deployed_sha" = "$WEB_SHA" ]; then
+              serving_artifact_converged=1
+              break
             fi
             [ "$serving_attempt" -lt 5 ] && sleep 2
           done
@@ -252,12 +257,17 @@ jobs:
             [ "$(jq -r '.result.deployments[0].id // empty' <<<"$terminal_serving_owner")" = "$candidate_deployment_id" ] || fail "Piner deployment changed during terminal serving convergence."
             [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$terminal_serving_owner" | head -1)" = "$candidate_id" ] || fail "Piner version changed during terminal serving convergence."
             [ "$(jq -r '.result.deployments[0].annotations["workers/message"] // empty' <<<"$terminal_serving_owner")" = "$deployment_marker" ] || fail "Piner deployment marker changed during terminal serving convergence."
+            terminal_deployed_sha=""
             if terminal_deployed_info="$(curl -fsS https://piner.pinohouse.art/build-info.json 2>/dev/null)"; then
               terminal_deployed_sha="$(jq -r '.commit // empty' <<<"$terminal_deployed_info")"
-              if [ "$terminal_deployed_sha" = "$WEB_SHA" ]; then
-                terminal_serving_converged=1
-                break
-              fi
+            fi
+            terminal_serving_owner_after_artifact="$(curl -fsS "${api}/accounts/${CF_ACCOUNT_ID}/workers/scripts/${PINER_WORKER}/deployments" "${auth[@]}")" || fail "Cannot re-fence Piner ownership after terminal serving artifact observation."
+            [ "$(jq -r '.result.deployments[0].id // empty' <<<"$terminal_serving_owner_after_artifact")" = "$candidate_deployment_id" ] || fail "Piner deployment changed across terminal serving artifact observation."
+            [ "$(jq -r '.result.deployments[0].versions[]? | select(.percentage==100) | .version_id // empty' <<<"$terminal_serving_owner_after_artifact" | head -1)" = "$candidate_id" ] || fail "Piner version changed across terminal serving artifact observation."
+            [ "$(jq -r '.result.deployments[0].annotations["workers/message"] // empty' <<<"$terminal_serving_owner_after_artifact")" = "$deployment_marker" ] || fail "Piner deployment marker changed across terminal serving artifact observation."
+            if [ "$terminal_deployed_sha" = "$WEB_SHA" ]; then
+              terminal_serving_converged=1
+              break
             fi
             [ "$terminal_serving_attempt" -lt 5 ] && sleep 2
           done
