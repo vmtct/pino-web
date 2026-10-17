@@ -44,18 +44,19 @@ function cloudflareCheck(overrides: Record<string, any> = {}) {
 const boundedReleaseTest =
   "node --test --experimental-strip-types test/production-release-governance.test.ts";
 
-test("main CI validates an immutable candidate without promoting production", () => {
-  assert.match(ci, /candidate:/);
-  assert.match(ci, /Production traffic: not authorized by this workflow/);
+test("main CI validates source only while Production release owns immutable candidate authority", () => {
   assert.match(ci, new RegExp(boundedReleaseTest.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-  assert.doesNotMatch(ci, /bun run test/);
+  assert.match(ci, /bun run typecheck/);
+  assert.match(ci, /bun run build/);
+  assert.doesNotMatch(ci, /candidate:/);
+  assert.doesNotMatch(ci, /PINO_CORE_RELEASE_READ_TOKEN/);
+  assert.doesNotMatch(ci, /PINO_TOPPI_RELEASE_READ_TOKEN/);
+  assert.doesNotMatch(ci, /web-production-candidate-check\.ts/);
   assert.doesNotMatch(ci, /wrangler versions deploy/);
-  assert.doesNotMatch(ci, /Verify deployed Worker identity/);
   assert.doesNotMatch(ci, /Run production smoke tests/);
-  assert.match(ci, /Verify private Core release-read credential/);
-  assert.match(ci, /PINO_CORE_RELEASE_READ_TOKEN/);
-  assert.match(ci, /actions\/workflows\/core-production-release\.yml/);
-  assert.match(ci, /issues\?per_page=1/);
+  assert.match(release, /web-production-candidate-check\.ts/);
+  assert.match(release, /PINO_CORE_RELEASE_READ_TOKEN/);
+  assert.match(release, /RELEASE_PRODUCTION/);
 });
 
 test("production release requires Founder exact-SHA provenance and explicit confirmation", () => {

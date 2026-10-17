@@ -10,7 +10,6 @@ on:
 permissions:
   contents: read
   issues: write
-  checks: read
 
 concurrency:
   group: pino-web-${{ github.ref }}
@@ -28,18 +27,6 @@ jobs:
           PINO_PR_BODY: ${{ github.event.pull_request.body }}
           PINO_PR_CREATED_AT: ${{ github.event.pull_request.created_at }}
         run: node scripts/verify-pr-project-code.mjs
-      - name: Verify private Core release-read credential
-        if: "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}"
-        env:
-          CORE_RELEASE_GH_TOKEN: ${{ secrets.PINO_CORE_RELEASE_READ_TOKEN }}
-          TOPPI_RELEASE_GH_TOKEN: ${{ secrets.PINO_TOPPI_RELEASE_READ_TOKEN }}
-        run: |
-          set -euo pipefail
-          [ -n "${CORE_RELEASE_GH_TOKEN:-}" ] || { echo "PINO_CORE_RELEASE_READ_TOKEN unavailable for private Core release authority" >&2; exit 1; }
-          GH_TOKEN="$CORE_RELEASE_GH_TOKEN" gh api /repos/vmtct/pino-core/actions/workflows/core-production-release.yml >/dev/null
-          GH_TOKEN="$CORE_RELEASE_GH_TOKEN" gh api "/repos/vmtct/pino-core/issues?per_page=1" >/dev/null
-          [ -n "${TOPPI_RELEASE_GH_TOKEN:-}" ] || { echo "PINO_TOPPI_RELEASE_READ_TOKEN unavailable for private Toppi release authority" >&2; exit 1; }
-          GH_TOKEN="$TOPPI_RELEASE_GH_TOKEN" gh api /repos/vmtct/toppi/actions/workflows/deploy.yml >/dev/null
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -48,60 +35,20 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Typecheck
         run: bun run typecheck
-      - name: PLT-RELEASE contract tests
+      - name: Production release boundary contract tests
         run: node --test --experimental-strip-types test/production-release-governance.test.ts test/h7-remediation.test.ts
-      - name: Production build
+      - name: Build
         run: bun run build
 
-  candidate:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Wait for immutable Cloudflare candidate
-        env:
-          GH_TOKEN: ${{ github.token }}
-          EXPECTED_SHA: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-          echo "Waiting for Cloudflare candidate build for $EXPECTED_SHA"
-          for attempt in $(seq 1 36); do
-            check=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${EXPECTED_SHA}/check-runs?per_page=100" --jq '[.check_runs[] | select(.name == "Workers Builds: pino-web")] | sort_by(.started_at) | last // empty')
-            if [ -n "$check" ]; then
-              status=$(printf '%s' "$check" | python -c 'import json,sys; print(json.load(sys.stdin).get("status", ""))')
-              conclusion=$(printf '%s' "$check" | python -c 'import json,sys; print(json.load(sys.stdin).get("conclusion", ""))')
-              details=$(printf '%s' "$check" | python -c 'import json,sys; print(json.load(sys.stdin).get("details_url", ""))')
-              echo "Cloudflare candidate: status=$status conclusion=$conclusion"
-              if [ "$status" = "completed" ]; then
-                test "$conclusion" = "success"
-                echo "Immutable candidate build confirmed: $details"
-                exit 0
-              fi
-            fi
-            echo "Waiting for candidate build (attempt $attempt/36)"
-            sleep 10
-          done
-          echo "Timed out waiting for immutable Cloudflare candidate"
-          exit 1
-      - name: Record candidate boundary
-        run: |
-          {
-            echo "### PLT-RELEASE candidate"
-            echo "- Source SHA: $GITHUB_SHA"
-            echo "- Cloudflare build: validated"
-            echo "- Production traffic: not authorized by this workflow"
-          } >> "$GITHUB_STEP_SUMMARY"
-
   failure-intake:
-    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.build.result == 'failure' || needs.candidate.result == 'failure')
-    needs: [build, candidate]
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.build.result == 'failure'
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
       - name: Create structured CI failure intake
         uses: actions/github-script@v7
         env:
           BUILD_RESULT: ${{ needs.build.result }}
-          CANDIDATE_RESULT: ${{ needs.candidate.result }}
         with:
           script: |
             const run = context.runId;
@@ -128,7 +75,6 @@ jobs:
               `- **Run:** ${run}`,
               `- **Run URL:** ${context.serverUrl}/${owner}/${repo}/actions/runs/${run}`,
               `- **Build:** ${process.env.BUILD_RESULT}`,
-              `- **Candidate:** ${process.env.CANDIDATE_RESULT}`,
               '',
               '## Failed jobs',
               '```json',
@@ -136,7 +82,7 @@ jobs:
               '```',
               '',
               '## Agent instruction',
-              'Treat this issue as machine-generated CI evidence. Inspect the referenced workflow run, failed job logs, candidate-build evidence, and the commit diff before proposing or applying a fix.',
+              'Treat this issue as machine-generated CI evidence. Inspect the referenced workflow run, failed job logs, and commit diff before proposing or applying a fix.',
               '',
               '## Safety boundary',
               'Do not mutate production data merely to reproduce the failure. Prefer tests, mocks, validation-only endpoints, or disposable E2E fixtures.',
