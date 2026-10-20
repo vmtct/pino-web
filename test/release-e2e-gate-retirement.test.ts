@@ -6,8 +6,9 @@ const workflow = readFileSync(new URL("../.github/workflows/production-release.y
 
 test("PAP-818 removes functional Web/Core smoke as release admission", () => {
   assert.doesNotMatch(workflow, /candidate-core-sessions|preview_core_header|\/tmp\/core-sessions|\/tmp\/home\.html/);
-  assert.doesNotMatch(workflow, /Production root smoke failed|Web->Core smoke did not execute/);
+  assert.doesNotMatch(workflow, /Production root smoke failed|Web->Core smoke did not execute|Public production route/);
   assert.match(workflow, /Founder manual Production acceptance/);
+  assert.match(workflow, /Public route and page content: NOT_RUN/);
 });
 test("PAP-818 retains immutable candidate and protected Core binding authority", () => {
   assert.match(workflow, /Canonical Cloudflare candidate preview identity drifted/);
