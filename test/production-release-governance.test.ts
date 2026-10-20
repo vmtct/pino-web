@@ -217,7 +217,7 @@ test("already-serving Web candidate rebind fails closed on a newer non-PASS term
   assert.throws(() => validateServingRebindProof({ ...validRebindInput(), priorComments: [priorWebReceipt(), rejected] }), /PRIOR_TERMINAL_NOT_PASS/);
 });
 
-test("Web hard-kill recovery is durable and terminal ingress proves immutable static assets", () => {
+test("Web hard-kill recovery remains durable without automated public content smoke", () => {
   const watchdog = readFileSync(".github/workflows/production-release-recovery-watchdog.yml", "utf8");
   const recovery = readFileSync("scripts/recover-worker-promotion.sh", "utf8");
   const armedAt = release.indexOf("PINO_WEB_PRODUCTION_RELEASE: **RECOVERY_ARMED**");
@@ -235,9 +235,9 @@ test("Web hard-kill recovery is durable and terminal ingress proves immutable st
   assert.match(recovery, /REFUSE_OWNERSHIP/);
   assert.match(release, /web-production-route-transition\.ts apply/);
   assert.match(release, /web-production-route-transition\.ts rollback/);
-  assert.match(release, /https:\/\/pinohouse\.art\/policy/);
-  assert.match(release, /homepage \+ legal \+ learning surfaces routed ingress: PASS/);
-  assert.match(release, /exposed no immutable Next static asset reference/);
+  assert.doesNotMatch(release, /Public production route|public-route\.html/);
+  assert.match(release, /Public route and page content: NOT_RUN/);
+  assert.match(release, /Public Next asset loading: NOT_RUN/);
 });
 
 test("Web release consumes only a semantically validated canonical Cloudflare candidate", () => {
@@ -247,9 +247,9 @@ test("Web release consumes only a semantically validated canonical Cloudflare ca
   assert.doesNotMatch(release, /candidate_version_lines|build_summary=/);
   assert.match(release, /wrangler@4\.126\.0 versions view "\$candidate_id"/);
   assert.match(release, /Canonical Cloudflare candidate tag does not bind the exact approved Web SHA/);
-  assert.match(release, /candidate preview did not execute against the exact Core release version/);
+  assert.doesNotMatch(release, /candidate preview did not execute against the exact Core release version/);
   assert.match(release, /Candidate: exact immutable version from canonical Cloudflare Workers Build check/);
-  assert.match(release, /Candidate preview exact-SHA\/Core smoke: PASS/);
+  assert.match(release, /Candidate preview SHA identity: PASS; functional Core smoke: NOT_RUN/);
 
   const normalizeShellContinuations = (source: string) => source.replace(/\\\r?\n[ \t]*/g, " ");
   const countVersionUploads = (source: string) =>
