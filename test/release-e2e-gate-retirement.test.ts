@@ -19,3 +19,13 @@ test("PAP-818 retains immutable candidate and protected Core binding authority",
   assert.match(workflow, /Production identity did not converge to the approved SHA/);
   assert.match(workflow, /web-production-route-transition\.ts verify/);
 });
+
+test("PAP-819 Piner release leaves homepage acceptance to Founder and preserves auth-denial safety", () => {
+  const piner = readFileSync(new URL("../.github/workflows/piner-production-release.yml", import.meta.url), "utf8");
+  assert.doesNotMatch(piner, /Piner root smoke failed|\/tmp\/piner-home\.html/);
+  assert.match(piner, /Piner homepage manual acceptance: PENDING_FOUNDER/);
+  assert.match(piner, /Piner member provider smoke returned HTTP/);
+  assert.match(piner, /Piner Toppi provider smoke returned HTTP/);
+  assert.match(piner, /PARENT_AUTH_SESSION_INVALID/);
+  assert.match(piner, /Piner deployment did not converge to exact run-owned identity/);
+});
