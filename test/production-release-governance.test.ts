@@ -87,9 +87,9 @@ test("promotion is forward-only, SHA-tagged, config-preserving, rollback-capable
   assert.match(release, /pino-release-proof=\$\{candidate_deployment_id\}-\$\{identity_attempt\}/);
   assert.match(release, /sleep 5/);
   assert.match(release, /main moved during Web release verification; rollback/);
-  assert.match(release, /X-PINO-Schedule-Source/);
-  assert.match(release, /pinohouse\.art\/policy/);
-  assert.match(release, /www\.pinohouse\.art\/term/);
+  // PAP-818: user-facing HTTP/route content smoke is Founder manual Production acceptance.
+  assert.doesNotMatch(release, /X-PINO-Schedule-Source|Public production route/);
+  assert.match(release, /web-production-route-transition\.ts verify/);
 });
 
 test("repository records the required external Cloudflare Builds decoupling", () => {
