@@ -14,23 +14,15 @@ Before changing a material business rule, public/member data contract, eligibili
 
 If the required Core governance/spec material is unavailable, stop before inventing shared business semantics and report the missing dependency.
 
-## Continuation entry gate
+## Continuation facts and retired PLT-CARE
 
-For material continuation intent (`continue`, `triển`, `triển tiếp`, `ok triển`, `finish`, or equivalent), conversation history is non-authoritative. Before material edits run `npm run pino:resume -- --core <current-pino-core-worktree>` or set `PINO_CORE_PATH`. Supply `--feature <featureCode|featureId>` only when branch/checkpoint resolution cannot identify one canonical feature.
+The live Jira Job and applicable Directives (PAP-184, PAP-512 and PAP-596) govern DEV/review authority. Conversation history is non-authoritative delivery memory. Inspect exact worktree, branch, head, current main, merge-base, dirty state, changed paths, exact-head CI and real conflicting writers before material side effects.
 
-Obey the Core Drift Protocol result: `NONE` continues; `SAFE` continues without a forced sync; `CONTRACT` is reconciled by the coding agent in the same work session and the gate is rerun; `DESTRUCTIVE` or genuinely ambiguous state requires human review. Never ask the Founder to reconcile merely because `main` advanced, and never treat pino-web chat context as a substitute for Core registry/checkpoint authority.
+The optional pino:resume and delivery:enter scripts are read-only compatibility fact inspectors, never mandatory continuation gates. Legacy allowedMode, implementationAuthority, needsReconcile, Project-Code, PLT-CARE materialEditGuard and stale checkpoint/lease fields cannot grant or block Jira-authorized DEV/review.
 
-For implementation/builder work, the terminal state is `DEV_HANDOFF_READY`: implementation complete, local verification complete, immutable candidate pushed, and exact-head CI requested/proven. Stop there. Authoritative PRE-MAIN audit, final current-main reconcile, `MERGE_READY`, and merge execution are owned downstream by Core `PLT-MERGE`.
+Do not claim, heartbeat, reclaim, transfer, release or require historical PLT-CARE leases. Historical records are for forensic inspection only. Protect actual shared side effects with narrowly scoped single-writer/idempotency safety; retain Git freshness, auth, security and release gates. Merge, Staging, D1 and Production require their own applicable Jira authority.
 
-### Cross-Project slice care
-
-Material Web work must identify the coordinating ChatGPT Project with one canonical Project Code: `PRJ-TPP`, `PRJ-PSP`, `PRJ-PNR`, `PRJ-WFM`, or `PRJ-PLT`. Pass it through `--project` or `PINO_PROJECT_CODE`.
-
-Before material edits, Core PLT-CARE must report the current owner transparently. Unclaimed work requires a claim. Fresh foreign care blocks duplicate material edits and must surface owner, branch, PR, and freshness. Stale care requires explicit reclaim. Fresh foreign transfer requires explicit Founder approval plus a reason.
-
-Care ownership is coordination metadata only; it never authorizes staging or production.
-
-## Feature readiness is implementation authority
+## Feature maturity is product evidence, not execution authority
 
 - `READY_FOR_IMPLEMENTATION` — implementation may proceed against the registered approved spec/handoff.
 - `READY_WITH_PREREQUISITES` — UI/product review may continue, but blocked runtime integration waits for named prerequisites.
