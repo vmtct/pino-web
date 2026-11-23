@@ -14,8 +14,8 @@ test("web exposes the Core-owned Drift Protocol entry wrapper", () => {
   assert.match(wrapper, /--worktree/);
 });
 
-test("web working contract defines continuation drift behavior", () => {
-  assert.match(agents, /Continuation entry gate/);
-  assert.match(agents, /NONE[\s\S]*SAFE[\s\S]*CONTRACT[\s\S]*DESTRUCTIVE/);
+test("web working contract defines current Jira-owned continuation behavior", () => {
+  assert.match(agents, /optional pino:resume and delivery:enter scripts are read-only compatibility fact inspectors/i);
+  assert.match(agents, /live Jira Job and applicable Directives/i);
   assert.match(agents, /conversation history is non-authoritative/i);
 });
