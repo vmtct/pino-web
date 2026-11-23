@@ -225,3 +225,18 @@
 @media(max-width:900px){
 .header.menuOpen .actions .action,.header:not(.homeHeader).menuOpen .actions .action{font-size:19px;font-weight:700;line-height:1.3;text-transform:uppercase;letter-spacing:.035em;min-height:52px;justify-content:center;text-align:center}
 }
+/* PAP-2336: elastic, evenly distributed desktop navigation within each side of centered brand. */
+@media(min-width:901px){
+ .header .nav,.header .actions{min-width:0;width:100%;gap:0;justify-content:space-evenly;justify-self:stretch}
+ .homeHeader .nav{display:flex;width:100%;gap:0;justify-content:space-evenly;justify-self:stretch}
+ .homeHeader .actions{display:flex;width:100%;gap:0;justify-content:space-evenly;justify-self:stretch;align-items:center}
+ .header.afterschoolHeader:not(.homeHeader) .nav,
+ .header.afterschoolHeader:not(.homeHeader) .actions{width:100%;gap:0;justify-content:space-evenly;justify-self:stretch}
+}
+@media(min-width:901px){
+ .header{width:calc(100% - var(--public-gutter) * 2);max-width:none}
+}
+/* PAP-2338 refinement: navbar content max-width 940px, not viewport-wide. */
+@media(min-width:901px){
+ .header{width:min(940px,calc(100% - var(--public-gutter) * 2));max-width:940px}
+}

@@ -8,6 +8,7 @@ import CmsHydrator from "./cms-hydrator";
 import { LocaleProvider } from "./localization";
 import PublicEnhancements from "./public-enhancements";
 import ContactBubble from "./contact-bubble";
+import ScrollMotion from "./scroll-motion";
 
 const notoSerif = Noto_Serif({
   subsets: ["latin", "vietnamese"],
@@ -38,7 +39,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" suppressHydrationWarning className={notoSerif.variable+" "+notoSans.variable}>
-      <body><LocaleProvider><CmsHydrator>{children}</CmsHydrator><PublicEnhancements /><ContactBubble /></LocaleProvider></body>
+      <body><LocaleProvider><CmsHydrator>{children}</CmsHydrator><PublicEnhancements /><ScrollMotion /><ContactBubble /></LocaleProvider></body>
     </html>
   );
 }

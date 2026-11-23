@@ -39,3 +39,4 @@
 .heroCarousel .carouselControls{left:max(var(--public-gutter),calc((100% - var(--public-content-max))/2))}
 .page>.heroCarousel .heroCopy{max-width:640px}
 @media(max-width:560px){.page>.heroCarousel{padding-inline:var(--public-gutter)}.heroCarousel .carouselControls{left:var(--public-gutter);right:var(--public-gutter)}}
+@media (prefers-reduced-motion: no-preference){.heroCarousel .heroBackground{animation:pinoSlideImage 850ms cubic-bezier(.22,1,.36,1) both}.heroCarousel .heroCopy{animation:pinoSlideCopy 650ms cubic-bezier(.22,1,.36,1) .5s both}} @keyframes pinoSlideImage{from{opacity:.45;transform:scale(1.045)}to{opacity:1;transform:scale(1)}} @keyframes pinoSlideCopy{from{opacity:0;transform:translate3d(0,22px,0)}to{opacity:1;transform:translate3d(0,0,0)}}

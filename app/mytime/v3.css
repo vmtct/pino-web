@@ -704,3 +704,12 @@
 
 /* PAP-2331 — prominent uppercase Piner App in MyTime hamburger navigation. */
 @media(max-width:900px){.mytime-v3 .mobile-nav.is-open a[href='https://app.pinohouse.art']{font-size:19px;font-weight:700;line-height:1.3;text-transform:uppercase;letter-spacing:.035em;min-height:52px}}
+/* PAP-2336: distribute desktop nav labels elastically across available header columns. */
+@media(min-width:901px){
+ .mytime-v3 .mtv3-site-header>.desktop-nav,
+ .mytime-v3 .mtv3-site-header>.header-actions{width:100%;min-width:0;gap:0;justify-self:stretch;justify-content:space-evenly}
+}
+/* PAP-2338 refinement: constrain MyTime desktop navbar to shared 940px content rail. */
+@media(min-width:901px){
+ .mytime-v3 .mtv3-site-header{width:min(940px,100%);max-width:940px;margin-inline:auto}
+}
