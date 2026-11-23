@@ -19,7 +19,7 @@ function resolveInitialLocale(): Locale {
   if (query === "en" || query === "vi") return query;
   const stored = window.localStorage.getItem(STORAGE_KEY);
   if (stored === "en" || stored === "vi") return stored;
-  return navigator.language.toLowerCase().startsWith("vi") ? "vi" : "en";
+  return "vi";
 }
 
 export function LocaleProvider({ children }: { children: ReactNode }) {

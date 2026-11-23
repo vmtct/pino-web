@@ -1,0 +1,6 @@
+import type {Metadata} from "next";
+import {Storefront,Section,afterTag} from "../../storefront";
+import {Localized as L} from "../../localization";
+import u from "../../storefront.module.css";
+export const metadata:Metadata={title:"PINO Community | Afterschool",robots:{index:false,follow:false}};
+export default function Community(){return <Storefront brand="PINO Community" tagline={afterTag} title={{vi:"Những câu chuyện sáng tạo.",en:"Creative stories."}} description={{vi:"Cộng đồng PINO sẽ được khám phá ngay trong Piner App, không cần đăng nhập để xem nội dung công khai.",en:"Explore the PINO community in Piner App without signing in to view public content."}} image="bright-art-classroom.png"><Section label="PINER APP · GUEST" title={{vi:"Không gian cộng đồng đang được chuẩn bị",en:"The community is being prepared"}} description={{vi:"Chế độ khách chưa mở. Website không hiển thị bài đăng, hình ảnh hay portfolio riêng tư của học viên.",en:"Guest access is not open yet. No private posts, images or student portfolios are shown on this website."}}><a className={u.primary} href="https://app.pinohouse.art"><L vi="Mở Piner App (thành viên)" en="Open Piner App (members)"/> </a></Section></Storefront>}

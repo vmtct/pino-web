@@ -1,4 +1,5 @@
 "use client";
+import RegistrationInterest from "../registration-interest";
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -24,6 +25,7 @@ import { useLocale } from "../localization";
 import { CmsText } from "../cms-hydrator";
 
 import "./page.css";
+import OpenStudioM1Review from "./m1-review";
 
 const SCHEDULE_ENDPOINT = "/api/pino-core/open-studio/sessions";
 const CAPABILITY_ENDPOINT = "/api/pino-core/open-studio/capabilities";
@@ -31,16 +33,21 @@ const REGISTRATION_ENDPOINT = "/api/pino-core/open-studio/registrations";
 const ASSET_BASE = "https://assets.pinohouse.art/site/OpenStudio";
 
 const ASSETS = {
-  hero: `${ASSET_BASE}/open-studio-courtyard-exterior.png`,
-  piano: `${ASSET_BASE}/child-playing-piano.png`,
+  hero: `${ASSET_BASE}/Revise/Seashell%20Art%20in%20the%20Cozy%20Studio.png`,
+  piano: `${ASSET_BASE}/Revise/Child%E2%80%99s%20Hands%20at%20the%20Piano-3.png`,
   blocks: `${ASSET_BASE}/children-building-wooden-blocks.png`,
-  watercolor: `${ASSET_BASE}/watercolor-palette-and-botanical-painting.png`,
-  clay: `${ASSET_BASE}/child-making-clay-cup.png`,
+  watercolor: `${ASSET_BASE}/Revise/Child%20Painting%20a%20Whimsical%20Cat%20Scene-2.png`,
+  acrylicCover: `${ASSET_BASE}/Revise/Young%20Artist%20Painting%20Anime%20Portrait.png`,
+  clay: `${ASSET_BASE}/Revise/Child%20Creating%20a%20Colorful%20Collage-1.png`,
   dance: `${ASSET_BASE}/children-dance-class.png`,
   architecture: `${ASSET_BASE}/architectural-model-and-sketchbook.png`,
   gate: `${ASSET_BASE}/garden-archway-entrance.png`,
   leavesOne: `${ASSET_BASE}/glowing-autumn-leaves-v1.png`,
   leavesTwo: `${ASSET_BASE}/glowing-autumn-leaves-v2.png`,
+  promo: `${ASSET_BASE}/Revise/Pastel%20Artist%E2%80%99s%20Desk%20with%20Books%20and%20Brushes.png`,
+  littlePiner: `${ASSET_BASE}/Revise/Watercolor%20Mushroom%20Garden%20with%20Butterfly.png`,
+  artchitect: `${ASSET_BASE}/Revise/Watercolor%20Mountain%20Landscape%20Easel.png`,
+  pianoHouse: `${ASSET_BASE}/Revise/Watercolor%20Piano%20with%20Butterfly%20and%20Foliage.png`,
 };
 
 const LOGO_URL = "https://assets.pinohouse.art/core/Pino%20Sigil.png";
@@ -136,7 +143,9 @@ export default function OpenStudioPage() {
   const [submissionMessage, setSubmissionMessage] = useState("");
   const attemptKey = useRef<string | null>(null);
   const submissionInFlight = useRef(false);
-  const detailRef = useRef<HTMLDivElement>(null);
+  const detailRef = useRef<HTMLDialogElement>(null);
+  const returnFocus=useRef<HTMLElement|null>(null);
+  useEffect(()=>{if(selectedId&&detailRef.current&&!detailRef.current.open)detailRef.current.showModal()},[selectedId]);
 
   const loadSessions = useCallback(async () => {
     setStatus("loading");
@@ -168,16 +177,11 @@ export default function OpenStudioPage() {
   const canRegister = registrationEnabled;
   const selectedSession = sessions.find((session) => session.id === selectedId) || null;
   const featuredSession = useMemo(() => sessions.find((session) => !isSessionFull(session)) || sessions[0] || null, [sessions]);
-  const dateOptions = useMemo(() => Array.from(new Set(sessions.map((session) => localDateKey(session.startsAt)))), [sessions]);
-  const visibleSessions = useMemo(() => sessions.filter((session) => {
-    const matchesDate = activeDate === "all" || localDateKey(session.startsAt) === activeDate;
-    const matchesPath = pathFilter === "all" || pathLabel(session) === pathFilter;
-    return matchesDate && matchesPath;
-  }), [activeDate, pathFilter, sessions]);
+  const visibleSessions = sessions;
 
   const selectSession = (session: CoreSession, openForm = false) => {
     if (isSessionFull(session)) return;
-    setSelectedId(session.id); setShowForm(openForm && canRegister); setSubmission("idle"); setSubmissionMessage(""); setForm(emptyForm); setFieldErrors({}); attemptKey.current = null;
+    returnFocus.current=document.activeElement instanceof HTMLElement?document.activeElement:null; setSelectedId(session.id); setShowForm(openForm && canRegister); setSubmission("idle"); setSubmissionMessage(""); setForm(emptyForm); setFieldErrors({}); attemptKey.current = null;
     window.setTimeout(() => detailRef.current?.focus(), 0);
   };
 
@@ -216,13 +220,12 @@ export default function OpenStudioPage() {
     <main className="open-studio-page">
       <OpenStudioNav locale={locale} />
 
-      <section className="os-hero os-shell" aria-labelledby="open-studio-title">
-        <img className="os-hero-leaves" src={ASSETS.leavesOne} alt="" aria-hidden="true" />
-        <div className="os-hero-copy"><h1 id="open-studio-title">Open Studio</h1><p><CmsText contentKey="os_v2_hero_description" fallback={t.hero} /></p><a href="#sessions" className="os-inline-link"><CmsText contentKey="os_v2_hero_cta" fallback={t.heroLink} /> <span>↓</span></a></div>
-        <div className="os-hero-visual"><img src={ASSETS.hero} alt={t.heroAlt} /></div>
-      </section>
-
-      <section className="os-main os-shell" id="sessions" aria-labelledby="sessions-title">
+      <section className="os-new-hero os-shell"><div><p className="os-kicker">PINO AFTERSCHOOL / OPEN STUDIO</p><h1>{locale==="vi"?"Buổi tối không chỉ để khép lại một ngày.":"An evening is more than the end of a day."}</h1><p>{locale==="vi"?"Một không gian mở, nơi con khám phá nghệ thuật và âm nhạc theo cách riêng.":"An open space to explore art and music in your own way."}</p><strong>{locale==="vi"?"2 buổi miễn phí mỗi tháng.":"2 free sessions every month."}</strong><div className="os-new-actions"><a href="#sessions">{locale==="vi"?"Đặt chỗ cho con":"Reserve a place"} →</a><a href="#activities">{locale==="vi"?"Khám phá không gian":"Explore the studio"}</a></div></div><img src={ASSETS.hero} alt={t.heroAlt}/></section>
+<section className="os-new-section os-shell os-value"><h2>{locale==="vi"?"Thêm lựa chọn cho con sau giờ học.":"More ways to spend the afternoon."}</h2><p>{locale==="vi"?"Thay vì chỉ xem màn hình hay quanh quẩn ở nhà, con có thể dành buổi chiều để vẽ tranh, khám phá chất liệu và thử chơi piano.":"Instead of another afternoon on screens or at home, children can paint, explore materials and try the piano."}</p><p>{locale==="vi"?"Tại Trạm Nghệ Thuật Mở, con được tự chọn hoạt động, sáng tạo theo sở thích và làm quen với những trải nghiệm mới mỗi lần ghé đến.":"At Open Studio, children choose activities, create at their own pace and discover something new each visit."}</p></section><section id="activities" className="os-new-section os-shell"><h2>{locale==="vi"?"Hôm nay con muốn làm gì?":"What would you like to make today?"}</h2><div className="os-new-grid">{[[ASSETS.clay,"Đa chất liệu","Mixed media","Khám phá bằng đôi tay, với giấy, đất nặn và vật liệu sáng tạo.","Explore paper, clay and creative materials."],[ASSETS.acrylicCover,"Chất liệu & Nhân vật","Materials & Characters","Tự do thể hiện ý tưởng qua sắc màu, họa cụ và sáng tạo nhân vật.","Express your ideas through colour."],[ASSETS.piano,"Piano nền tảng","Foundational piano","Làm quen phím đàn, nhịp điệu và âm thanh.","Discover keys, rhythm and sound."]].map(([src,vi,en,dv,de])=><article key={en}><img src={src} alt="" loading="lazy"/><div><h3>{locale==="vi"?vi:en}</h3><p>{locale==="vi"?dv:de}</p><a className="os-activity-register" href="#register" data-registration-branch={src===ASSETS.piano?"pianohouse":src===ASSETS.acrylicCover?"artchitect":"little-piner"}>{locale==="vi"?"Đăng ký tham gia":"Register for a session"} →</a></div></article>)}</div></section>
+<section className="os-new-section os-shell"><h2>{locale==="vi"?"Một buổi tại Open Studio":"A visit to Open Studio"}</h2><div className="os-new-steps">{(locale==="vi"?["Đến trạm","Chọn hoạt động","Tự do sáng tạo","Mang về niềm vui"]:["Arrive","Choose an activity","Create freely","Take joy home"]).map((step,i)=><div key={step}><b>0{i+1}</b><h3>{step}</h3></div>)}</div><p>{locale==="vi"?"Mentor hỗ trợ khi con cần và gợi mở khi con chưa có ý tưởng.":"Mentors offer support and inspiration whenever needed."}</p></section>
+<section className="os-new-studio os-shell" aria-label="PINO House creative studio"><img src={ASSETS.watercolor} alt="Góc sáng tạo nghệ thuật tại PINO House" loading="lazy"/></section><section className="os-new-section os-shell os-new-free"><h2>{locale==="vi"?"Một thói quen sáng tạo mỗi tháng":"A creative habit every month"}</h2><strong>{locale==="vi"?"2 buổi miễn phí*":"2 free sessions*"}</strong><p>{locale==="vi"?"Một khoảng thời gian dành riêng cho nghệ thuật và âm nhạc.":"Time set aside for art and music."}</p><div className="os-new-actions"><a href="#sessions">{locale==="vi"?"Đặt chỗ tại Open Studio":"Reserve a place"} →</a></div><small>{locale==="vi"?"* Các buổi tiếp theo: 199.000đ/buổi.":"* Additional sessions: 199,000 VND per session."}</small></section>
+<section className="os-main os-shell" id="sessions" aria-labelledby="sessions-title">
+        <OpenStudioM1Review/>
         <div className="os-featured-panel">
           <p className="os-kicker">✦ <CmsText contentKey="os_v2_up_next_label" fallback={t.upNext} />{usingFallback ? ` · ${t.demoSchedule}` : ""}</p>
           {status === "loading" ? <div className="os-featured-loading">{t.loading}</div> : null}
@@ -235,13 +238,11 @@ export default function OpenStudioPage() {
           </div> : null}
         </div>
 
-        <div className="os-week-head"><div><p className="os-kicker"><CmsText contentKey="os_v2_calendar_label" fallback={t.schedule} />{usingFallback ? ` · ${t.demoData}` : ""}</p><div className="os-date-row" aria-label={t.filterDate}><button className={activeDate === "all" ? "is-active" : ""} onClick={() => setActiveDate("all")} type="button">{t.all}</button>{dateOptions.slice(0, 7).map((date) => { const representative = sessions.find((session) => localDateKey(session.startsAt) === date); return representative ? <button className={activeDate === date ? "is-active" : ""} onClick={() => setActiveDate(date)} type="button" key={date}>{compactDate(representative.startsAt, locale)}</button> : null; })}</div></div><div className="os-filter-row" aria-label={t.filterPath}>{(["all", "PianoHouse", "Artchitect", "Little Piner"] as PathFilter[]).map((filter) => <button className={pathFilter === filter ? "is-active" : ""} onClick={() => setPathFilter(filter)} type="button" key={filter}>{filter === "all" ? t.all : filter}</button>)}</div></div>
-
         {status === "loading" ? <div className="os-card-grid os-skeleton-grid">{[0, 1, 2, 3, 4, 5].map((item) => <div className="os-session-card os-skeleton-card" key={item}><span /><i /><i /><i /></div>)}</div> : null}
         {status === "success" && visibleSessions.length === 0 ? <div className="os-empty">{t.noFiltered}</div> : null}
         {status === "success" && visibleSessions.length > 0 ? <div className="os-card-grid">{visibleSessions.slice(0, 9).map((session, index) => { const full = isSessionFull(session); return <article className={`os-session-card${selectedId === session.id ? " is-selected" : ""}`} key={session.id}><img src={activityImage(session, index)} alt={sessionImageAlt(session)} /><div className="os-session-body"><span className="os-time-label">{formatLocalTimeRange(session.startsAt, session.endsAt, locale)}</span><h3>{publicSyllabusTitle(session.syllabus.title)}</h3><div className="os-pills"><span>{formatAgeRange(session.syllabus.ageMin, session.syllabus.ageMax, locale)}</span><span>{pathLabel(session)}</span></div><div className="os-session-bottom"><strong className={typeof session.availability.remainingSeats === "number" && session.availability.remainingSeats <= 3 ? "is-low" : ""}>{full ? t.full : session.availability.remainingSeats === null ? t.available : `${session.availability.remainingSeats} ${t.seatsRemaining}`}</strong><button type="button" disabled={full} onClick={() => selectSession(session)}>{full ? t.fullShort : t.detail}<span>{full ? "" : "→"}</span></button></div></div></article>; })}</div> : null}
 
-        {selectedSession ? <div className="os-session-detail" ref={detailRef} tabIndex={-1} aria-labelledby="session-detail-title">
+        {selectedSession ? <dialog className="os-session-detail os-session-modal" ref={detailRef} tabIndex={-1} aria-labelledby="session-detail-title" onClose={()=>{if(submissionInFlight.current)return;setSelectedId(null);setShowForm(false);requestAnimationFrame(()=>returnFocus.current?.focus())}} onCancel={e=>{if(submissionInFlight.current)e.preventDefault()}}><button className="os-modal-close" type="button" aria-label={locale==="vi"?"Đóng":"Close"} disabled={submission==="pending"} onClick={()=>detailRef.current?.close()}>×</button>
           <img src={activityImage(selectedSession)} alt={sessionImageAlt(selectedSession)} />
           <div className="os-session-detail-copy"><p className="os-kicker">{pathLabel(selectedSession)} · {formatAgeRange(selectedSession.syllabus.ageMin, selectedSession.syllabus.ageMax, locale)}</p><h2 id="session-detail-title">{publicSyllabusTitle(selectedSession.syllabus.title)}</h2><p className="os-detail-date">{formatLocalDate(selectedSession.startsAt, locale)} · {formatLocalTimeRange(selectedSession.startsAt, selectedSession.endsAt, locale)} · {t.vietnamTime}</p>{selectedSession.syllabus.publicDescription ? <p>{selectedSession.syllabus.publicDescription}</p> : null}{selectedSession.syllabus.skillSummary ? <div className="os-detail-note"><strong>{t.exploreHeading}</strong><p>{selectedSession.syllabus.skillSummary}</p></div> : null}
           {usingFallback ? <div className="os-registration-notice"><strong>{t.demoTitle}</strong><p>{t.demoCopy}</p></div> : null}
@@ -249,16 +250,11 @@ export default function OpenStudioPage() {
           {canRegister && !showForm && submission !== "success" ? <button className="os-book-button" type="button" onClick={() => setShowForm(true)}>{t.registerSession} <span>→</span></button> : null}
           {canRegister && showForm && submission !== "success" ? <form className="os-registration-form" onSubmit={submitRegistration} noValidate><h3>{t.familyInfo}</h3><p>{t.familyInfoCopy}</p><label>{t.parentName}<input name="contactName" autoComplete="name" value={form.contactName} onChange={(event) => updateForm("contactName", event.target.value)} aria-invalid={Boolean(fieldErrors.contactName)} />{fieldErrors.contactName ? <small>{fieldErrors.contactName}</small> : null}</label><label>{t.phone}<input name="phone" type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={(event) => updateForm("phone", event.target.value)} aria-invalid={Boolean(fieldErrors.phone)} />{fieldErrors.phone ? <small>{fieldErrors.phone}</small> : null}</label><label>{t.childName}<input name="childName" autoComplete="off" value={form.childName} onChange={(event) => updateForm("childName", event.target.value)} aria-invalid={Boolean(fieldErrors.childName)} />{fieldErrors.childName ? <small>{fieldErrors.childName}</small> : null}</label><label>{t.childBirth}<input name="childDateOfBirth" type="date" value={form.childDateOfBirth} onChange={(event) => updateForm("childDateOfBirth", event.target.value)} aria-invalid={Boolean(fieldErrors.childDateOfBirth)} />{fieldErrors.childDateOfBirth ? <small>{fieldErrors.childDateOfBirth}</small> : null}</label>{submission === "error" ? <p className="os-submit-error" role="alert">{submissionMessage}</p> : null}<button className="os-book-button" type="submit" disabled={submission === "pending"}>{submission === "pending" ? t.sending : t.submit}<span>→</span></button></form> : null}
           {canRegister && submission === "success" ? <div className="os-registration-success" role="status"><span>✓</span><div><strong>{registrationSuccessTitle(locale)}</strong><p>{registrationSuccessBody(locale)}</p></div></div> : null}</div>
-        </div> : null}
+        </dialog> : null}
       </section>
 
-      <section className="os-info os-shell">
-        <article className="os-architecture-card"><div><p className="os-kicker">{t.weekAtPino}</p><h2>Architecture Explorers</h2><p>{t.architectureCopy}</p><a href="#sessions">{t.viewSchedule} <span>→</span></a></div><img src={ASSETS.architecture} alt={locale === "vi" ? "Mô hình kiến trúc và sổ phác thảo" : "Architectural model and sketchbook"} /></article>
-        <article className="os-how-card"><p className="os-kicker">{t.how}</p><div className="os-how-steps"><span><b>01</b>{t.choose}</span><i>→</i><span><b>02</b>{t.reserve}</span><i>→</i><span><b>03</b>{t.arrive}</span><i>→</i><span><b>04</b>{t.tryExplore}</span></div></article>
-        <article className="os-for-card"><p className="os-kicker">{t.forWho}</p><ul>{t.who.map((item) => <li key={item}>{item}</li>)}</ul></article>
-      </section>
-
-      <section className="os-faq os-shell" aria-labelledby="faq-title"><h2 id="faq-title">FAQ</h2><div>{t.faq.map(([question, answer]) => <details key={question}><summary>{question}</summary><p>{answer}</p></details>)}</div></section>
+      <section className="os-new-section os-shell"><h2>{locale==="vi"?"Khi con tìm thấy điều mình thích":"When your child finds what they love"}</h2><div className="os-new-grid">{[["Little Piner","little-piner","Mầm sáng tạo",ASSETS.littlePiner],["Artchitect","artchitect","Mỹ thuật sáng tạo",ASSETS.artchitect],["PianoHouse","pianohouse","Piano nghệ thuật",ASSETS.pianoHouse]].map(([name,path,vi])=><a className="os-new-path" key={path} href={"/"+path} data-path={path}><img className="os-new-path-visual" src={path === "little-piner" ? ASSETS.littlePiner : path === "artchitect" ? ASSETS.artchitect : ASSETS.pianoHouse} alt="" loading="lazy"/><span className="os-path-age">{locale==="vi"?(path==="little-piner"?"3–6 tuổi":"7+ tuổi"):(path==="little-piner"?"Ages 3–6":"Ages 7+")}</span><h3>{name}</h3><p>{locale==="vi"?vi:"Explore the journey"} →</p></a>)}</div></section>
+<div className="os-shell os-registration-interest"><RegistrationInterest openStudio/></div><section className="os-faq os-shell" aria-labelledby="faq-title"><h2 id="faq-title">FAQ</h2><div>{t.faq.map(([question, answer]) => <details key={question}><summary>{question}</summary><p>{answer}</p></details>)}</div></section>
 
       <section className="os-final-cta os-shell"><img className="os-final-bg" src={ASSETS.gate} alt="" aria-hidden="true" /><img className="os-final-leaves os-final-leaves-left" src={ASSETS.leavesOne} alt="" aria-hidden="true" /><img className="os-final-leaves os-final-leaves-right" src={ASSETS.leavesTwo} alt="" aria-hidden="true" /><div><h2><CmsText contentKey="os_v2_final_title" fallback={t.finalTitle} /></h2><p><CmsText contentKey="os_v2_final_description" fallback={t.finalCopy} /></p><a className="os-final-button" href="#sessions"><CmsText contentKey="os_v2_final_cta" fallback={t.finalButton} /> <span>→</span></a></div></section>
 

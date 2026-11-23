@@ -1,0 +1,706 @@
+/* PAP-2176: scoped native port of deployed MYTIME-WEB V3. */
+.mytime-v3{--paper:#f5f1e9;--paper-deep:#ebe6d9;--ink:#202722;--muted:#65706a;--forest:#263e34;--forest-dark:#172c26;--olive:#83937b;--sage:#dfe5d9;--terra:#bb785c;--salmon:#cf8b71;--peach:#eed2c2;--line:rgba(38,55,45,.16);--serif:var(--mt-display),Georgia,serif;--sans:var(--mt-body),Arial,sans-serif;--wrap:var(--public-content-max)}
+.mytime-v3 *{box-sizing:border-box}
+.mytime-v3{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.7;-webkit-font-smoothing:antialiased}
+.mytime-v3 button,.mytime-v3 input{font:inherit}
+.mytime-v3 button{cursor:pointer}
+.mytime-v3 a{color:inherit}
+.mytime-v3 img,.mytime-v3 svg{max-width:100%}
+.mytime-v3 section{position:relative}
+.mytime-v3 .wrap{width:min(calc(100% - 112px),var(--wrap));margin:0 auto}
+.mytime-v3 .section-pad{padding:135px 0}
+.mytime-v3 .mtv3-eyebrow{margin:0;font-size:10px;font-weight:700;line-height:1.8;letter-spacing:.195em;text-transform:uppercase}
+.mytime-v3 .mtv3-eyebrow.muted{color:var(--muted)}
+.mytime-v3 h1,.mytime-v3 h2,.mytime-v3 h3,.mytime-v3 p{margin-top:0}
+.mytime-v3 h1,.mytime-v3 h2,.mytime-v3 h3{font-family:var(--serif);font-weight:500;letter-spacing:-.045em}
+.mytime-v3 h2{font-size:clamp(44px,5vw,76px);line-height:1.17}
+.mytime-v3 h2 em,.mytime-v3 h3 em,.mytime-v3 h1 em{font-weight:400}
+.mytime-v3 :focus-visible{outline:3px solid #c0785e;outline-offset:5px}
+.mytime-v3 .skip-link{position:absolute;z-index:200;top:-80px;left:10px;background:#fff;color:var(--ink);padding:12px 18px}
+.mytime-v3 .skip-link:focus{top:10px}
+.mytime-v3 .mtv3-site-header{z-index:60;position:sticky;top:0;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:32px;height:80px;padding:0 max(56px,calc((100vw - var(--wrap))/2));background:rgba(245,241,233,.94);backdrop-filter:blur(18px);border-bottom:1px solid rgba(38,55,45,.13)}
+.mytime-v3 .brand{text-decoration:none;display:flex;align-items:center;gap:10px;justify-self:flex-start;white-space:nowrap}
+.mytime-v3 .brand-sigil{width:27px;height:37px;object-fit:contain}
+.mytime-v3 .brand-words{display:flex;align-items:baseline;gap:7px;letter-spacing:.02em;line-height:1}
+.mytime-v3 .brand-words strong{font-family:var(--sans);font-size:20px;letter-spacing:-.055em;font-weight:700}
+.mytime-v3 .brand-dot{color:#c77e63}
+.mytime-v3 .brand-words small{font-family:var(--serif);font-size:12px;font-style:italic;white-space:nowrap}
+.mytime-v3 .desktop-nav{display:flex;align-items:center;gap:30px}
+.mytime-v3 .desktop-nav a{font-size:12px;font-weight:500;text-decoration:none;color:#3c443c;transition:color .2s}
+.mytime-v3 .desktop-nav a:hover{color:var(--terra)}
+.mytime-v3 .header-actions{justify-self:flex-end;display:flex;align-items:center;gap:10px}
+.mytime-v3 .header-cta{font-size:11px;font-weight:700;white-space:nowrap;text-decoration:none;padding:11px 20px;border:1px solid #3c473f;border-radius:999px;transition:background .2s,color .2s}
+.mytime-v3 .header-cta span{margin-left:10px}
+.mytime-v3 .header-cta:hover{background:var(--ink);color:#fff}
+.mytime-v3 .menu-toggle{display:none;width:42px;height:42px;border:1px solid var(--line);border-radius:50%;background:transparent;align-items:center;justify-content:center;flex-direction:column;gap:5px}
+.mytime-v3 .menu-toggle span{width:17px;height:1px;background:var(--ink);transition:transform .2s}
+.mytime-v3 .mobile-nav{display:none}
+.mytime-v3 .mtv3-hero{min-height:min(850px,calc(100svh - 80px));padding:0;background:var(--paper);overflow:hidden}
+.mytime-v3 .hero-inner{display:grid;grid-template-columns:52% 48%;min-height:min(780px,calc(100svh - 80px));align-items:center}
+.mytime-v3 .hero-content{padding:44px 36px 70px 0;position:relative;z-index:2}
+.mytime-v3 .hero-eyebrow{display:flex;align-items:center;gap:9px;color:#647068;margin-bottom:34px;white-space:nowrap}
+.mytime-v3 .eyebrow-rule{width:29px;height:1px;background:#c68d79;display:inline-block}
+.mytime-v3 .eyebrow-dot{font-size:15px;color:#b77c68;margin-left:2px}
+.mytime-v3 .mtv3-hero h1{font-size:clamp(72px,7.7vw,130px);line-height:1.07;letter-spacing:-.072em;margin-bottom:31px;white-space:nowrap}
+.mytime-v3 .mtv3-hero h1 em{color:var(--salmon);font-weight:400;letter-spacing:-.085em}
+.mytime-v3 .hero-lead{font-family:var(--serif);font-size:clamp(18px,1.52vw,23px);line-height:1.7;max-width:590px;color:#51544c;margin-bottom:34px}
+.mytime-v3 .hero-buttons{display:flex;align-items:center;gap:30px;flex-wrap:wrap}
+.mytime-v3 .btn{display:inline-flex;align-items:center;justify-content:space-between;gap:30px;padding:17px 24px;border-radius:100px;border:1px solid transparent;text-decoration:none;font-size:12px;font-weight:700;white-space:nowrap;transition:transform .2s,background .2s}
+.mytime-v3 .btn:hover{transform:translateY(-3px)}
+.mytime-v3 .btn-dark{background:var(--forest-dark);color:white}
+.mytime-v3 .btn-dark:hover{background:#3a5648}
+.mytime-v3 .inline-link{font-size:12px;text-decoration:none;font-weight:600;white-space:nowrap;border-bottom:1px solid #858c80;padding:7px 0}
+.mytime-v3 .inline-link span{padding-left:12px;font-size:17px}
+.mytime-v3 .hero-bottom{display:flex;align-items:center;gap:17px;margin-top:63px;color:#72796d;font-size:11px;line-height:1.7}
+.mytime-v3 .tiny-sun{display:grid;place-items:center;font-size:23px;background:#e5e6d5;color:#738368;width:46px;height:46px;border-radius:50%}
+.mytime-v3 .hero-visual{height:730px;position:relative;isolation:isolate;align-self:stretch}
+.mytime-v3 .visual-backdrop{position:absolute;z-index:-2;top:7%;right:-17%;width:100%;height:85%;border-radius:49% 49% 32% 32%;background:linear-gradient(145deg,#e4cab0 0%,#e5d6bd 43%,#b5b2a1 43%,#b5b2a1 55%,#394e49 55%,#2b4039 100%)}
+.mytime-v3 .visual-sun{position:absolute;z-index:-1;right:4%;top:15%;width:152px;height:152px;border-radius:50%;background:#f0dfa5;filter:blur(.4px)}
+.mytime-v3 .hero-paint-card{position:absolute;top:16%;left:5%;width:61%;min-width:270px;height:64%;background:#f9f4e7;padding:13px 13px 16px;border-radius:4px;box-shadow:18px 26px 38px rgba(32,42,35,.18);transform:rotate(-5deg)}
+.mytime-v3 .art-label{display:flex;align-items:center;justify-content:space-between;padding:1px 6px 9px;font-size:9px;letter-spacing:.15em;color:#69675e}
+.mytime-v3 .art-label span{font-weight:700}
+.mytime-v3 .hero-painting{height:calc(100% - 48px);border:1px solid rgba(0,0,0,.08);overflow:hidden}
+.mytime-v3 .hero-painting svg{display:block;width:100%;height:100%;object-fit:cover}
+.mytime-v3 .hero-paint-card p{font-family:var(--serif);font-style:italic;color:#7b766b;text-align:right;font-size:11px;margin:5px 6px 0}
+.mytime-v3 .hero-piano-card{position:absolute;right:-3%;bottom:10%;width:69%;height:32%;border-radius:24px;background:linear-gradient(155deg,#2a3940,#15222b 75%);color:#fff;padding:24px 28px 23px;box-shadow:-5px 30px 48px rgba(20,34,37,.23);transform:rotate(5deg)}
+.mytime-v3 .piano-card-heading{display:flex;justify-content:space-between;color:#c5d2d0;font-family:var(--sans);font-size:9px;letter-spacing:.15em}
+.mytime-v3 .piano-spark{font-size:23px;line-height:.8;color:#e4caa2}
+.mytime-v3 .hero-piano-card p{font-family:var(--serif);font-size:clamp(17px,1.8vw,28px);line-height:1.35;margin:8px 0 17px}
+.mytime-v3 .hero-piano-card p em{color:#eac2a6}
+.mytime-v3 .keyboard,.mytime-v3 .piano-full-keys{height:71px;position:relative;overflow:hidden;border-radius:5px}
+.mytime-v3 .white-keys,.mytime-v3 .piano-whites{height:100%;width:100%;display:flex;gap:2px;background:#15222b}
+.mytime-v3 .white-keys i,.mytime-v3 .piano-whites i{display:block;flex:1;background:#f3eee5;border-radius:0 0 4px 4px}
+.mytime-v3 .black-keys,.mytime-v3 .piano-blacks{position:absolute;top:0;left:5%;right:5%;height:62%;display:flex;justify-content:space-around;pointer-events:none}
+.mytime-v3 .black-keys i,.mytime-v3 .piano-blacks i{display:block;background:#1a252b;width:9%;border-radius:0 0 4px 4px;box-shadow:0 4px 2px rgba(0,0,0,.2)}
+.mytime-v3 .black-keys .gap,.mytime-v3 .piano-blacks .key-gap{visibility:hidden}
+.mytime-v3 .hero-stamp{position:absolute;right:2%;top:18%;background:#e6b69c;color:#643f36;width:93px;height:93px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15;font-family:var(--serif);font-size:17px;font-style:italic;transform:rotate(12deg);border:1px solid #d99b7f;box-shadow:0 0 0 7px #e6b69c,0 0 0 8px #e3b397}
+.mytime-v3 .hero-stamp span:nth-child(2){font-style:normal;font-size:22px;color:#976d55}
+.mytime-v3 .hero-visual-caption{position:absolute;right:-1%;bottom:1%;font-size:11px;color:#667269;font-style:italic;white-space:nowrap}
+.mytime-v3 .hero-visual-caption span{font-family:var(--serif)}
+.mytime-v3 .philosophy{background:#fbf8f1}
+.mytime-v3 .philosophy-layout{display:grid;grid-template-columns:.9fr 1.1fr;gap:10%;align-items:flex-start}
+.mytime-v3 .philosophy h2{margin-top:20px;font-size:clamp(43px,4.35vw,68px)}
+.mytime-v3 .philosophy h2 em{color:var(--salmon)}
+.mytime-v3 .philosophy-lead{font-family:var(--serif);font-size:24px;line-height:1.66;letter-spacing:-.018em;max-width:650px;margin-bottom:46px}
+.mytime-v3 .belief-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.mytime-v3 .belief{padding-top:22px;border-top:1px solid #afbab0}
+.mytime-v3 .belief-icon{font-family:var(--serif);font-style:italic;font-size:20px;color:#bf8870}
+.mytime-v3 .belief h3{font-family:var(--sans);font-size:13px;font-weight:700;letter-spacing:-.02em;margin:14px 0 10px}
+.mytime-v3 .belief p{color:#6d756f;font-size:11px;line-height:1.95}
+.mytime-v3 .experiences{background:#e9e8dd}
+.mytime-v3 .section-intro{display:flex;justify-content:space-between;gap:80px;align-items:flex-end;margin-bottom:70px}
+.mytime-v3 .section-intro h2{margin:20px 0 0}
+.mytime-v3 .section-intro h2 em{color:#c48067}
+.mytime-v3 .section-intro>p{max-width:340px;font-size:14px;color:#70766d;line-height:1.9;margin-bottom:6px}
+.mytime-v3 .experience-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.mytime-v3 .experience-card{min-width:0;background:#f8f5ee;border-radius:12px;overflow:hidden;box-shadow:0 5px 20px rgba(54,62,51,.03)}
+.mytime-v3 .experience-art{height:360px;position:relative;overflow:hidden}
+.mytime-v3 .experience-acrylic .experience-art{background:linear-gradient(125deg,#d1d5be,#e1c6b2)}
+.mytime-v3 .experience-piano .experience-art{background:linear-gradient(130deg,#a6b3ae,#728482 58%,#455a54)}
+.mytime-v3 .art-poster{position:absolute;top:8%;left:22%;width:56%;height:90%;background:#faf5e7;padding:15px;transform:rotate(-6deg);box-shadow:14px 16px 18px rgba(57,63,49,.18)}
+.mytime-v3 .art-poster>small{display:block;font-family:var(--serif);font-style:italic;text-align:center;color:#6e745f;margin-top:8px;font-size:11px}
+.mytime-v3 .mini-art-landscape{height:88%;background:linear-gradient(180deg,#d9b5a4 0%,#eddcb5 46%,#8da38f 46%,#426f67 75%,#244c43 100%);position:relative;overflow:hidden}
+.mytime-v3 .mini-sun{position:absolute;right:15%;top:16%;width:66px;height:66px;border-radius:50%;background:#f7e2a1}
+.mytime-v3 .mini-mountain{position:absolute;bottom:0;width:115%;height:47%;border-radius:51% 49% 0 0;background:#739a83}
+.mytime-v3 .mini-mountain.one{left:-40%;bottom:5%}
+.mytime-v3 .mini-mountain.two{right:-38%;bottom:-7%;background:#3f6d61}
+.mytime-v3 .mini-plant{position:absolute;right:16%;bottom:8%;color:#dbb49c;font-size:100px}
+.mytime-v3 .brush-stroke{position:absolute;opacity:.8;border-radius:50%;transform:rotate(-25deg)}
+.mytime-v3 .brush-one{width:65px;height:255px;left:-10px;bottom:-65px;background:#d99d7d}
+.mytime-v3 .brush-two{width:32px;height:185px;right:23px;top:-45px;background:#71977a}
+.mytime-v3 .art-annotation{position:absolute;right:24px;bottom:18px;color:#394b3e;text-align:right;font-family:var(--serif);font-size:14px;font-style:italic}
+.mytime-v3 .piano-illustration{position:absolute;width:83%;top:25%;left:11%;height:56%;transform:rotate(-7deg);border-radius:11px;background:#1e3035;box-shadow:14px 28px 22px rgba(18,27,28,.25);padding:38px 13px 11px}
+.mytime-v3 .piano-full-keys{height:95px}
+.mytime-v3 .piano-whites,.mytime-v3 .piano-blacks{background:transparent}
+.mytime-v3 .piano-whites i{background:#f4f0e9}
+.mytime-v3 .piano-blacks i{background:#202d31}
+.mytime-v3 .piano-sheet{position:absolute;z-index:2;left:18%;bottom:79%;width:64%;height:112px;background:#f4f0e4;box-shadow:0 1px 8px rgba(0,0,0,.18);transform:rotate(1deg);padding:15px 22px;text-align:center}
+.mytime-v3 .piano-sheet>span{font-size:9px;letter-spacing:.09em;color:#7c887f}
+.mytime-v3 .piano-sheet>i{display:block;font-family:var(--serif);font-size:30px;letter-spacing:.25em;color:#ae8e78;line-height:1.4}
+.mytime-v3 .piano-sheet>b{font-size:9px;font-weight:500;color:#55685e}
+.mytime-v3 .music-note{position:absolute;color:#e8d5ad;font-family:var(--serif);font-size:58px}
+.mytime-v3 .note-a{top:12%;right:12%;transform:rotate(17deg)}
+.mytime-v3 .note-b{bottom:6%;left:12%;transform:rotate(-17deg);font-size:38px}
+.mytime-v3 .experience-copy{padding:42px 42px 37px;min-height:360px}
+.mytime-v3 .experience-copy .mtv3-eyebrow{color:#8d7268}
+.mytime-v3 .experience-copy h3{font-size:clamp(40px,3.8vw,61px);line-height:1.18;margin:16px 0 22px}
+.mytime-v3 .experience-copy h3 em{color:#bd8469}
+.mytime-v3 .experience-copy>p:not(.mtv3-eyebrow){font-size:13px;line-height:2;color:#647066;min-height:80px}
+.mytime-v3 .mtv3-card-link{font-size:12px;font-weight:700;display:flex;justify-content:space-between;align-items:center;max-width:260px;text-decoration:none;border-bottom:1px solid #7e877b;padding:0 0 11px;transition:color .2s}
+.mytime-v3 .mtv3-card-link:hover{color:#bb816a}
+.mytime-v3 .mtv3-card-link span{font-size:20px}
+.mytime-v3 .closing-section{background:#edcbb5;padding:110px 0;overflow:hidden}
+.mytime-v3 .closing-grid{display:grid;grid-template-columns:1.1fr .9fr;align-items:center;gap:10%}
+.mytime-v3 .closing-grid h2{font-size:clamp(60px,6vw,100px);margin:21px 0}
+.mytime-v3 .closing-grid h2 em{color:#8c624f}
+.mytime-v3 .closing-grid p:not(.mtv3-eyebrow){font-family:var(--serif);font-size:20px;line-height:1.8;max-width:530px;margin-bottom:32px}
+.mytime-v3 .closing-art{min-height:370px;position:relative;display:grid;place-items:center}
+.mytime-v3 .closing-sun{width:330px;height:330px;border-radius:50%;background:#f6dfb7;position:absolute;right:10%;top:2%}
+.mytime-v3 .closing-paper{z-index:1;transform:rotate(-9deg);background:#fcf7e7;padding:70px 36px 50px;width:74%;min-height:330px;box-shadow:10px 18px 0 #c29583;display:flex;flex-direction:column;justify-content:space-between;text-align:center}
+.mytime-v3 .closing-paper strong{font-family:var(--serif);font-size:41px;line-height:1.2;letter-spacing:-.045em;font-weight:500}
+.mytime-v3 .closing-paper strong em{font-weight:400;color:#a47764}
+.mytime-v3 .closing-paper>span{color:#b78b75;font-size:33px}
+.mytime-v3 .site-footer{background:#21372f;color:#e6e9df;padding:65px 0 18px}
+.mytime-v3 .footer-main{display:flex;justify-content:space-between;gap:30px;padding-bottom:75px}
+.mytime-v3 .footer-logo{text-decoration:none;font-family:var(--serif);font-style:italic;font-size:74px;line-height:1;letter-spacing:-.07em;color:#f3eee2}
+.mytime-v3 .footer-logo span{font-size:24px;color:#dda88d;vertical-align:top;margin-left:5px}
+.mytime-v3 .footer-main p{font-size:12px;line-height:2;color:#b6c5ba;margin-top:15px}
+.mytime-v3 .mtv3-footer-links{display:grid;grid-template-columns:repeat(2,minmax(120px,1fr));align-content:flex-start;gap:18px 50px}
+.mytime-v3 .mtv3-footer-links a{font-size:12px;text-decoration:none}
+.mytime-v3 .mtv3-footer-links a:hover{color:#e1b39a}
+.mytime-v3 .footer-bottom{display:flex;justify-content:space-between;padding:17px 0 0;border-top:1px solid rgba(255,255,255,.17);font-size:10px;color:#96aa9d}
+@media(max-width:1190px){
+.mytime-v3 .mtv3-site-header{padding:0 34px;gap:15px}.mytime-v3 .desktop-nav{gap:20px}
+.mytime-v3 .wrap{width:min(calc(100% - 74px),var(--wrap))}
+.mytime-v3 .mtv3-hero h1{font-size:clamp(67px,7.5vw,104px)}
+.mytime-v3 .hero-visual{height:650px}.mytime-v3 .hero-inner{min-height:700px}
+.mytime-v3 .hero-piano-card{right:-7%;width:80%;bottom:12%}
+.mytime-v3 .hero-stamp{right:-2%}
+.mytime-v3 .experience-copy{padding:34px}
+}
+@media(max-width:900px){
+.mytime-v3 .wrap{width:min(calc(100% - 50px),var(--wrap))}
+.mytime-v3 .mtv3-site-header{height:70px;padding:0 25px;grid-template-columns:1fr auto}
+.mytime-v3 .desktop-nav{display:none}
+.mytime-v3 .header-cta{padding:10px 16px}
+.mytime-v3 .menu-toggle{display:flex}
+.mytime-v3 .mobile-nav{position:fixed;top:70px;left:0;right:0;z-index:59;background:#f7f3ea;border-bottom:1px solid #d4d7ce;box-shadow:0 18px 20px #1d302211;flex-direction:column;padding:18px 25px 25px;gap:0}
+.mytime-v3 .mobile-nav.is-open{display:flex}
+.mytime-v3 .mobile-nav a{text-decoration:none;padding:13px 8px;border-bottom:1px solid #d7ddd2;font-size:14px}
+.mytime-v3 .mtv3-hero{min-height:0}
+.mytime-v3 .hero-inner{grid-template-columns:1fr;min-height:0}
+.mytime-v3 .hero-content{padding:70px 0 30px}
+.mytime-v3 .mtv3-hero h1{font-size:clamp(65px,10vw,100px)}
+.mytime-v3 .hero-lead{max-width:620px}
+.mytime-v3 .hero-bottom{margin-top:42px}
+.mytime-v3 .hero-visual{height:570px;max-width:610px;width:100%;margin:auto}
+.mytime-v3 .visual-backdrop{right:0;width:100%;top:4%;height:92%}
+.mytime-v3 .hero-paint-card{left:13%;top:12%;width:50%;min-width:0}
+.mytime-v3 .hero-piano-card{right:5%;bottom:6%;width:67%}
+.mytime-v3 .hero-stamp{right:9%;top:15%}
+.mytime-v3 .hero-visual-caption{right:6%;bottom:0}
+.mytime-v3 .section-pad{padding:90px 0}
+.mytime-v3 .philosophy-layout{grid-template-columns:1fr;gap:45px}
+.mytime-v3 .philosophy-lead{max-width:100%}
+.mytime-v3 .experience-grid{grid-template-columns:1fr 1fr;gap:14px}
+.mytime-v3 .experience-art{height:275px}
+.mytime-v3 .experience-copy{padding:30px 24px}
+.mytime-v3 .experience-copy h3{font-size:37px}
+.mytime-v3 .experience-copy>p:not(.mtv3-eyebrow){min-height:100px}
+.mytime-v3 .closing-grid{gap:4%}
+.mytime-v3 .closing-paper strong{font-size:31px}
+}
+@media(max-width:600px){
+.mytime-v3 .wrap{width:calc(100% - 36px)}
+.mytime-v3 .section-pad{padding:78px 0}
+.mytime-v3 .mtv3-site-header{padding:0 18px;height:66px}
+.mytime-v3 .mobile-nav{top:66px}
+.mytime-v3 .brand-words strong{font-size:18px}
+.mytime-v3 .brand-words small{font-size:11px}
+.mytime-v3 .brand-sigil{width:23px;height:30px}
+.mytime-v3 .header-cta{display:none}
+.mytime-v3 .hero-content{padding:68px 0 10px}
+.mytime-v3 .hero-eyebrow{font-size:8px;letter-spacing:.12em;margin-bottom:22px;gap:6px}
+.mytime-v3 .eyebrow-rule{width:19px}
+.mytime-v3 .mtv3-hero h1{font-size:clamp(56px,13.3vw,79px);letter-spacing:-.076em;line-height:1.13;margin-bottom:19px}
+.mytime-v3 .hero-lead{font-size:17px;line-height:1.72;margin-bottom:25px}
+.mytime-v3 .hero-buttons{gap:19px}
+.mytime-v3 .btn{padding:14px 20px;font-size:11px;gap:22px}
+.mytime-v3 .inline-link{font-size:11px}
+.mytime-v3 .hero-bottom{margin-top:38px;gap:12px}
+.mytime-v3 .tiny-sun{width:40px;height:40px;font-size:21px}
+.mytime-v3 .hero-visual{height:470px;width:calc(100% + 14px);margin-left:-7px}
+.mytime-v3 .visual-backdrop{top:8%;right:0;width:100%;height:85%}
+.mytime-v3 .visual-sun{width:100px;height:100px;right:9%;top:14%}
+.mytime-v3 .hero-paint-card{left:6%;top:14%;width:67%;height:63%;padding:8px 8px 10px}
+.mytime-v3 .art-label{font-size:7px;padding-bottom:5px}
+.mytime-v3 .hero-painting{height:calc(100% - 35px)}
+.mytime-v3 .hero-piano-card{right:0;bottom:8%;width:75%;height:34%;padding:15px 15px;border-radius:13px}
+.mytime-v3 .piano-card-heading{font-size:7px}
+.mytime-v3 .hero-piano-card p{font-size:20px;margin:5px 0 9px}
+.mytime-v3 .keyboard{height:43px}
+.mytime-v3 .hero-stamp{width:69px;height:69px;top:20%;right:4%;font-size:12px;box-shadow:0 0 0 4px #e6b69c,0 0 0 5px #e3b397}
+.mytime-v3 .hero-stamp span:nth-child(2){font-size:14px}
+.mytime-v3 .hero-visual-caption{font-size:9px;right:2%;bottom:0}
+.mytime-v3 h2{font-size:clamp(39px,9.5vw,53px)}
+.mytime-v3 .philosophy h2{font-size:42px}
+.mytime-v3 .philosophy-lead{font-size:20px;margin-bottom:26px}
+.mytime-v3 .belief-grid{grid-template-columns:1fr;gap:7px}
+.mytime-v3 .belief{padding-top:15px}
+.mytime-v3 .belief h3{margin:4px 0 5px}
+.mytime-v3 .belief p{margin-bottom:15px}
+.mytime-v3 .section-intro{display:block;margin-bottom:32px}
+.mytime-v3 .section-intro h2{margin:15px 0 17px}
+.mytime-v3 .section-intro>p{margin:0;max-width:100%;font-size:12px}
+.mytime-v3 .experience-grid{grid-template-columns:1fr;gap:25px}
+.mytime-v3 .experience-art{height:280px}
+.mytime-v3 .experience-copy{padding:28px 24px 34px;min-height:0}
+.mytime-v3 .experience-copy h3{font-size:43px}
+.mytime-v3 .experience-copy>p:not(.mtv3-eyebrow){min-height:0;font-size:12px;line-height:1.9}
+.mytime-v3 .closing-section{padding:75px 0}
+.mytime-v3 .closing-grid{grid-template-columns:1fr;gap:30px}
+.mytime-v3 .closing-grid h2{font-size:65px}
+.mytime-v3 .closing-grid p:not(.mtv3-eyebrow){font-size:18px}
+.mytime-v3 .closing-art{min-height:250px}
+.mytime-v3 .closing-sun{width:250px;height:250px}
+.mytime-v3 .closing-paper{min-height:240px;width:68%;padding:40px 22px}
+.mytime-v3 .closing-paper strong{font-size:28px}
+.mytime-v3 .site-footer{padding-top:50px}
+.mytime-v3 .footer-main{display:block;padding-bottom:35px}
+.mytime-v3 .footer-logo{font-size:65px}
+.mytime-v3 .mtv3-footer-links{margin-top:35px;grid-template-columns:repeat(2,1fr)}
+.mytime-v3 .footer-bottom{display:block;font-size:9px}
+.mytime-v3 .footer-bottom span{display:block;margin-bottom:7px}
+}
+@media(prefers-reduced-motion:reduce){.mytime-v3 *,.mytime-v3 *:before,.mytime-v3 *:after{animation-duration:.01ms;transition-duration:.01ms}}
+@media(max-width:600px){.mytime-v3 .art-annotation{display:none}}
+.mytime-v3 .collections-section{background:#f3efe5;color:#26382f;overflow:hidden}
+.mytime-v3 .collections-intro{display:grid;grid-template-columns:1.12fr .62fr;gap:10%;align-items:flex-end;margin-bottom:58px}
+.mytime-v3 .collections-intro .mtv3-eyebrow{color:#8b887a}
+.mytime-v3 .collections-intro .mtv3-eyebrow span{color:#b48169;padding:0 6px}
+.mytime-v3 .collections-intro h2{margin:17px 0 0;font-size:clamp(48px,5.5vw,83px);line-height:1.14}
+.mytime-v3 .collections-intro h2 em{color:#b88270}
+.mytime-v3 .collections-intro>p{font-family:var(--serif);color:#667366;font-size:19px;line-height:1.7;margin:0 0 12px}
+.mytime-v3 .collection-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:17px}
+.mytime-v3 .collection-card-copy{padding:23px 21px 20px;display:flex;flex:1;flex-direction:column;gap:0;min-height:216px}
+.mytime-v3 .collection-card-copy h3{font-size:clamp(22px,2.1vw,29px);margin:0;line-height:1.2;letter-spacing:-.05em}
+.mytime-v3 .collection-card-copy h3 em{font-size:14px;font-weight:400;color:#a17d6a;display:block;margin-top:4px;letter-spacing:-.02em;line-height:1.4}
+.mytime-v3 .collection-card-description{font-size:11px;line-height:1.75;color:#6e7a70;margin:13px 0 17px}
+.mytime-v3 .collection-editorial-note{margin:20px 0 0;font-size:10px;color:#849086;line-height:1.8}
+@media(max-width:1190px){.mytime-v3 .collection-grid{gap:12px}.mytime-v3 .collection-card-copy{padding:18px 15px 15px}}
+@media(max-width:900px){.mytime-v3 .collections-intro{grid-template-columns:1fr;gap:16px}.mytime-v3 .collections-intro>p{max-width:630px}.mytime-v3 .collection-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:19px}.mytime-v3 .collection-card-copy h3{font-size:28px}}
+@media(max-width:600px){
+.mytime-v3 .collections-intro{margin-bottom:33px}
+.mytime-v3 .collections-intro h2{font-size:42px}
+.mytime-v3 .collections-intro>p{font-size:16px}
+.mytime-v3 .collection-grid{gap:11px}
+.mytime-v3 .collection-card-copy{padding:14px 12px 13px;min-height:196px}
+.mytime-v3 .collection-card-copy h3{font-size:20px}
+.mytime-v3 .collection-card-copy h3 em{font-size:11px}
+.mytime-v3 .collection-card-description{font-size:10px;line-height:1.65;margin:9px 0}
+.mytime-v3 .collection-editorial-note{font-size:9px}
+}
+.mytime-v3 .signup-section{background:#e7e7da;overflow:hidden}
+.mytime-v3 .signup-layout{display:grid;grid-template-columns:.83fr 1.17fr;gap:8%;align-items:flex-start}
+.mytime-v3 .signup-story{position:relative;min-width:0}
+.mytime-v3 .signup-story>.mtv3-eyebrow{color:#7d8e7e}
+.mytime-v3 .signup-story h2{font-size:clamp(49px,5.5vw,82px);margin:20px 0 27px;line-height:1.11}
+.mytime-v3 .signup-story h2 em{color:#bf8068}
+.mytime-v3 .signup-lead{max-width:460px;font-family:var(--serif);font-size:19px;line-height:1.7;color:#607061}
+.mytime-v3 .signup-preview-art{height:350px;position:relative;margin:12px 0}
+.mytime-v3 .signup-orbit{position:absolute;top:35px;left:15%;width:270px;height:270px;border-radius:50%;border:1px solid #aebcac;box-shadow:inset 0 0 0 22px #e1e6d9,inset 0 0 0 23px #c3cfbf;transform:rotate(-12deg)}
+.mytime-v3 .signup-note{position:absolute;background:#faf5e8;box-shadow:10px 15px 18px #526a5030;padding:20px 24px;border:1px solid #dbe1d6;display:flex;align-items:center;gap:11px}
+.mytime-v3 .signup-note span{font-family:var(--serif);font-size:24px;font-style:italic;color:#c1886e}
+.mytime-v3 .signup-note strong{font-family:var(--serif);font-size:18px;font-weight:500}
+.mytime-v3 .signup-note i{color:#ad8a76;font-size:23px;font-style:normal}
+.mytime-v3 .signup-note-one{top:79px;left:0;transform:rotate(-8deg)}
+.mytime-v3 .signup-note-two{top:179px;left:16%;transform:rotate(7deg)}
+.mytime-v3 .signup-panel{background:#faf8f0;border:1px solid #d5dfd1;padding:37px 42px 40px;box-shadow:12px 13px 0 #d5decf;min-width:0}
+@media(max-width:1100px){.mytime-v3 .signup-layout{grid-template-columns:.72fr 1.28fr;gap:4%}.mytime-v3 .signup-panel{padding:30px 25px}.mytime-v3 .signup-story h2{font-size:56px}}
+@media(max-width:900px){.mytime-v3 .signup-layout{grid-template-columns:1fr;gap:45px}.mytime-v3 .signup-story{max-width:700px}.mytime-v3 .signup-preview-art{display:none}.mytime-v3 .signup-panel{padding:35px 32px}.mytime-v3 .signup-story h2{font-size:60px}.mytime-v3 .signup-lead{max-width:640px}}
+@media(max-width:600px){
+.mytime-v3 .signup-story h2{font-size:44px;margin:15px 0 18px}
+.mytime-v3 .signup-lead{font-size:16px}
+.mytime-v3 .signup-panel{padding:24px 18px 27px;box-shadow:6px 7px 0 #d5decf}
+}
+.mytime-v3[data-page="home"] .hero-visual{max-height:750px}
+.mytime-v3[data-page="home"] .philosophy{padding-block:95px}
+.mytime-v3[data-page="home"] .experiences{padding-block:105px}
+.mytime-v3[data-page="home"] .experience-copy{min-height:0}
+.mytime-v3[data-page="home"] .closing-section{padding-block:92px}
+.mytime-v3 .v3-site-header .desktop-nav{gap:28px}
+.mytime-v3 .v3-site-header .desktop-nav a[aria-current="page"]{color:#b2775e;font-weight:700}
+.mytime-v3 .v3-site-header .header-cta{background:#263e34;color:#fff;border-color:#263e34}
+.mytime-v3 .v3-site-header .header-cta:hover{background:#405f4b}
+.mytime-v3 .season-highlight{background:#f3eae1;overflow:hidden}
+.mytime-v3 .season-top{display:grid;grid-template-columns:1.25fr .75fr;gap:9%;align-items:flex-end;margin-bottom:54px}
+.mytime-v3 .season-top h2{font-size:clamp(47px,5.5vw,82px);margin:18px 0 0}
+.mytime-v3 .season-top h2 em{color:#ba866e}
+.mytime-v3 .season-top>p{font-family:var(--serif);font-size:21px;line-height:1.65;color:#657367;margin:0 0 8px}
+.mytime-v3 .season-spotlight{display:grid;grid-template-columns:1.2fr 1fr;background:#fcfaf2;min-height:475px;overflow:hidden}
+.mytime-v3 .season-canvas-overline{position:absolute;top:26px;left:31px;letter-spacing:.18em;color:#fff;font-size:9px;font-weight:700}
+.mytime-v3 .season-poster{position:absolute;top:11%;left:20%;width:53%;height:75%;background:#f8f1e4;padding:12px;transform:rotate(-7deg);box-shadow:16px 24px 30px #25392c3d}
+.mytime-v3 .season-poster-sky{position:relative;overflow:hidden;width:100%;height:83%;background:linear-gradient(180deg,#ebc6af,#f3e0b9 51%,#9dafa0 52%,#4f7568 100%);transition:background .25s}
+.mytime-v3 .season-poster-sun{display:block;position:absolute;top:13%;right:17%;width:85px;height:85px;border-radius:50%;background:#f7e2a0;z-index:1}
+.mytime-v3 .season-poster-hill{position:absolute;display:block;bottom:-29%;width:127%;height:66%;border-radius:50%;background:#7a9f8e;left:-37%;z-index:2}
+.mytime-v3 .season-poster-hill.two{background:#375f55;left:34%;bottom:-43%}
+.mytime-v3 .season-poster-motif{position:absolute;z-index:4;bottom:-47px;left:7%;font-size:165px;font-family:var(--serif);font-style:normal;color:#d9a98b}
+.mytime-v3 .season-poster-label{display:block;font-family:var(--serif);font-size:13px;text-align:right;font-style:italic;padding:7px 5px;color:#7b8878}
+.mytime-v3 .season-mini-music{position:absolute;right:9%;bottom:16%;width:34%;height:26%;background:#23383a;transform:rotate(8deg);box-shadow:8px 14px 18px #1c352f3f;color:#e4dbc7;display:flex;justify-content:space-between;flex-direction:column;padding:17px}
+.mytime-v3 .season-mini-music span{font-family:var(--serif);font-size:70px;line-height:.8}
+.mytime-v3 .season-mini-music small{font-size:9px;letter-spacing:.13em;line-height:1.3;align-self:flex-end}
+.mytime-v3 .season-canvas-stamp{position:absolute;right:15%;top:9%;width:94px;height:94px;background:#e5b494;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;font-family:var(--serif);font-size:18px;line-height:1.05;font-style:italic;color:#6e5347;transform:rotate(14deg);box-shadow:0 0 0 7px #e5b494,0 0 0 8px #deb394}
+.mytime-v3 .season-message{display:flex;flex-direction:column;justify-content:center;padding:56px 63px}
+.mytime-v3 .season-message .mtv3-eyebrow{color:#a47a69}
+.mytime-v3 .season-message h3{font-size:clamp(39px,4vw,59px);margin:17px 0 22px;line-height:1.22}
+.mytime-v3 .season-message h3 em{color:#c08a6e}
+.mytime-v3 .season-message>p:not(.mtv3-eyebrow){color:#6b766c;font-size:14px;line-height:1.9;max-width:500px}
+.mytime-v3 .season-experience-tags{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 29px}
+.mytime-v3 .season-experience-tags span{font-size:9px;letter-spacing:.07em;border:1px solid #d3dcd1;color:#5e7065;padding:8px 12px}
+.mytime-v3 .season-message-actions{display:flex;flex-wrap:wrap;gap:15px 28px}
+.mytime-v3 .season-link{font-size:11px;font-weight:700;border-bottom:1px solid #5a6c5d;padding-bottom:8px;text-decoration:none;display:flex;align-items:center;gap:22px}
+.mytime-v3 .season-link span{font-size:18px}
+.mytime-v3 .season-selector{display:grid;grid-template-columns:repeat(4,1fr);margin-top:18px;gap:11px}
+.mytime-v3 .season-selector button{text-align:left;border:1px solid #d2d8ca;background:#fbf7ee;min-height:109px;padding:18px 21px;cursor:pointer;position:relative;display:flex;flex-direction:column;transition:background .2s,border-color .2s}
+.mytime-v3 .season-selector button.active{background:#dfe8da;border-color:#8fa48d}
+.mytime-v3 .season-selector button>span{font-size:9px;letter-spacing:.12em;color:#b08370}
+.mytime-v3 .season-selector button strong{font-family:var(--serif);font-size:24px;font-weight:500;line-height:1.3}
+.mytime-v3 .season-selector button small{font-size:9px;color:#889389}
+.mytime-v3 .season-selector button i{position:absolute;right:16px;top:28px;font-family:var(--serif);font-size:29px;font-style:normal;color:#bd8c71}
+.mytime-v3 .season-note{font-size:10px;line-height:1.8;margin:18px 0 0;color:#8c9387}
+.mytime-v3 .season-tone-spring{background:linear-gradient(135deg,#c8d9b4,#92b99e)}
+.mytime-v3 .season-tone-spring .season-poster-sky{background:linear-gradient(180deg,#e7d5c8,#f5dec7 51%,#a9c3a1 52%,#5d987c)}
+.mytime-v3 .season-tone-spring .season-poster-motif{color:#f4e2cd}
+.mytime-v3 .season-tone-summer{background:linear-gradient(135deg,#a9d0c8,#548a92)}
+.mytime-v3 .season-tone-summer .season-poster-sky{background:linear-gradient(180deg,#c8d9d9,#f6dcab 51%,#85b5ac 52%,#226879)}
+.mytime-v3 .season-tone-summer .season-poster-motif{color:#f0deac}
+.mytime-v3 .season-tone-autumn{background:linear-gradient(130deg,#bfbaa5,#789483)}
+.mytime-v3 .season-tone-autumn .season-poster-sky{background:linear-gradient(180deg,#e1b8a6,#f5dcb5 51%,#a29b82 52%,#676d5a)}
+.mytime-v3 .season-tone-autumn .season-poster-motif{color:#da9c74}
+.mytime-v3 .season-tone-winter{background:linear-gradient(130deg,#b0bacb,#7d91a1)}
+.mytime-v3 .season-tone-winter .season-poster-sky{background:linear-gradient(180deg,#c4c5da,#e5cfe2 51%,#a9b7bf 52%,#677f97)}
+.mytime-v3 .season-tone-winter .season-poster-motif{color:#e2d9e9}
+.mytime-v3 .d1-short{background:#f8f6ef}
+.mytime-v3 .d1-short-grid{display:grid;grid-template-columns:1fr 1fr;gap:10%;align-items:flex-start}
+.mytime-v3 .d1-short h2{margin:16px 0 27px;font-size:clamp(42px,4.6vw,68px)}
+.mytime-v3 .d1-short h2 em{color:#c38b70}
+.mytime-v3 .d1-short-grid>div:first-child>p:not(.mtv3-eyebrow){color:#68776b;font-size:14px;line-height:1.9;max-width:600px}
+.mytime-v3 .d1-short-stages{border-top:1px solid #cad3c8}
+.mytime-v3 .d1-short-stages>div{display:grid;grid-template-columns:39px 1fr;column-gap:17px;padding:19px 0;border-bottom:1px solid #cad3c8}
+.mytime-v3 .d1-short-stages span{grid-row:1/3;font-family:var(--serif);font-size:24px;color:#bf9278;font-style:italic}
+.mytime-v3 .d1-short-stages strong{font-size:13px}
+.mytime-v3 .d1-short-stages p{font-size:11px;color:#859184;margin:5px 0 0}
+.mytime-v3 .program-hero{background:#f4efe7;padding:57px 0 36px;overflow:hidden;min-height:630px}
+.mytime-v3 .program-hero-grid{display:grid;grid-template-columns:1.02fr .98fr;align-items:center;gap:6%;min-height:585px}
+.mytime-v3 .program-hero-copy{z-index:2;position:relative}
+.mytime-v3 .program-small-rule{display:inline-block;width:29px;height:1px;background:#be8e73;vertical-align:middle;margin-right:10px}
+.mytime-v3 .program-hero-copy .mtv3-eyebrow{font-size:9px;color:#677b6b}
+.mytime-v3 .program-hero-copy h1{font-size:clamp(64px,6.3vw,102px);line-height:1.14;letter-spacing:-.065em;margin:23px 0 25px}
+.mytime-v3 .program-hero-copy h1 em{color:#be886f}
+.mytime-v3 .program-hero-copy>p:not(.mtv3-eyebrow){font-family:var(--serif);font-size:21px;line-height:1.7;color:#5f6d64;max-width:580px;margin-bottom:27px}
+.mytime-v3 .program-hero-links{display:flex;flex-wrap:wrap;gap:20px 29px;align-items:center}
+.mytime-v3 .program-hero-visual{height:555px;position:relative;isolation:isolate}
+.mytime-v3 .program-art-halo,.mytime-v3 .program-music-halo{position:absolute;inset:7% 0 1% 7%;border-radius:50% 50% 35% 35%;background:linear-gradient(145deg,#e0c5af,#b1c4ac 58%,#688b76 58%)}
+.mytime-v3 .program-art-easel{position:absolute;top:11%;left:15%;width:58%;height:78%;background:#faf3e7;padding:18px;transform:rotate(-7deg);box-shadow:20px 28px 23px #3f54453b}
+.mytime-v3 .program-art-work{position:relative;overflow:hidden;height:87%;background:linear-gradient(180deg,#e9cfb7 0 43%,#bcc9b0 44% 58%,#6e9481 59% 78%,#426b5d 79%)}
+.mytime-v3 .program-art-sun{position:absolute;width:82px;height:82px;right:15%;top:13%;border-radius:50%;background:#f9e6ab}
+.mytime-v3 .program-art-ridge{position:absolute;bottom:-24%;width:125%;height:56%;left:-31%;border-radius:50%;background:#749681}
+.mytime-v3 .program-art-ridge.two{left:35%;bottom:-30%;background:#2e695a}
+.mytime-v3 .program-art-flower{position:absolute;z-index:4;bottom:-18%;left:2%;color:#efc6a1;font-size:200px}
+.mytime-v3 .program-art-caption{font-family:var(--serif);font-style:italic;font-size:12px;text-align:right;display:block;color:#8a8e80}
+.mytime-v3 .program-art-sticker,.mytime-v3 .program-music-sticker{position:absolute;right:5%;top:17%;background:#e2aa8d;padding:23px 19px;text-align:center;border-radius:50%;width:126px;height:126px;display:flex;flex-direction:column;justify-content:center;font-family:var(--serif);font-size:17px;line-height:1.4;transform:rotate(12deg);box-shadow:0 0 0 8px #e2aa8d,0 0 0 9px #d5a086}
+.mytime-v3 .program-art-sticker em,.mytime-v3 .program-music-sticker em{font-size:15px}
+.mytime-v3 .program-music{background:#e7e9df}
+.mytime-v3 .program-music-halo{background:linear-gradient(140deg,#bfcfc3,#a9b9b7 47%,#778d8c 47%,#486668 100%)}
+.mytime-v3 .program-music-piano{position:absolute;left:8%;bottom:19%;width:86%;height:193px;background:#24343b;border-radius:14px;padding:30px 13px 12px;box-shadow:16px 24px 31px #1d353c57;transform:rotate(-6deg)}
+.mytime-v3 .program-music-whites{height:100%;display:flex;gap:2px}
+.mytime-v3 .program-music-whites i{display:block;flex:1;background:#f7f2ea;border-radius:0 0 5px 5px}
+.mytime-v3 .program-music-blacks{position:absolute;top:30px;left:7%;width:86%;height:75px;display:flex;justify-content:space-around}
+.mytime-v3 .program-music-blacks i{width:10%;background:#152329;border-radius:0 0 5px 5px}
+.mytime-v3 .program-music-sheet{position:absolute;left:23%;top:7%;width:52%;height:227px;background:#fbf8ea;box-shadow:8px 13px 12px #172c2647;transform:rotate(5deg);padding:28px 17px;text-align:center;z-index:2}
+.mytime-v3 .program-music-sheet span{font-size:10px;letter-spacing:.14em;color:#889484}
+.mytime-v3 .program-music-sheet strong{display:block;font-family:var(--serif);font-size:54px;letter-spacing:.04em;color:#a48e7f;font-weight:400;margin:19px 0}
+.mytime-v3 .program-music-sheet em{display:block;font-family:var(--serif);font-size:17px;color:#63786d}
+.mytime-v3 .program-music-sticker{top:auto;bottom:5%;right:5%;background:#e3c6a4;box-shadow:0 0 0 8px #e3c6a4,0 0 0 9px #d8b79a}
+.mytime-v3 .program-ticker{background:#2a473b;color:#e7d9c7;padding:19px 0;overflow:hidden}
+.mytime-v3 .program-ticker .wrap{text-align:center;letter-spacing:.19em;font-size:10px;font-weight:700;white-space:nowrap}
+.mytime-v3 .program-ticker span{color:#c99271;font-size:18px;vertical-align:middle;margin:0 22px}
+.mytime-v3[data-page="piano"] .collections-section{background:#eff1ec}
+.mytime-v3[data-page="acrylic"] .collections-section{background:#efede1}
+.mytime-v3[data-page="acrylic"] .collections-intro h2,
+.mytime-v3[data-page="piano"] .collections-intro h2{font-size:clamp(48px,5vw,75px)}
+.mytime-v3[data-page="acrylic"] .collections-intro>p,
+.mytime-v3[data-page="piano"] .collections-intro>p{max-width:410px}
+.mytime-v3 .combo-section{background:#f8f5ed}
+.mytime-v3 .combo-music-section{background:#ebece5}
+.mytime-v3 .combo-intro{display:flex;gap:10%;justify-content:space-between;align-items:flex-end;margin-bottom:46px}
+.mytime-v3 .combo-intro>div{flex:1}
+.mytime-v3 .combo-intro h2{font-size:clamp(46px,4.8vw,70px);margin:19px 0 0}
+.mytime-v3 .combo-intro h2 em{color:#c4876a}
+.mytime-v3 .combo-intro>p{max-width:390px;color:#738076;font-size:13px;line-height:1.9}
+.mytime-v3 .combo-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;align-items:stretch}
+.mytime-v3 .combo-card-top{position:absolute;left:0;right:0;top:0;z-index:5;padding:18px 20px;display:flex;justify-content:space-between;align-items:flex-start}
+.mytime-v3 .combo-card-top>span:first-child{font-size:9px;font-weight:700;letter-spacing:.13em;color:#fcf7eb}
+.mytime-v3 .combo-count{border-radius:50%;height:48px;width:48px;display:grid;place-items:center;background:#fbf3e7;color:#a77d64;font-family:var(--serif);font-style:italic;font-size:25px}
+.mytime-v3 .combo-card-copy{padding:28px 25px 25px;display:flex;flex-direction:column;flex:1}
+.mytime-v3 .combo-card-copy .mtv3-eyebrow{font-size:9px;color:#ab836e}
+.mytime-v3 .combo-card-copy h3{font-size:39px;margin:9px 0 13px;line-height:1.2}
+.mytime-v3 .combo-card-copy>p:not(.mtv3-eyebrow){font-size:12px;line-height:1.85;color:#6a766c;margin-bottom:16px}
+.mytime-v3 .combo-expand{margin-top:auto;border-top:1px solid #d7e0d4;font-size:11px;color:#617163}
+.mytime-v3 .combo-expand summary{cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:9px;padding:14px 0;font-weight:700;list-style:none;color:#394b3d}
+.mytime-v3 .combo-expand summary::-webkit-details-marker{display:none}
+.mytime-v3 .combo-expand summary span{font-size:20px;font-weight:400}
+.mytime-v3 .combo-expand[open] summary span{transform:rotate(45deg)}
+.mytime-v3 .combo-expand>div{padding:1px 0 17px;line-height:1.85}
+.mytime-v3 .combo-cta{text-decoration:none;background:#274538;color:#fff;font-size:11px;font-weight:700;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;margin-top:13px;transition:background .2s}
+.mytime-v3 .combo-cta:hover{background:#426650}
+.mytime-v3 .combo-cta span{font-size:19px;font-weight:400}
+.mytime-v3[data-page="register"] .signup-section{padding-top:40px}
+.mytime-v3[data-page="register"] .signup-story h2{font-size:clamp(47px,4.6vw,69px)}
+@media(max-width:1190px){.mytime-v3 .program-hero-copy h1{font-size:71px}.mytime-v3 .combo-intro{gap:5%}.mytime-v3 .combo-card-copy{padding:23px 19px}.mytime-v3 .combo-card-copy h3{font-size:33px}}
+@media(max-width:900px){
+.mytime-v3 .season-top{grid-template-columns:1fr;gap:15px}
+.mytime-v3 .season-top>p{max-width:660px}
+.mytime-v3 .season-spotlight{grid-template-columns:1fr}
+.mytime-v3 .season-poster{width:35%;left:27%;top:10%;height:78%}
+.mytime-v3 .season-mini-music{width:26%;height:29%;right:18%}
+.mytime-v3 .season-message{padding:40px 48px}
+.mytime-v3 .season-message h3{font-size:48px}
+.mytime-v3 .d1-short-grid{grid-template-columns:1fr;gap:35px}
+.mytime-v3 .program-hero-grid{grid-template-columns:1fr;gap:20px}
+.mytime-v3 .program-hero-copy{padding-top:20px}
+.mytime-v3 .program-hero-copy h1{font-size:76px}
+.mytime-v3 .program-hero-visual{height:470px;max-width:650px;width:100%;margin:auto}
+.mytime-v3 .combo-grid{grid-template-columns:1fr;gap:24px;margin:auto}
+.mytime-v3 .combo-intro{display:block}
+.mytime-v3 .combo-intro>p{max-width:690px;margin-top:20px}
+.mytime-v3 .combo-card-copy h3{font-size:42px}
+}
+@media(max-width:600px){
+.mytime-v3 .season-top{margin-bottom:30px}
+.mytime-v3 .season-top h2{font-size:42px}
+.mytime-v3 .season-top>p{font-size:17px}
+.mytime-v3 .season-spotlight{display:block}
+.mytime-v3 .season-canvas-overline{font-size:8px;top:15px;left:15px}
+.mytime-v3 .season-poster{width:47%;height:75%;left:15%;top:13%;padding:7px}
+.mytime-v3 .season-poster-sun{width:47px;height:47px}
+.mytime-v3 .season-poster-motif{font-size:92px;bottom:-23px}
+.mytime-v3 .season-poster-label{font-size:9px}
+.mytime-v3 .season-mini-music{width:38%;height:32%;right:7%;bottom:11%;padding:11px}
+.mytime-v3 .season-mini-music span{font-size:40px}
+.mytime-v3 .season-mini-music small{font-size:7px}
+.mytime-v3 .season-canvas-stamp{width:58px;height:58px;font-size:12px;right:11%;top:13%;box-shadow:0 0 0 4px #e5b494,0 0 0 5px #deb394}
+.mytime-v3 .season-message{padding:31px 23px 33px}
+.mytime-v3 .season-message h3{font-size:37px;margin:10px 0}
+.mytime-v3 .season-message>p:not(.mtv3-eyebrow){font-size:12px}
+.mytime-v3 .season-experience-tags span{font-size:8px}
+.mytime-v3 .season-selector{gap:5px}
+.mytime-v3 .season-selector button{min-height:85px;padding:10px 8px}
+.mytime-v3 .season-selector button span{font-size:8px}
+.mytime-v3 .season-selector button strong{font-size:20px}
+.mytime-v3 .season-selector button small{font-size:7px}
+.mytime-v3 .season-selector button i{font-size:18px;right:5px;top:10px}
+.mytime-v3 .season-note{font-size:9px}
+.mytime-v3 .d1-short h2{font-size:40px}
+.mytime-v3 .program-hero{padding:44px 0 10px;min-height:0}
+.mytime-v3 .program-hero-grid{min-height:0;gap:10px}
+.mytime-v3 .program-hero-copy h1{font-size:clamp(50px,12.5vw,68px);margin:17px 0 20px}
+.mytime-v3 .program-hero-copy>p:not(.mtv3-eyebrow){font-size:17px}
+.mytime-v3 .program-hero-links{gap:16px}
+.mytime-v3 .program-hero-visual{height:365px}
+.mytime-v3 .program-art-easel{padding:11px;left:15%;width:60%;height:81%}
+.mytime-v3 .program-art-flower{font-size:120px}
+.mytime-v3 .program-art-sun{height:55px;width:55px}
+.mytime-v3 .program-art-sticker,.mytime-v3 .program-music-sticker{width:85px;height:85px;font-size:12px;padding:9px}
+.mytime-v3 .program-art-sticker em,.mytime-v3 .program-music-sticker em{font-size:10px}
+.mytime-v3 .program-music-piano{height:135px;padding:20px 10px 8px;bottom:19%}
+.mytime-v3 .program-music-blacks{top:20px;height:55px}
+.mytime-v3 .program-music-sheet{height:180px;top:13%;padding:20px 8px}
+.mytime-v3 .program-music-sheet strong{font-size:32px}
+.mytime-v3 .program-music-sheet em{font-size:12px}
+.mytime-v3 .program-ticker{padding:14px 0}
+.mytime-v3 .program-ticker .wrap{font-size:7px;letter-spacing:.06em;white-space:normal;line-height:1.9}
+.mytime-v3 .program-ticker span{margin:0 8px}
+.mytime-v3 .combo-intro h2{font-size:41px}
+.mytime-v3 .combo-intro>p{font-size:12px}
+.mytime-v3 .combo-card-copy{padding:24px 21px}
+.mytime-v3 .combo-card-copy h3{font-size:39px}
+.mytime-v3 .combo-card-top{padding:14px}
+.mytime-v3 .combo-count{height:38px;width:38px;font-size:21px}
+.mytime-v3 .combo-card-top>span:first-child{font-size:8px}
+}
+
+
+
+/* PAP-2176 native integration: MyTime only. Original V3 visual rules above; new native interactions below. */
+.mytime-v3{min-width:0;min-height:100vh;font-synthesis:none;--mt-header-height:80px;--public-sans:var(--sans);--public-display:var(--serif);--public-h3:29px;--public-button:13px;--public-radius:18px;--public-pill:999px;--public-line:var(--line);--public-chocolate:#704d3b}
+.mytime-v3 h1,.mytime-v3 h2,.mytime-v3 h3{font-family:var(--serif)}
+.mytime-v3 h1 em,.mytime-v3 h2 em,.mytime-v3 h3 em{font-family:var(--serif)}
+.mytime-v3 .mt-header-slot{height:var(--mt-header-height)}
+.mytime-v3 .mt-header-frame{position:fixed;inset:0 0 auto;z-index:80;transform:translateY(0);transition:transform 220ms ease}
+.mytime-v3 .mt-header-frame[data-mt-header-state=hidden]{transform:translateY(-100%);pointer-events:none}
+.mytime-v3 .mt-header-frame:focus-within{transform:translateY(0);pointer-events:auto}
+.mytime-v3 .mtv3-site-header{position:relative;min-height:var(--mt-header-height);height:var(--mt-header-height)}
+.mytime-v3 .desktop-nav a[aria-current=page]{color:var(--terra);text-decoration:underline;text-underline-offset:5px}
+.mytime-v3 .header-cta,.mytime-v3 .desktop-nav a,.mytime-v3 .mobile-nav a{min-height:44px;align-items:center;display:inline-flex}
+.mytime-v3 .header-actions .locale-toggle{font-family:var(--sans);font-size:10px}
+.mytime-v3 .menu-toggle{min-width:44px;min-height:44px}
+.mytime-v3 .mobile-nav{max-height:calc(100dvh - var(--mt-header-height));overflow:auto;background:var(--paper)}
+.mytime-v3 section[id]{scroll-margin-top:calc(var(--mt-header-height) + 12px)}
+.mytime-v3 .mt-tagline{font:600 14px/1.6 var(--sans);color:var(--forest);margin:0 0 15px}
+.mytime-v3 .mt-work-list{padding:14px 0 20px;border-top:1px solid var(--line);min-width:0}
+.mytime-v3 .mt-work-list span{overflow-wrap:anywhere}
+.mytime-v3 .mt-work-list [data-music-credit]{font:400 12px/1.5 var(--sans);color:#65706a}
+.mytime-v3 .season-message .mt-work-list{margin-top:15px}
+.mytime-v3 .mt-filters{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 24px}
+.mytime-v3 .mt-filters button{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;min-height:44px;padding:8px 16px;font-size:12px}
+.mytime-v3 .mt-filters button[aria-pressed=true]{background:var(--forest);color:white}
+.mytime-v3 .mt-collection-card{background:#fcfaf5;border:1px solid var(--line);min-width:0;display:flex;flex-direction:column}
+.mytime-v3 .mt-collection-cover{height:220px;position:relative;overflow:hidden;display:grid;place-items:center;background:#d8d4c3;color:#365d50}
+.mytime-v3 .mt-collection-cover span{font:500 75px/1 var(--serif);z-index:1}
+.mytime-v3 .mt-collection-cover i{position:absolute;bottom:-40%;left:10%;width:100%;height:85%;border-radius:50%;background:#83937b;opacity:.66}
+.mytime-v3 .mt-collection-cover em{position:absolute;bottom:12px;left:14px;font:500 12px/1.4 var(--serif);z-index:1}
+.mytime-v3 .mt-collection-cover.season-tone-winter{background:#d9c4d9}
+.mytime-v3 .mt-collection-cover.season-tone-summer{background:#c5dce0}
+.mytime-v3 .mt-collection-cover.season-tone-spring{background:#dbe6ce}
+.mytime-v3 .mt-combo-visual{display:flex;align-items:center;justify-content:center;gap:6px;background:#eadfce;padding:20px;min-height:180px}
+.mytime-v3 .mt-combo-visual span{min-width:0;flex:1;display:grid;place-items:center;aspect-ratio:3/4;background:#a8b9a0;color:#fff7e6;border:5px solid #fff9ef;font:500 clamp(18px,3vw,36px)/1 var(--serif);box-shadow:2px 5px 9px #27382e22}
+.mytime-v3 .mt-combo-visual span[data-tone="1"]{background:#536c74}.mytime-v3 .mt-combo-visual span[data-tone="2"]{background:#c38b73}.mytime-v3 .mt-combo-visual span[data-tone="3"]{background:#887c9d}
+.mytime-v3 .mt-listening{display:grid;grid-template-columns:68px 1fr;align-items:center;gap:14px;padding:12px;border:1px solid var(--line);border-radius:14px;background:#fff8ef;margin-top:22px;max-width:420px}
+.mytime-v3 .mt-vinyl{display:grid;place-items:center;border-radius:50%;width:68px;aspect-ratio:1;background:repeating-radial-gradient(#283c35 0px,#283c35 3px,#48594f 4px,#283c35 5px);color:#ead2ac;font-size:26px}
+.mytime-v3 .mt-listening strong{display:block;font:500 22px/1.3 var(--serif)}
+.mytime-v3 .mt-author,.mytime-v3 .mt-listening small,.mytime-v3 .mt-listening a{display:block;font-size:11px;margin-top:5px}
+.mytime-v3 .mt-listening button{background:var(--forest);color:white;border:0;width:44px;height:44px;border-radius:50%;margin-top:8px}
+.mytime-v3 .mt-preview{padding:12px;background:#f3e6d6;font-size:12px;border-radius:8px}
+.mytime-v3 .mt-form{border:0;padding:0;margin:0;display:grid;gap:16px;min-width:0}
+.mytime-v3 .mt-form label{display:grid;gap:6px;font-weight:600;font-size:13px}
+.mytime-v3 .mt-form input:not([type=checkbox]),.mytime-v3 .mt-form select{min-height:46px;padding:10px 12px;border:1px solid var(--line);background:#fffdf8;border-radius:8px;min-width:0;width:100%;font:inherit}
+.mytime-v3 .mt-form .mt-consent{grid-template-columns:18px 1fr;align-items:flex-start;font-weight:400}
+.mytime-v3 .mt-form:disabled{opacity:.7}
+.mytime-v3 .site-footer{padding-bottom:90px}
+@media(max-width:1100px){.mytime-v3 .mtv3-site-header{gap:14px;padding-inline:24px}.mytime-v3 .desktop-nav{gap:16px}}
+@media(max-width:1100px){.mytime-v3{--mt-header-height:68px}.mytime-v3 .mtv3-site-header{display:flex;justify-content:space-between;padding-inline:20px;gap:8px}.mytime-v3 .desktop-nav{display:none}.mytime-v3 .menu-toggle{display:flex}.mytime-v3 .header-cta{display:none}.mytime-v3 .mobile-nav.is-open{display:flex;flex-direction:column;padding:12px 20px;position:absolute;top:100%;left:0;right:0;border-bottom:1px solid var(--line)}.mytime-v3 .mobile-nav a{padding:8px 0}.mytime-v3 .mt-collection-cover{height:200px}}
+@media(max-width:600px){.mytime-v3 .brand-words{gap:4px}.mytime-v3 .brand-words strong{font-size:17px}.mytime-v3 .brand-words small{font-size:10px}.mytime-v3 .mtv3-site-header{padding-inline:12px}.mytime-v3 .header-actions{gap:6px}.mytime-v3 .brand-sigil{width:24px}.mytime-v3 .mtv3-hero h1,.mytime-v3 .program-hero-copy h1{white-space:normal;overflow-wrap:normal}.mytime-v3 .mt-collection-cover{height:160px}.mytime-v3 .mt-listening{grid-template-columns:50px 1fr}.mytime-v3 .mt-vinyl{width:50px}.mytime-v3 .mt-combo-visual{min-height:130px;padding:12px}.mytime-v3 .mt-filters button{font-size:11px;padding:8px 10px}}
+@media(prefers-reduced-motion:reduce){.mytime-v3 .mt-header-frame{transition:none}.mytime-v3 *{animation:none;transition:none}}
+
+/* PAP-2176: native V3 collection modal, two-column cover + repertoire. */
+.mytime-v3 .mt-collection-open{display:flex;justify-content:space-between;align-items:center;text-align:left;gap:10px;border:0;border-top:1px solid var(--line);padding:12px 0 0;margin-top:auto;min-height:44px;color:var(--forest);font:600 12px/1.4 var(--sans);background:transparent;width:100%}
+.mytime-v3 .collection-dialog{position:fixed;inset:0;margin:auto;border:0;max-width:880px;width:calc(100% - 44px);max-height:91dvh;padding:0;background:#fcf9f2;color:#293f31;box-shadow:0 30px 95px #17251b50;overflow:auto;font:400 14px/1.65 var(--sans)}
+.mytime-v3 .collection-dialog::backdrop{background:rgba(17,38,28,.68);backdrop-filter:blur(5px)}
+.mytime-v3 .collection-dialog-close{position:absolute;z-index:4;right:12px;top:10px;background:#fcf9f2;border:1px solid #dce2d9;width:44px;height:44px;border-radius:50%;font-size:26px;line-height:1}
+.mytime-v3 .collection-dialog-layout{display:grid;grid-template-columns:minmax(0,.78fr) minmax(0,1fr);min-height:520px}
+.mytime-v3 .collection-dialog-art{min-height:100%;display:grid;place-items:center;position:relative;overflow:hidden;background:#d0d9ca}
+.mytime-v3 .collection-dialog-art.season-tone-winter{background:#d9c4d9}.mytime-v3 .collection-dialog-art.season-tone-summer{background:#c5dce0}.mytime-v3 .collection-dialog-art.season-tone-spring{background:#dbe6ce}.mytime-v3 .collection-dialog-art.season-tone-autumn{background:#ddd0b8}
+.mytime-v3 .mt-cover-overline,.mytime-v3 .mt-cover-edition{position:absolute;left:24px;letter-spacing:.12em;font-size:10px;font-weight:600}.mytime-v3 .mt-cover-overline{top:24px}.mytime-v3 .mt-cover-edition{bottom:24px}
+.mytime-v3 .mt-collection-vinyl{width:76%;aspect-ratio:1;border-radius:50%;display:grid;place-content:center;text-align:center;gap:8px;background:repeating-radial-gradient(#24372f 0px,#24372f 5px,#46594b 6px,#24372f 8px);box-shadow:12px 16px 28px #17251b40;color:#f5e7cb;position:relative}
+.mytime-v3 .mt-collection-vinyl:before{content:"";position:absolute;inset:34%;border-radius:50%;background:#b77f68}.mytime-v3 .mt-collection-vinyl span,.mytime-v3 .mt-collection-vinyl small{position:relative}.mytime-v3 .mt-collection-vinyl span{font-size:28px}.mytime-v3 .mt-collection-vinyl small{font-size:9px}
+.mytime-v3 .mt-collection-framed{width:66%;aspect-ratio:3/4;border:12px solid #faf2e0;box-shadow:14px 21px 30px #172d1a3a;background:linear-gradient(160deg,#eac9ad 0 40%,#a8b89f 41% 65%,#537a68 66%);display:grid;place-items:center;font:500 60px/1 var(--serif);color:#fff1be;transform:rotate(-4deg)}
+.mytime-v3 .collection-dialog-copy{padding:54px 36px 32px;max-height:min(91dvh,750px);overflow:auto;min-width:0}
+.mytime-v3 .collection-dialog-copy h2{font-size:clamp(35px,4.2vw,53px);line-height:1.13;margin:15px 0 14px}
+.mytime-v3 .collection-dialog-copy>p{font-size:13px;line-height:1.8;color:#69786a}
+.mytime-v3 .collection-dialog-copy .collection-dialog-section-label{font-size:10px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#9d7c69;margin:20px 0 9px}
+.mytime-v3 .collection-dialog-items{display:grid;gap:9px}
+.mytime-v3 .collection-artwork-item{border:1px solid #dce4d9;padding:10px 12px;background:#f5f4eb;min-width:0;display:grid;gap:4px}
+.mytime-v3 .collection-artwork-item>small{font-size:9px;letter-spacing:.08em;color:#69786a}
+.mytime-v3 .collection-song-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.mytime-v3 .collection-song-title{min-width:0;flex:1;overflow-wrap:anywhere;font-size:13px;line-height:1.5;color:#314b3b}.mytime-v3 .collection-song-title strong,.mytime-v3 .collection-song-title small,.mytime-v3 .collection-song-title [data-music-credit]{display:block}.mytime-v3 .collection-song-title small,.mytime-v3 .collection-song-title [data-music-credit]{font-size:11px;color:#65706a;font-weight:400}
+.mytime-v3 .collection-song-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.mytime-v3 .collection-song-preview{display:grid;place-items:center;width:44px;height:44px;padding:0;background:transparent;border:0;border-radius:50%;color:#466b50}.mytime-v3 .collection-song-preview span{display:grid;place-items:center;width:30px;height:30px;background:#dfe9df;border-radius:50%;font-size:12px}.mytime-v3 .collection-song-preview[aria-pressed=true] span{background:#365942;color:#fff}
+.mytime-v3 .collection-song-pick{display:inline-flex;align-items:center;min-height:44px;border:1px solid #bfd0bd;background:#fffdf9;color:#4e7057;border-radius:3px;padding:7px 10px;font:500 11px/1.4 var(--sans);white-space:nowrap}
+.mytime-v3 .collection-dialog-copy .collection-dialog-disclaimer{font-size:11px;line-height:1.7;color:#65706a;margin:16px 0}
+.mytime-v3 .collection-official{display:block;font-size:12px;text-decoration:underline;margin-bottom:14px}
+.mytime-v3 .collection-dialog-cta{min-height:44px;font-size:12px;padding:12px 18px}
+@media(max-width:760px){.mytime-v3 .collection-dialog{width:calc(100% - 24px)}.mytime-v3 .collection-dialog-layout{grid-template-columns:1fr;min-height:0}.mytime-v3 .collection-dialog-art{height:190px;min-height:190px}.mytime-v3 .mt-collection-vinyl{width:148px}.mytime-v3 .mt-collection-framed{width:105px;border-width:7px}.mytime-v3 .mt-cover-overline,.mytime-v3 .mt-cover-edition{left:12px;font-size:9px}.mytime-v3 .mt-cover-overline{top:12px}.mytime-v3 .mt-cover-edition{bottom:12px}.mytime-v3 .collection-dialog-copy{padding:24px 16px;max-height:none;overflow:visible}.mytime-v3 .collection-dialog-copy h2{font-size:32px}.mytime-v3 .collection-artwork-item{padding:8px}.mytime-v3 .collection-song-head{gap:4px}.mytime-v3 .collection-song-actions{gap:3px}.mytime-v3 .collection-song-pick{font-size:10px;padding:6px}.mytime-v3 .collection-song-title{font-size:12px}}
+
+/* PAP-2191: IA V2 native product and workshop shells. */
+.mytime-v3 .mt-ia-section{background:#f5f1e8}.mytime-v3 .mt-ia-section h2{margin:12px 0 18px}.mytime-v3 .mt-ia-section h1{margin:18px 0;overflow-wrap:anywhere}.mytime-v3 .mt-ia-heading{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}.mytime-v3 .mt-ia-note{font:400 13px/1.6 var(--sans);color:#5d695b;margin:12px 0 24px}.mytime-v3 .mt-week-control{display:flex;align-items:center;gap:12px;font-size:13px}.mytime-v3 .mt-week-control button{width:44px;height:44px;border:1px solid var(--line);background:transparent;border-radius:50%}.mytime-v3 .mt-week-control button:disabled{opacity:.4}.mytime-v3 .mt-event-card{display:grid;grid-template-columns:minmax(100px,1fr) minmax(0,2fr);gap:24px;align-items:center;background:#fcf8ee;border:1px solid var(--line);padding:24px}.mytime-v3 .mt-event-thumb{aspect-ratio:4/3;background:linear-gradient(150deg,#7f7298,#e1abae 55%,#7c8f86);display:grid;place-items:center;color:#f8e5cf;font:500 72px/1 var(--serif)}.mytime-v3 .mt-event-card h3{margin:8px 0;font-size:32px}.mytime-v3 .mt-event-card .btn{margin-top:16px}.mytime-v3 .mt-event-empty{padding:30px;border:1px dashed var(--line)}.mytime-v3 .mt-ia-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:24px 0 36px}.mytime-v3 .mt-ia-grid article{padding:24px;background:#fcf8ee;border:1px solid var(--line);min-width:0}.mytime-v3 .mt-ia-grid article>span{color:var(--terra);font-size:13px}.mytime-v3 .mt-ia-grid h3{font-size:24px;margin:10px 0}@media(max-width:760px){.mytime-v3 .mt-event-card,.mytime-v3 .mt-ia-grid{grid-template-columns:1fr}.mytime-v3 .mt-event-thumb{aspect-ratio:16/9}.mytime-v3 .mt-event-card{padding:16px}}
+
+
+/* Program palette: olive Acrylic, Oxford blue Piano. Bounded editorial cards. */
+.mytime-v3{--mt-olive:#69763d;--mt-olive-light:#e3e6ce;--mt-oxford:#183653;--mt-oxford-light:#e0e9f1}
+.mytime-v3 .experience-grid{grid-template-columns:repeat(2,minmax(0,1fr));justify-content:center}
+.mytime-v3 .experience-card{width:100%;box-shadow:0 8px 24px #233b3020;transition:transform .2s ease,box-shadow .2s ease}
+.mytime-v3 .experience-acrylic{background:var(--mt-olive-light);border-top:5px solid var(--mt-olive)}.mytime-v3 .experience-piano{background:var(--mt-oxford-light);border-top:5px solid var(--mt-oxford)}
+.mytime-v3 .experience-acrylic .experience-art{background:linear-gradient(125deg,#d9debb,#84915d)}.mytime-v3 .experience-piano .experience-art{background:linear-gradient(130deg,#b9cfdf,#486a86 58%,#183653)}
+.mytime-v3 .experience-acrylic :is(h3,.mtv3-card-link){color:#475426}.mytime-v3 .experience-piano :is(h3,.mtv3-card-link){color:var(--mt-oxford)}
+.mytime-v3 .experience-copy p{max-width:45ch}.mytime-v3 .program-art{background:var(--mt-olive-light)}.mytime-v3 .program-music{background:var(--mt-oxford-light)}
+.mytime-v3 .program-art .btn-dark{background:var(--mt-olive);color:white}.mytime-v3 .program-music .btn-dark{background:var(--mt-oxford);color:white}
+.mytime-v3 .program-art-halo{background:linear-gradient(145deg,#e1e4cb,#acb68b 58%,#69763d 58%)}.mytime-v3 .program-music-halo{background:linear-gradient(140deg,#d8e4ee,#adc2d2 47%,#7391a9 47%,#183653)}
+.mytime-v3 .collection-grid{grid-template-columns:repeat(4,minmax(0,1fr));justify-content:center}.mytime-v3 .combo-grid,.mytime-v3 .mt-ia-grid{grid-template-columns:repeat(3,minmax(0,1fr));justify-content:center}.mytime-v3 .mt-event-card{margin-inline:auto}
+@media(hover:hover) and (pointer:fine){.mytime-v3 .experience-card:hover{transform:translateY(-4px);box-shadow:0 15px 30px #233b3033}}
+@media(max-width:900px){.mytime-v3 .collection-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mytime-v3 .combo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.mytime-v3 .mt-ia-grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.mytime-v3 .experience-grid,.mytime-v3 .collection-grid,.mytime-v3 .combo-grid{grid-template-columns:minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce){.mytime-v3 .experience-card{transition:none}}
+
+/* Same section width as PINO, independent MyTime typography/palette. */
+.mytime-v3 .wrap{width:var(--public-content-width)}
+.mytime-v3 .mtv3-hero,.mytime-v3 .program-hero{width:100%;max-width:none}
+.mytime-v3 .hero-inner,.mytime-v3 .program-hero-grid{width:calc(100% - 2 * var(--public-gutter));max-width:none}
+@media(min-width:901px){.mytime-v3 .hero-inner,.mytime-v3 .program-hero-grid{padding-inline:clamp(0px,calc((100vw - 1360px)/2),100px)}.mytime-v3 .mtv3-site-header{gap:12px;padding-inline:max(var(--public-gutter),calc((100vw - var(--public-content-max))/2))}}
+
+/* PAP-2191 — focused MyTime navigation and weekly mock carousel. */
+.mytime-v3 .v3-site-header .desktop-nav{gap:18px}.mytime-v3 .header-secondary{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 0 6px;border:0;border-radius:0;background:transparent;color:#475426;font-size:11px;font-weight:700;white-space:nowrap;text-decoration:underline;text-decoration-color:currentColor;text-decoration-thickness:1px;text-underline-offset:4px}.mytime-v3 .header-secondary:hover{background:transparent;color:#69763d}
+.mytime-v3 .v3-site-header .header-cta,.mytime-v3 .mobile-nav .header-cta{background:var(--mt-olive);color:white;border-color:var(--mt-olive);justify-content:center}.mytime-v3 .v3-site-header .header-cta:hover{background:#53612f}
+@media(min-width:1101px){.mytime-v3 .mtv3-site-header{grid-template-columns:auto minmax(0,1fr) auto}.mytime-v3 .desktop-nav{justify-content:center}.mytime-v3 .header-actions{gap:7px}.mytime-v3 .header-cta{padding-inline:14px}}
+@media(max-width:1100px){.mytime-v3 .header-actions>.header-secondary{display:none}.mytime-v3 .mobile-nav .header-secondary,.mytime-v3 .mobile-nav .header-cta{display:flex;margin-top:8px;padding:10px 16px}}.mytime-v3 .mobile-nav .header-secondary{border:0;background:transparent;text-decoration:underline;text-decoration-color:currentColor;text-decoration-thickness:1px;text-underline-offset:4px;color:#475426}
+.mytime-v3 .mt-week-slide{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.mytime-v3 .mt-workshop-card{min-width:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fcfaf3;box-shadow:0 6px 20px #233b3012}
+.mytime-v3 .mt-workshop-art{position:relative;isolation:isolate;aspect-ratio:16/9;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;padding:22px;color:#fff8eb;overflow:hidden;background:#7f7298}
+.mytime-v3 .mt-workshop-art i{position:absolute;z-index:-1;top:14%;right:9%;width:30%;aspect-ratio:1;border-radius:50%;background:#f9d9a2}.mytime-v3 .mt-workshop-art span{font-size:10px;font-weight:700;letter-spacing:.12em}.mytime-v3 .mt-workshop-art strong{font:500 clamp(25px,3vw,40px)/1.1 var(--serif);text-shadow:0 2px 8px #0005}
+.mytime-v3 .mt-workshop-tone-pink{background:linear-gradient(155deg,#786680 0%,#e1abae 58%,#6b647e 59%)}.mytime-v3 .mt-workshop-tone-moon{background:linear-gradient(155deg,#172b43 55%,#536d8d 56%,#293e58)}.mytime-v3 .mt-workshop-tone-matcha{background:linear-gradient(155deg,#677442 52%,#a9b58a 53%,#4d603e)}.mytime-v3 .mt-workshop-tone-blue{background:linear-gradient(155deg,#304b75 55%,#8cb0c8 56%,#3a6487)}.mytime-v3 .mt-workshop-tone-clay{background:linear-gradient(155deg,#a06a50 55%,#d6b18d 56%,#696b42)}
+.mytime-v3 .mt-workshop-copy{display:flex;flex-direction:column;align-items:flex-start;flex:1;gap:10px;padding:24px}.mytime-v3 .mt-workshop-copy h3{font-size:clamp(26px,3vw,36px);line-height:1.16;margin:0}.mytime-v3 .mt-workshop-copy p{margin:0}.mytime-v3 .mt-workshop-status{font-size:11px;color:#5b6751;margin-top:auto}.mytime-v3 .mt-workshop-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;width:100%;margin-top:6px}.mytime-v3 .mt-workshop-ask,.mytime-v3 .mt-workshop-detail{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border:1px solid var(--mt-olive);border-radius:999px;font-weight:700;font-size:12px;text-decoration:none;text-align:center}.mytime-v3 .mt-workshop-ask{background:var(--mt-olive);color:#fff}.mytime-v3 .mt-workshop-ask:hover{background:#53612f}.mytime-v3 .mt-workshop-detail{color:#475426}
+.mytime-v3 .mt-week-dots{display:flex;justify-content:center;gap:4px;margin-top:14px}.mytime-v3 .mt-week-dots button{width:44px;height:44px;display:grid;place-items:center;border:0;background:transparent}.mytime-v3 .mt-week-dots span{width:9px;height:9px;border-radius:50%;background:#b8c0a4}.mytime-v3 .mt-week-dots button[aria-current="true"] span{background:var(--mt-olive);width:22px;border-radius:10px}
+@media(max-width:600px){.mytime-v3 .mt-week-slide{grid-template-columns:1fr}.mytime-v3 .mt-workshop-copy{padding:16px}.mytime-v3 .mt-workshop-art{padding:16px}}
+
+/* PAP-2191 — MyTime header mirrors PINO's three-zone homepage composition. */
+@media(min-width:1101px){.mytime-v3 .mtv3-site-header{grid-template-columns:minmax(0,1fr) 190px minmax(0,1fr);gap:0}.mytime-v3 .mtv3-site-header>.brand{grid-column:2;grid-row:1;justify-self:center;position:relative}.mytime-v3 .mtv3-site-header>.desktop-nav{grid-column:1;grid-row:1;width:100%;justify-content:space-between;gap:0}.mytime-v3 .mtv3-site-header>.header-actions{grid-column:3;grid-row:1;width:100%;justify-self:stretch;justify-content:space-between;gap:8px}.mytime-v3 .mtv3-site-header>.header-actions>.header-cta{padding-inline:12px}.mytime-v3 .mtv3-site-header>.header-actions>.locale-toggle{flex:0 0 auto}}
+
+
+/* PAP-2191 — full-width desktop navigation, centered wordmark and balanced side groups. */
+@media(min-width:1101px){
+.mytime-v3 .mtv3-site-header{width:100%;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:0;padding-inline:24px}
+.mytime-v3 .mtv3-site-header>.brand{grid-column:2;grid-row:1;justify-self:center;gap:0}
+.mytime-v3 .mtv3-site-header>.brand .brand-sigil{width:60px;height:60px;max-width:none;max-height:60px;flex:0 0 60px}
+.mytime-v3 .mtv3-site-header>.brand .brand-words{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;line-height:1}
+.mytime-v3 .mtv3-site-header>.brand .brand-words strong{font-size:18px}
+.mytime-v3 .mtv3-site-header>.brand .brand-words small{font-size:10px}
+.mytime-v3 .mtv3-site-header>.desktop-nav{grid-column:1;grid-row:1;justify-self:center;display:flex;align-items:center;justify-content:center;gap:50px;width:auto}
+.mytime-v3 .mtv3-site-header>.header-actions{grid-column:3;grid-row:1;justify-self:center;display:flex;align-items:center;justify-content:center;gap:50px;width:auto}
+.mytime-v3 .mtv3-site-header>.header-actions>.header-cta{min-height:44px;padding:8px 14px}
+}
+
+/* PAP-2226: portrait phones get a full menu; larger/landscape views keep left links. */
+@media(max-width:600px) and (orientation:portrait){.mytime-v3 .desktop-nav{display:none}.mytime-v3 .header-actions>*:not(.menu-toggle){display:none}.mytime-v3 .menu-toggle{display:flex}.mytime-v3 .mobile-nav.is-open{display:flex;position:absolute;top:100%;left:0;right:0;z-index:80}.mytime-v3 .mobile-nav:not(.is-open){display:none}}
+@media(min-width:601px),(orientation:landscape){.mytime-v3 .desktop-nav{display:flex}.mytime-v3 .header-actions>.header-secondary,.mytime-v3 .header-actions>.header-cta,.mytime-v3 .header-actions>.locale-toggle{display:none}.mytime-v3 .menu-toggle{display:flex}.mytime-v3 .mobile-nav.is-open{display:flex;position:absolute;top:100%;right:0;left:auto;width:min(360px,100vw);z-index:80}.mytime-v3 .mobile-nav:not(.is-open){display:none}}
+
+/* PAP-2226: shared 900px responsive header boundary. */
+@media (max-width:900px){
+.mytime-v3 .mtv3-site-header{display:flex;justify-content:space-between;gap:8px}
+.mytime-v3 .mtv3-site-header>.brand{position:static;justify-self:start;gap:0}
+.mytime-v3 .brand-words{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;line-height:1}
+.mytime-v3 .brand-sigil{width:50px;height:50px;max-height:50px;flex:0 0 50px}
+.mytime-v3 .desktop-nav,.mytime-v3 .header-actions>*:not(.menu-toggle){display:none}
+.mytime-v3 .menu-toggle{display:flex}
+.mytime-v3 .mobile-nav.is-open{display:flex;flex-direction:column;position:absolute;top:100%;left:0;right:0;width:auto;z-index:80;padding:12px 20px}
+}
+@media (min-width:901px){
+.mytime-v3 .mtv3-site-header{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);width:100%;padding-inline:24px;gap:0}
+.mytime-v3 .mtv3-site-header>.brand{grid-column:2;grid-row:1;justify-self:center;gap:0}
+.mytime-v3 .brand-sigil{width:60px;height:60px;max-height:60px;flex:0 0 60px}
+.mytime-v3 .brand-words{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;line-height:1}
+.mytime-v3 .mtv3-site-header>.desktop-nav{display:flex;grid-column:1;grid-row:1;justify-self:center;width:auto;justify-content:center;gap:clamp(12px,2vw,50px)}
+.mytime-v3 .mtv3-site-header>.header-actions{display:flex;grid-column:3;grid-row:1;justify-self:center;width:auto;justify-content:center;gap:clamp(12px,2vw,50px)}
+.mytime-v3 .header-actions>.header-secondary,.mytime-v3 .header-actions>.header-cta,.mytime-v3 .header-actions>.locale-toggle{display:flex}
+.mytime-v3 .menu-toggle,.mytime-v3 .mobile-nav.is-open{display:none}
+}
+
+/* PAP-2226: language selector remains visible beside the mobile menu. */
+@media(max-width:900px){.mytime-v3 .mtv3-site-header .header-actions>.locale-toggle{display:flex;flex:0 0 auto}}
+/* PAP-2236: keep season artwork in its own grid cell, away from copy */
+@media(min-width:901px){.mytime-v3 .season-spotlight{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:stretch}.mytime-v3 .season-spotlight>.season-canvas{position:relative;min-width:0;min-height:520px;overflow:hidden;isolation:isolate}.mytime-v3 .season-spotlight>.season-message{position:relative;z-index:2;min-width:0;background:#fcfaf2;padding:clamp(28px,4vw,60px)}.mytime-v3 .season-message h3{overflow-wrap:break-word;font-size:clamp(32px,3.5vw,54px)}}
+/* PAP-2245: readable MyTime heading scale and functional combo disclosure. */
+.mytime-v3 h2{font-size:clamp(30px,3.3vw,49px)}
+.mytime-v3 .program-hero-copy h1{font-size:clamp(43px,5vw,72px)}
+.mytime-v3 .collections-intro h2,.mytime-v3[data-page="acrylic"] .collections-intro h2,.mytime-v3[data-page="piano"] .collections-intro h2,.mytime-v3 .combo-intro h2{font-size:clamp(30px,3.3vw,49px)}
+.mytime-v3 .experience-copy h3{font-size:clamp(29px,3vw,43px)}
+.mytime-v3 .combo-card-copy h3{font-size:clamp(25px,2.3vw,33px)}
+.mytime-v3[data-page="register"] .signup-story h1{font-size:clamp(38px,4.1vw,60px);line-height:1.13;overflow-wrap:break-word}
+.mytime-v3 .combo-learn-button{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:44px;padding:12px 0;border:0;background:transparent;color:#394b3d;font:700 12px/1.5 var(--sans);cursor:pointer;text-align:left}
+.mytime-v3 .combo-learn-button span{font-size:22px;font-weight:400}
+.mytime-v3 .combo-learn-button:focus-visible{outline:2px solid #274538;outline-offset:3px}
+.mytime-v3 .combo-learn-body{margin:0;padding:0 0 17px;line-height:1.85}
+@media(max-width:600px){.mytime-v3 h2,.mytime-v3 .combo-intro h2,.mytime-v3 .collections-intro h2{font-size:clamp(29px,8vw,38px)}.mytime-v3[data-page="register"] .signup-story h1{font-size:clamp(35px,9vw,44px)}.mytime-v3 .program-hero-copy h1{font-size:clamp(40px,10vw,55px)}}
+/* PAP-2328 — mobile MyTime hamburger and menu centered consistently. */
+@media(max-width:900px){
+.mytime-v3 .mtv3-site-header .header-actions{display:flex;align-items:center;justify-content:flex-end;align-self:center}
+.mytime-v3 .menu-toggle{align-self:center;justify-self:center;flex:0 0 44px;margin-block:0;padding:0}
+.mytime-v3 .mobile-nav.is-open{align-items:stretch;text-align:center}
+.mytime-v3 .mobile-nav.is-open a{display:flex;align-items:center;justify-content:center;text-align:center;min-height:44px}
+}
+
+/* PAP-2329 — larger MyTime hamburger menu labels. */
+@media(max-width:900px){.mytime-v3 .mobile-nav.is-open a{font-size:16px;line-height:1.4;min-height:48px}}
+
+/* PAP-2331 — prominent uppercase Piner App in MyTime hamburger navigation. */
+@media(max-width:900px){.mytime-v3 .mobile-nav.is-open a[href='https://app.pinohouse.art']{font-size:19px;font-weight:700;line-height:1.3;text-transform:uppercase;letter-spacing:.035em;min-height:52px}}

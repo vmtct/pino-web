@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <main className={styles.page}>
+    <main className={styles.page} data-pino-legal-page>
       <div className={styles.shell}>
         <header className={styles.header}>
           <a className={styles.brand} href="/">PINO House</a>

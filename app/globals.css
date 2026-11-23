@@ -344,3 +344,8 @@ h1 em, h2 em { font-family: "DM Serif Display", serif; font-weight: 400; letter-
 }
 .house-art-image { overflow: hidden; }
 .house-art-image img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* PAP-2226: responsive PINO homepage menu behavior. */
+.pino-menu-toggle{display:none;width:44px;height:44px;border:1px solid var(--line);border-radius:50%;background:transparent;align-items:center;justify-content:center;flex-direction:column;gap:5px;cursor:pointer}.pino-menu-toggle span{width:17px;height:1px;background:var(--ink)}
+@media(max-width:600px) and (orientation:portrait){.homepage .nav-links{display:none}.homepage .pino-header-actions>*{display:none}.homepage .pino-menu-toggle{display:flex}.homepage .pino-menu-open .nav-links,.homepage .pino-menu-open .pino-header-actions{display:flex;grid-column:1/-1}.homepage .pino-menu-open .nav-links{flex-direction:column;align-items:stretch}.homepage .pino-menu-open .pino-header-actions{flex-direction:column;align-items:stretch}}
+@media(min-width:601px),(orientation:landscape){.homepage .nav-links{display:flex}.homepage .pino-header-actions{display:none}.homepage .pino-menu-toggle{display:flex}.homepage .pino-menu-open .pino-header-actions{display:flex;position:absolute;right:24px;top:100%;z-index:90;flex-direction:column;align-items:stretch;padding:12px;background:var(--paper);border:1px solid var(--line);box-shadow:0 12px 24px #1d302218}}

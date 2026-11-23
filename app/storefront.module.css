@@ -1,0 +1,51 @@
+.hero{display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:40px;padding:42px 0 0}.hero>div:first-child{padding:24px 0}.hero h1{font-size:var(--public-h1);margin:12px 0 20px}.hero p{max-width:520px;color:#536353}.hero .tagline{font-weight:700;margin-bottom:12px}.hero img,.art{display:block;width:100%;height:430px;object-fit:cover;border-radius:22px}.primary{display:inline-flex;min-height:44px;align-items:center;margin-top:24px;padding:12px 20px;border-radius:100px;background:var(--pino-theme,#7E3121);color:white;font-weight:700;font-size:var(--public-button)}.adult{--cream:#faf3e8;color:#59382a}.adult .primary{background:#704d3b}.adult .hero p{color:#715b4c}.art{background:#dfcbb4;position:relative;overflow:hidden}.art i{position:absolute;display:block;width:60%;height:75%;border-radius:48% 52% 0 0;transform:rotate(-12deg);background:#b48068;left:12%;bottom:-20%}.art i:nth-child(2){left:48%;bottom:10%;background:#aab59c;transform:rotate(18deg)}.art i:nth-child(3){width:38%;height:55%;left:29%;bottom:-5%;background:#e8d4ad;transform:rotate(-4deg)}.hero+div{scroll-margin-top:16px}.adult article{background:#fffaf1}.adult :global(a[aria-current=page]){text-decoration:underline;text-underline-offset:5px}@media(max-width:760px){.hero{grid-template-columns:1fr;gap:12px;padding-top:24px}.hero img,.art{height:300px}.hero>div:first-child{padding:12px 0}}@media(max-width:390px){.hero img,.art{height:245px}}
+.ageTag{display:inline-block;border:1px solid #cbd4c5;background:#e9eee3;color:var(--pino-theme,#7E3121);border-radius:100px;font-size:12px;font-weight:700;line-height:1.35;padding:5px 10px;margin:0 0 10px}.cadence{display:block;margin-top:14px;padding-top:12px;border-top:1px solid #dcded3;color:var(--pino-theme,#7E3121);font-size:14px;font-weight:700}
+.exampleList{margin-top:16px;padding-top:13px;border-top:1px solid #dfd3c2}.exampleList>span:first-child{display:block;font-size:11px;font-weight:700;letter-spacing:.07em;color:#785640;margin-bottom:6px}.exampleList>p{font-size:var(--public-body);line-height:1.65;color:#493b30}.seasonGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}.seasonCard{display:flex;flex-direction:column;background:#fffaf1;border:1px solid #dfd3c2;border-radius:14px;overflow:hidden;min-width:0}.seasonColor{height:120px;position:relative;overflow:hidden;background:#dce6ce;--shape1:#a0b78d;--shape2:#f3e4bf;--shape3:#718e69}.seasonColor[data-tone=summer]{background:#d5e7e9;--shape1:#8bbdc8;--shape2:#f0eedc;--shape3:#527d92}.seasonColor[data-tone=autumn]{background:#ead7bc;--shape1:#bd8c68;--shape2:#f4e2b9;--shape3:#8a654f}.seasonColor[data-tone=winter]{background:#e8d5e1;--shape1:#b499bb;--shape2:#e9b6b0;--shape3:#70749c}.seasonColor i{position:absolute;display:block;border-radius:50%;width:70%;aspect-ratio:1;background:var(--shape1);left:-8%;bottom:-72%}.seasonColor i:nth-child(2){background:var(--shape2);width:46%;left:44%;bottom:36%}.seasonColor i:nth-child(3){background:var(--shape3);width:65%;left:54%;bottom:-76%}.seasonBody{padding:20px;flex:1;display:flex;flex-direction:column;gap:12px}.seasonBody h3{font-size:var(--public-h3);line-height:1.16}.seasonBody>p{font-size:var(--public-body);line-height:1.65;flex:1}.seasonBody .exampleList{margin-top:0}.seasonBody>span{color:#785640}@media(max-width:1000px){.seasonGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:540px){.seasonGrid{grid-template-columns:1fr}.seasonColor{height:100px}}
+
+.planGrid{display:grid;justify-content:center;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;align-items:stretch;padding-top:15px}.plan{position:relative;border:1px solid #d5ded0;background:#fffdf8;border-radius:20px;padding:30px 24px 24px;display:flex;flex-direction:column;min-width:0}.plan h3{font-size:19px;font-weight:500;line-height:1.16;margin:5px 0 16px}.plan h3>span:first-child{font-size:56px;letter-spacing:-.05em;font-weight:600}.planName{font-size:18px;font-weight:600;min-height:55px;line-height:1.45}.planCadence{padding:15px 0;border-bottom:1px solid #d5ded0;font-weight:600;font-size:15px}.plan ul{list-style:none;margin:20px 0 26px;padding:0;display:grid;gap:12px;flex:1}.plan li{display:flex;align-items:flex-start;gap:9px;font-size:14px;line-height:1.55}.plan li>span:first-child{font-weight:600}.planAction{display:block;padding:12px 8px;text-align:center;border:1px solid var(--pino-theme,#7E3121);border-radius:100px;font-size:14px;font-weight:600}.heroPlan{background:var(--pino-theme,#7E3121);color:#fffdf8;border:2px solid var(--pino-theme,#7E3121);box-shadow:0 10px 28px var(--pino-theme,#7E3121)20;transform:translateY(-8px)}.heroPlan .planCadence{border-color:#a6b39d}.heroPlan .planAction{background:#fffdf8;color:var(--pino-theme,#7E3121);border-color:#fffdf8}.planBadge{position:absolute;top:-14px;left:50%;transform:translateX(-50%);white-space:nowrap;background:#e5d5a7;color:var(--pino-theme,#7E3121);border-radius:100px;padding:6px 13px;font-size:10px;font-weight:700;letter-spacing:.08em}.planNote{margin-top:20px;padding:20px;border-radius:14px;background:#e4eadc;scroll-margin-top:20px}.planNote p{font-size:14px;margin-top:6px}@media(max-width:760px){.planGrid{grid-template-columns:1fr;gap:24px}.heroPlan{transform:none}.planName{min-height:0}}
+
+.ageTag[data-age-band="3-6"]{background:#f7e6ac;border-color:#e6c76d;color:#624909}.ageTag[data-age-band="7+"]{background:#e3ecf5;border-color:#bfcfe0;color:#183653}
+.heroPlan{box-shadow:0 10px 28px #7e312120}.planBadge{color:#7e3121}
+
+.hero{width:100%;max-width:none;margin:0;gap:0;padding:0;background:var(--public-paper);min-height:clamp(460px,55vw,680px);grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.hero>div:first-child{padding:clamp(32px,5vw,72px) clamp(24px,4vw,60px) clamp(32px,5vw,72px) max(var(--public-gutter),calc((100vw - var(--public-content-max))/2))}
+.hero>img,.hero>.art{height:100%;min-height:460px;border-radius:0;object-fit:cover}
+@media(max-width:760px){.hero{min-height:0;grid-template-columns:1fr}.hero>div:first-child{padding:32px var(--public-gutter)}.hero>img,.hero>.art{height:clamp(260px,65vw,420px);min-height:0}}
+
+/* PAP-2191: free Open Studio entry alongside the 12-week plans. */
+.threePlans{grid-template-columns:repeat(3,minmax(0,1fr))}
+.freePlanNote{font-size:13px;line-height:1.5;color:#637063;margin:0 0 16px}
+@media(max-width:760px){.threePlans{grid-template-columns:1fr}}
+
+/* PAP-2191: Afterschool background. */
+.afterschool.afterschool{--cream:#f1ece0;--public-paper:#f1ece0;background:#f1ece0}
+
+/* PAP-2229: consistent Afterschool plan spacing. */
+.threePlans .plan ul{align-content:start;gap:12px}.threePlans .freePlanNote{margin-bottom:24px}
+
+/* PAP-2229 */
+.centerPricing section>div:first-child{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px}.centerPricing section>div:first-child>div>span:empty{display:none}.centerPricing section>div:first-child>p{max-width:100%;text-align:center}.threePlans .plan[data-plan='open-studio'] h3{font-size:13.3px}.afterForm :global(#register){background:#efdacc}
+
+/* PAP-2282: right-aligned Open Studio community image crop. */
+.afterschool :global(a[href='/open-studio']) img{object-position:right center}
+
+
+/* PAP-2283: full-bleed Afterschool hero with legible copy on watercolor background. */
+.afterschool .hero{display:flex;align-items:center;background-color:#f1ece0;background-position:center center;background-size:cover;background-repeat:no-repeat}
+.afterschool .hero>div:first-child{position:relative;z-index:1;width:min(100%,780px);padding-right:clamp(24px,6vw,96px)}
+@media(max-width:760px){.afterschool .hero{min-height:clamp(520px,115vw,660px);align-items:flex-start;background-position:60% center}.afterschool .hero>div:first-child{width:100%;padding:clamp(36px,8vw,64px) var(--public-gutter)}}
+
+
+/* PAP-2283 mobile readability: translucent white glass behind hero copy only. */
+@media(max-width:760px){.afterschool .hero>div:first-child{background:rgba(255,255,255,.20);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);border-radius:0 0 18px 18px;padding-bottom:clamp(32px,7vw,52px)}}
+
+
+/* PAP-227: full-bleed warm gradient behind the three Afterschool path cards. */
+.afterschool :global(section[data-afterschool-path-gradient='true']){width:100vw;max-width:none;margin-left:calc(50% - 50vw);box-sizing:border-box;padding:var(--public-section) max(var(--public-gutter,24px),calc((100vw - var(--public-content-max,1120px))/2)) clamp(56px,7vw,110px);background:linear-gradient(180deg,#FDE7CF 0%,rgba(253,231,207,0) 100%)}
+
+/* PAP-2330 — Open Studio-style warm paper gradient, without frosted glass. */
+@media(max-width:760px){
+.afterschool .hero{position:relative;isolation:isolate}
+.afterschool .hero::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:linear-gradient(180deg,#f1ece0 0%,rgba(241,236,224,.98) 34%,rgba(241,236,224,.5) 57%,transparent 82%)}
+.afterschool .hero>div:first-child{position:relative;z-index:1;background:transparent;border-radius:0;-webkit-backdrop-filter:none;backdrop-filter:none}
+}

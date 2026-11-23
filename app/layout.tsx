@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { Noto_Serif } from "next/font/google";
+import { Noto_Serif, Noto_Sans } from "next/font/google";
 import "./globals.css";
-import "./homepage-mobile.css";
 import "./localization.css";
-import "./public-consistency.css";
 import "./public-enhancements.css";
+import "./marketing-consistency.css";
 import CmsHydrator from "./cms-hydrator";
 import { LocaleProvider } from "./localization";
 import PublicEnhancements from "./public-enhancements";
+import ContactBubble from "./contact-bubble";
 
 const notoSerif = Noto_Serif({
   subsets: ["latin", "vietnamese"],
@@ -15,6 +15,8 @@ const notoSerif = Noto_Serif({
   display: "swap",
   variable: "--font-display-vi",
 });
+
+const notoSans = Noto_Sans({ subsets: ["latin","vietnamese"], weight: "variable", display: "swap", variable: "--font-public-sans" });
 
 const PINO_LOGO = "https://assets.pinohouse.art/core/Pino%20Logo.png";
 
@@ -35,8 +37,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" suppressHydrationWarning className={notoSerif.variable}>
-      <body><LocaleProvider><CmsHydrator>{children}</CmsHydrator><PublicEnhancements /></LocaleProvider></body>
+    <html lang="vi" suppressHydrationWarning className={notoSerif.variable+" "+notoSans.variable}>
+      <body><LocaleProvider><CmsHydrator>{children}</CmsHydrator><PublicEnhancements /><ContactBubble /></LocaleProvider></body>
     </html>
   );
 }

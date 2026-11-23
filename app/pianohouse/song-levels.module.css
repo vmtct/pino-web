@@ -1,0 +1,57 @@
+/* PAP-2252 — PianoHouse song journey: one source of truth for each rule. */
+.section{
+  --level-ink:var(--navy-deep,#102c50);
+  --level-muted:var(--navy-soft,#5d7085);
+  --level-gold:var(--gold,#b77c35);
+  --level-line:var(--line,rgba(115,78,55,.14));
+  --level-paper:var(--paper,#fbf7f1);
+  padding:58px 6.2vw 62px;
+  background:var(--level-paper);
+  color:var(--level-ink);
+  border-block:1px solid var(--level-line);
+  font-family:var(--public-sans,Arial,sans-serif);
+}
+.intro{width:100%;margin-bottom:26px}
+.kicker,.detail small{font-size:10px;font-weight:700;letter-spacing:.14em;color:var(--level-gold)}
+.intro h2{font-size:clamp(29px,3.25vw,44px);line-height:1.13;font-weight:500;letter-spacing:-.025em;margin:10px 0 12px;color:var(--level-ink)}
+.intro em{font-weight:400;color:var(--level-gold)}
+.intro>p:last-child{font-size:14px;line-height:1.65;max-width:620px;color:var(--level-muted)}
+.group{margin-bottom:18px}
+.groupHeading{display:flex;align-items:center;gap:18px;border-bottom:1px solid var(--level-line);padding-bottom:9px;margin-bottom:12px}
+.groupHeading>span{font-size:26px;font-weight:400;font-style:italic;color:var(--level-gold)}
+.groupHeading h3{font-size:13px;font-weight:700;letter-spacing:.15em;margin:0 0 3px}
+.groupHeading p{font-size:12px;line-height:1.5;color:var(--level-muted);margin:0}
+.groupHeading small{margin-left:auto;color:var(--level-gold);white-space:nowrap}
+.track{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.level{min-height:116px;cursor:pointer;display:flex;align-items:flex-start;flex-direction:column;text-align:left;padding:12px 13px;border:1px solid var(--level-line);border-radius:11px;background:var(--paper-2,#fffaf4);color:var(--level-ink);font-family:inherit;transition:transform .2s,border-color .2s,background-color .2s}
+.level:hover{transform:translateY(-3px);border-color:var(--level-gold)}
+.level:focus-visible{outline:3px solid var(--level-gold);outline-offset:3px}
+.level.active{border-color:var(--level-gold);background:#f3e6d6}
+.level.milestone{background:#f5e9dc;border-color:rgba(183,124,53,.45)}
+.level.milestone.active{background:#ecd4b8;border-color:var(--level-gold)}
+.level i{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:#f2e4d2;color:var(--level-gold);font-size:14px;margin-bottom:9px}
+.level.milestone i{background:var(--level-gold);color:#fff}
+.level small{font-size:11px;font-weight:700;color:var(--level-gold);margin-bottom:5px}
+.level strong{font-size:14px;font-weight:600}
+.level span{font-size:10px;line-height:1.35;margin-top:5px;color:var(--level-muted)}
+.detail{display:flex;justify-content:space-between;align-items:center;gap:22px;padding:18px 25px;border-radius:13px;background:var(--navy-deep,#102c50);color:#fff}
+.detail small{color:#edc48d}
+.section .detail h3{font-size:clamp(21px,2.4vw,29px);font-weight:500;line-height:1.2;margin:6px 0;color:#fff}
+.detail p{font-size:13px;line-height:1.55;color:#e6edf5;margin:0}
+.detail>i{font-size:29px;color:#edc48d}
+.next{display:flex;align-items:center;gap:20px;margin-top:12px;padding:16px 20px;border:1px solid var(--level-line);border-radius:12px}
+.next>i{font-size:30px;color:var(--level-gold)}
+.next strong{font-size:16px;font-weight:600}
+.next p{font-size:12px;line-height:1.6;color:var(--level-muted);margin:4px 0 0}
+@media(max-width:760px){
+  .section{padding:46px 20px}
+  .intro{margin-bottom:23px}
+  .intro h2{font-size:31px}
+  .groupHeading{gap:10px}
+  .track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-inline:calc((100% - 133px)/2);overscroll-behavior-inline:contain;padding:2px calc((100% - 133px)/2) 12px;gap:10px;scrollbar-width:none}
+  .level{flex:0 0 133px;scroll-snap-align:center}
+  .detail{padding:18px}
+  .detail>i{font-size:28px}
+  .next{padding:16px;align-items:flex-start}
+}
+@media(prefers-reduced-motion:reduce){.level{transition:none}.level:hover{transform:none}}

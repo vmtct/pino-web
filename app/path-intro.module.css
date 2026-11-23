@@ -1,0 +1,82 @@
+/* Shared native path editorial template; no external reference imagery copied. */
+.hero,.ageSection{width:100%;margin:0 auto;display:grid;grid-template-columns:minmax(0, .85fr) minmax(0,1.15fr);overflow:hidden;color:var(--pino-ink)}
+.hero{min-height:clamp(560px,calc(100svh - 80px),760px);background:#f8f2e9;border-bottom:1px solid var(--pino-line);position:relative}
+.heroCopy{padding:clamp(32px,5vw,90px);display:flex;flex-direction:column;justify-content:center;align-items:flex-start;position:relative;min-width:0}
+.heroCopy:before{content:"";width:54px;height:5px;background:var(--path-accent);border-radius:9px;margin-bottom:26px}
+.eyebrow{font:600 11px/1.5 var(--public-sans);letter-spacing:.12em;text-transform:uppercase;color:var(--pino-theme);margin:0 0 12px}
+.age{font:700 12px/1.4 var(--public-sans);border-radius:999px;padding:6px 12px;margin-bottom:18px;background:#e3ecf5;color:#183653}
+.age[data-age-band="3-6"]{background:#f7e6ac;color:#624909}
+.hero h1{font-size:clamp(42px,5.6vw,78px);line-height:1.05;margin:0 0 22px;color:var(--pino-theme);text-wrap:balance}
+.lead{font:500 clamp(18px,2vw,25px)/1.4 var(--public-display);color:var(--pino-theme);margin:0 0 14px}
+.description{font:400 16px/1.75 var(--public-sans);max-width:43ch;margin:0 0 24px}
+.actions{display:flex;gap:12px;flex-wrap:wrap}
+.primary,.secondary{border:1px solid var(--path-accent);text-decoration:none}
+.actions .primary{background:var(--path-accent);color:white}
+[data-path-hero="little-piner"] .actions .primary{background:#e7c351;color:#4a3609;border-color:#e7c351}
+.secondary{color:var(--pino-theme);background:transparent;border-color:#c8b5a6}
+.heroMedia{height:100%;min-height:520px;position:relative}
+.heroMedia img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ageSection{grid-template-columns:1fr 1fr;background:#fcf8f2;min-height:520px;align-items:stretch}
+.ageMedia{min-height:470px;position:relative;overflow:hidden}
+.ageMedia img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ageCopy{padding:clamp(36px,5vw,84px);display:flex;flex-direction:column;justify-content:center;align-items:flex-start;min-width:0}
+.ageCopy h2{max-width:21ch;font-size:clamp(29px,3.2vw,48px);margin:0 0 22px;color:var(--pino-theme)}
+.ageCopy>p:not(.eyebrow){max-width:50ch;font:400 16px/1.8 var(--public-sans);margin:0 0 16px}
+.ageLink{display:inline-flex;align-items:center;color:var(--pino-theme);font-weight:600;min-height:44px;border-bottom:1px solid var(--path-accent)}
+@media(max-width:900px){.hero{min-height:0}.heroCopy,.ageCopy{padding:36px 26px}.hero h1{font-size:clamp(36px,5vw,54px)}.heroMedia,.ageMedia{min-height:470px}}
+@media(max-width:760px){.hero,.ageSection{grid-template-columns:minmax(0,1fr)}.heroCopy,.ageCopy{padding:36px 24px}.heroMedia{height:clamp(310px,75vw,480px);min-height:0}.ageMedia{height:clamp(240px,65vw,380px);min-height:0}.ageSection{min-height:0}.hero h1{font-size:42px}.description,.ageCopy>p:not(.eyebrow){font-size:15px}.actions{gap:8px}}
+
+.ageSection{width:var(--public-content-width);margin-inline:auto}.ageCopy{padding:clamp(24px,3vw,42px)}.ageMedia{min-height:400px}
+@media(max-width:760px){.ageCopy{padding:28px var(--public-gutter)}.ageMedia{min-height:0}}
+
+/* PAP-2247: all three path heroes use full-bleed photography with readable overlaid copy. */
+.hero{display:grid;grid-template-columns:minmax(0,1fr);min-height:clamp(560px,calc(100svh - 80px),760px);isolation:isolate;background:#243b39}
+.heroMedia{position:absolute;inset:0;z-index:-2;width:100%;height:100%;min-height:0}
+.heroMedia img{width:100%;height:100%;object-fit:cover;object-position:center}
+.hero:after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(16,28,28,.88) 0%,rgba(16,28,28,.67) 40%,rgba(16,28,28,.15) 100%);pointer-events:none}
+.heroCopy{z-index:1;max-width:760px;padding:clamp(40px,6vw,96px)}
+.hero .eyebrow,.hero h1,.hero .lead,.hero .description{color:#fffaf1;text-shadow:0 1px 4px #0005}
+.hero .age{box-shadow:0 2px 12px #0003}
+.hero .secondary{color:#fffaf1;background:#ffffff1b;border-color:#ffffffa0}
+@media(max-width:760px){.hero{min-height:620px}.heroMedia{height:100%;min-height:0}.hero:after{background:linear-gradient(180deg,rgba(16,28,28,.8) 0%,rgba(16,28,28,.64) 64%,rgba(16,28,28,.22) 100%)}.heroCopy{padding:44px 24px;justify-content:center}.hero h1{font-size:clamp(39px,9vw,54px)}}
+/* PAP-2247: keep image and shade above hero background, below transparent text layer. */
+.hero .heroMedia{z-index:0}
+.hero::after{z-index:1}
+.hero .heroCopy{z-index:2;background:transparent!important;box-shadow:none}
+.hero .heroCopy::before{background:var(--path-accent)}
+
+/* PAP-2247 root fix: render photo as the hero background itself, not a layered child. */
+.hero[data-path-hero]{background-color:#243b39;background-position:center;background-size:cover;background-repeat:no-repeat;isolation:isolate;gap:0}
+.hero[data-path-hero="pianohouse"]{background-image:linear-gradient(90deg,rgba(16,28,28,.72),rgba(16,28,28,.1)),url("https://assets.pinohouse.art/site/pianohouse/221126/Girls%20Playing%20Piano%20Together.png")}
+.hero[data-path-hero="artchitect"]{background-image:linear-gradient(90deg,rgba(16,28,28,.72),rgba(16,28,28,.1)),url("https://assets.pinohouse.art/site/Artchitect/221126/Vibrant%20Art%20Studio%20Collaboration.png")}
+.hero[data-path-hero="little-piner"]{background-image:linear-gradient(90deg,rgba(250,246,234,.91) 0%,rgba(250,246,234,.77) 37%,rgba(250,246,234,.08) 83%),url("https://assets.pinohouse.art/site/littlePiner/231126/Joyful%20Messy%20Painting%20Day.png")}
+.hero[data-path-hero] .heroMedia{display:none}
+.hero[data-path-hero]::after{display:none}
+.hero[data-path-hero] .heroCopy{background:none!important;opacity:1}
+@media(max-width:760px){.hero[data-path-hero]{background-position:center;background-size:cover}}
+/* PAP-227 Artchitect hero title contrast */
+.hero[data-path-hero="artchitect"] h1{color:#fffaf1;text-shadow:0 2px 14px rgba(0,0,0,.4)}
+
+/* PAP-227: Artchitect contrast and square editorial artwork */
+.hero[data-path-hero="artchitect"] .heroCopy h1,.hero[data-path-hero="artchitect"] .heroCopy h1 span{color:#fffaf1!important;text-shadow:0 2px 14px rgba(0,0,0,.45)}
+.hero[data-path-hero="artchitect"] + .ageSection .ageMedia{aspect-ratio:1/1;min-height:0;align-self:center}
+.hero[data-path-hero="artchitect"] + .ageSection .ageMedia img{object-fit:cover;object-position:center}
+@media(max-width:760px){.hero[data-path-hero="artchitect"] + .ageSection .ageMedia{width:100%;height:auto;aspect-ratio:1/1}}
+
+/* PAP-2301 PianoHouse hero contrast */
+.hero[data-path-hero="pianohouse"] .heroCopy h1,.hero[data-path-hero="pianohouse"] .heroCopy h1 span{color:#fffaf1!important;text-shadow:0 2px 14px rgba(0,0,0,.5)}
+
+/* PAP-2304: Little Piner warm light overlay with dark legible copy. */
+.hero[data-path-hero="little-piner"] .eyebrow,.hero[data-path-hero="little-piner"] h1,.hero[data-path-hero="little-piner"] h1 span,.hero[data-path-hero="little-piner"] .lead,.hero[data-path-hero="little-piner"] .description{color:#392d24!important;text-shadow:none}
+.hero[data-path-hero="little-piner"] .secondary{color:#392d24;background:rgba(255,250,241,.7);border-color:rgba(75,57,39,.48)}
+@media(max-width:760px){.hero[data-path-hero="little-piner"]{background-image:linear-gradient(180deg,rgba(250,246,234,.93) 0%,rgba(250,246,234,.82) 56%,rgba(250,246,234,.35) 100%),url("https://assets.pinohouse.art/site/littlePiner/231126/Joyful%20Messy%20Painting%20Day.png")}}
+
+/* PAP-2306: Little Piner light veil covers only the left half of the hero. */
+.hero[data-path-hero="little-piner"]{background-image:linear-gradient(90deg,rgba(250,246,234,.94) 0%,rgba(250,246,234,.84) 80%,rgba(250,246,234,0) 100%),url("https://assets.pinohouse.art/site/littlePiner/231126/Joyful%20Messy%20Painting%20Day.png");background-size:50% 100%,cover;background-position:left center,center;background-repeat:no-repeat}
+@media(max-width:760px){.hero[data-path-hero="little-piner"]{background-image:linear-gradient(90deg,rgba(250,246,234,.94),rgba(250,246,234,.7)),url("https://assets.pinohouse.art/site/littlePiner/231126/Joyful%20Messy%20Painting%20Day.png");background-size:100% 100%,cover}}
+
+/* PAP-2318: desktop dark veil only over the left 50% of Artchitect and PianoHouse heroes */
+@media(min-width:761px){
+.hero[data-path-hero="artchitect"]{background-image:linear-gradient(90deg,rgba(16,28,28,.78) 0%,rgba(16,28,28,.54) 72%,rgba(16,28,28,0) 100%),url("https://assets.pinohouse.art/site/Artchitect/221126/Vibrant%20Art%20Studio%20Collaboration.png");background-size:50% 100%,cover;background-position:left center,center;background-repeat:no-repeat}
+.hero[data-path-hero="pianohouse"]{background-image:linear-gradient(90deg,rgba(16,28,28,.78) 0%,rgba(16,28,28,.54) 72%,rgba(16,28,28,0) 100%),url("https://assets.pinohouse.art/site/pianohouse/221126/Girls%20Playing%20Piano%20Together.png");background-size:50% 100%,cover;background-position:left center,center;background-repeat:no-repeat}
+}

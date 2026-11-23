@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { CmsText, useCmsImage } from "../cms-hydrator";
 import { LocaleToggle, useLocale } from "../localization";
 
@@ -11,8 +11,9 @@ export function BrandMark({ href = "/" }: { href?: string }) {
 
 export function PublicNav() {
   const { locale } = useLocale();
+  const [open,setOpen]=useState(false);
   return (
-    <header className="site-header" id="top">
+    <header className={"site-header"+(open?" pino-menu-open":"")} id="top">
       <nav className="nav shell" aria-label={locale === "vi" ? "Điều hướng chính" : "Main navigation"}>
         <BrandMark href="#top" />
         <div className="nav-links">
@@ -20,7 +21,7 @@ export function PublicNav() {
           <a href="#paths"><CmsText contentKey="site_nav_paths" fallback="Bốn lộ trình" /></a>
           <a href="#journey"><CmsText contentKey="site_nav_premium" fallback="Premium Journey" /></a>
         </div>
-        <div className="pino-header-actions"><a className="nav-cta" href="/open-studio"><CmsText contentKey="site_nav_open_studio" fallback="Khám phá Open Studio" /></a><LocaleToggle /></div>
+        <div className="pino-header-actions" id="pino-actions"><a className="nav-cta" href="/open-studio"><CmsText contentKey="site_nav_open_studio" fallback="Khám phá Open Studio" /></a><LocaleToggle /></div><button className="pino-menu-toggle" type="button" aria-label={open?"Close menu":"Open menu"} aria-expanded={open} aria-controls="pino-actions" onClick={()=>setOpen(v=>!v)}><span/><span/></button>
       </nav>
     </header>
   );

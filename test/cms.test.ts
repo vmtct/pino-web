@@ -74,7 +74,10 @@ test("public pages use explicit CMS keys and retain canonical session ownership"
   const home = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
   const openStudio = readFileSync(new URL("../app/open-studio/page.tsx", import.meta.url), "utf8");
   const hydrator = readFileSync(new URL("../app/cms-hydrator.tsx", import.meta.url), "utf8");
-  assert.match(home, /homepage_v2_hero_title_line_1/);
+  // The new program storefront uses product-canon presentation copy, not the retired child-only hero CMS keys.
+  assert.doesNotMatch(home, /homepage_v2_hero_title_line_1/);
+  assert.match(home, /Afterschool/);
+  assert.match(home, /MyTime/);
   assert.match(openStudio, /os_v2_calendar_label/);
   assert.match(openStudio, /publicSyllabusTitle\(session\.syllabus\.title\)/);
   assert.doesNotMatch(openStudio, /contentKey="[^"]*(?:syllabus_title|syllabus_description|session_title|session_date|session_time|remaining_seats|is_full)/i);

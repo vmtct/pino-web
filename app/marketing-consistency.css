@@ -1,0 +1,95 @@
+/* PINO public design tokens. Layout and program palettes live with their routes. */
+:root {
+  --public-display: var(--font-display-vi), Georgia, serif;
+  --public-sans: var(--font-public-sans), Arial, sans-serif;
+  --public-h1: clamp(36px, 5vw, 68px);
+  --public-h2: clamp(28px, 3.2vw, 44px);
+  --public-h3: 26px;
+  --public-body: 16px;
+  --public-keyword: 15px;
+  --public-button: 14px;
+  --public-caption: 12px;
+  --public-max: 1260px;
+  --public-content-max: 940px;
+  --public-content-width: min(var(--public-content-max),calc(100% - 2 * var(--public-gutter)));
+  --public-gutter: 24px;
+  --public-header-height:80px;
+  --public-section: 72px;
+  --public-gap: 18px;
+  --public-radius: 18px;
+  --public-pill: 999px;
+  --public-line: #dcded3;
+  --public-line-strong: #9da698;
+  --public-green: #344f39;
+  --public-chocolate: #704d3b;
+  --public-paper: #faf7ef;
+}
+[data-pino-marketing-page], [data-pino-legal-page] {
+  font-family: var(--public-sans);
+  font-size: var(--public-body);
+  line-height: 1.65;
+  font-synthesis: none;
+}
+[data-pino-marketing-page] :is(h1,h2,h3),[data-pino-legal-page] :is(h1,h2,h3) {
+  font-family: var(--public-display);
+  font-weight: 500;
+  letter-spacing: -.025em;
+  line-height: 1.16;
+  text-wrap: balance;
+}
+[data-pino-marketing-page] h1 { font-size:var(--public-h1); }
+[data-pino-marketing-page] h2 { font-size:var(--public-h2); }
+[data-pino-marketing-page] h3 { font-size:var(--public-h3); }
+[data-marketing-actions] { display:flex; flex-wrap:wrap; gap:10px; }
+[data-marketing-actions] a {
+  display:inline-flex;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  min-height:44px;
+  padding:10px 16px;
+  gap:8px;
+  border-radius:var(--public-pill);
+  font:600 var(--public-button)/1.3 var(--public-sans);
+  white-space:normal;
+}
+[data-marketing-actions] a:first-child { color:#fff; }
+[data-marketing-media] { position:relative; overflow:hidden; min-width:0; }
+[data-marketing-media]>img { display:block; position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+html:has([data-pino-path-header]) { scroll-padding-top:calc(var(--public-header-height) + 12px); }
+[data-pino-marketing-page] a:focus-visible,[data-pino-legal-page] a:focus-visible { outline:2px solid currentColor; outline-offset:3px; }
+@media(max-width:900px){
+  :root{--public-h1:36px;--public-h2:28px;--public-h3:22px;--public-body:15px;--public-gutter:16px;--public-header-height:98px;--public-section:48px}
+}
+@media(max-width:760px){[data-marketing-media]{height:clamp(220px,65vw,300px);min-height:0}}
+
+[data-pino-marketing-page] .pino-path-consult{width:min(var(--public-max),calc(100% - 2*var(--public-gutter)));margin:var(--public-section) auto 0;background:#e4eadc;border-radius:var(--public-radius);padding:clamp(20px,4vw,36px);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}[data-pino-marketing-page] .pino-path-consult h2{margin:0}[data-pino-marketing-page] .pino-path-consult a{display:inline-flex;align-items:center;min-height:44px;padding:12px 20px;border-radius:999px;background:#344f39;color:white;font:600 var(--public-button)/1.4 var(--public-sans)}
+
+
+/* Scoped feedback for marketing controls, no application/auth changes. */
+[data-pino-marketing-page] :is(a[href],button:not(:disabled),summary),.mytime-v3 :is(a[href],button:not(:disabled),summary){transition:filter .16s ease,background-color .16s ease,color .16s ease,box-shadow .16s ease,transform .16s ease}
+[data-pino-marketing-page] :is(button,summary):focus-visible,.mytime-v3 :is(a,button,summary):focus-visible{outline:2px solid currentColor;outline-offset:3px}
+@media(hover:hover) and (pointer:fine){[data-pino-marketing-page] :is(a[href],button:not(:disabled),summary):hover,.mytime-v3 :is(a[href],button:not(:disabled),summary):hover{filter:brightness(.92);cursor:pointer}[data-pino-marketing-page] :is(nav,footer) a:hover,.mytime-v3 :is(nav,footer) a:hover{text-decoration:underline;text-underline-offset:4px}}
+[data-pino-marketing-page][data-path-theme="little-piner"]{--path-accent:#9a750c;--path-tint:#fff0bf}[data-pino-marketing-page][data-path-theme="artchitect"]{--path-accent:#a64c38;--path-tint:#f8e6de}[data-pino-marketing-page][data-path-theme="pianohouse"]{--path-accent:#183653;--path-tint:#e4ecf4}
+[data-path-theme] .pino-path-consult{background:var(--path-tint)}[data-path-theme] .pino-path-consult a{background:var(--path-accent)}[data-path-theme] .pino-path-consult h2{color:var(--path-accent)}
+@media(prefers-reduced-motion:reduce){[data-pino-marketing-page] :is(a,button,summary),.mytime-v3 :is(a,button,summary){transition:none}}
+
+html:has([data-home-header]){scroll-padding-top:12px}
+
+/* PINO umbrella theme; independent MyTime palette remains unchanged. */
+[data-pino-marketing-page]{--pino-theme:#7E3121;--pino-ink:#3e2e28;--pino-line:#e3d6cc;color:var(--pino-ink)}
+[data-pino-marketing-page] [data-pino-path-header]{color:var(--pino-theme)}
+[data-pino-marketing-page] [data-pino-path-header] a[aria-current=page]{color:var(--pino-theme)}
+[data-pino-marketing-page] .pino-path-consult{background:#f5eae3}
+[data-path-theme] .pino-path-consult h2{color:var(--pino-theme)}
+[data-path-theme] .pino-path-consult a{background:var(--path-accent)}
+[data-path-theme="little-piner"] .pino-path-consult a{background:#e7c351;color:#4a3609}
+
+/* PAP-2191: shared marketing content boundaries; legal and private surfaces unchanged. */
+[data-pino-marketing-page],.open-studio-page{--public-max:var(--public-content-max)}
+[data-path-theme]>section:not([data-path-hero]){width:var(--public-content-width);margin-inline:auto}
+[data-path-theme]>section[data-path-hero]{width:100%;max-width:none}
+/* PAP-2229: Afterschool H1 and free plan title */
+[data-pino-marketing-page]:has([data-plan="open-studio"]) h1,[data-pino-marketing-page][data-path-theme] h1{color:var(--pino-ink)!important}
+[data-pino-marketing-page] [data-plan="open-studio"] h3{font-size:13.3px!important}
+[data-pino-marketing-page]:has([data-plan="open-studio"]) #register{background:#efdacc}
