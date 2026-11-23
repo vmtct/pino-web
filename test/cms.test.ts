@@ -78,7 +78,7 @@ test("public pages use explicit CMS keys and retain canonical session ownership"
   assert.doesNotMatch(home, /homepage_v2_hero_title_line_1/);
   assert.match(home, /Afterschool/);
   assert.match(home, /MyTime/);
-  assert.match(openStudio, /os_v2_calendar_label/);
+  assert.match(openStudio, /os_v2_up_next_label/);
   assert.match(openStudio, /publicSyllabusTitle\(session\.syllabus\.title\)/);
   assert.doesNotMatch(openStudio, /contentKey="[^"]*(?:syllabus_title|syllabus_description|session_title|session_date|session_time|remaining_seats|is_full)/i);
   assert.doesNotMatch(hydrator, /createTreeWalker|nodeValue/);
