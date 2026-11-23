@@ -1,0 +1,1 @@
+import {MyTimeHome} from "../v3"; import "./season-hero.css"; export default function SeasonPreview(){return <MyTimeHome/>}

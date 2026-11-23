@@ -1,0 +1,178 @@
+/* PAP-2310 — Digital Art Studio concept V2 */
+.page{--ink:#193752;--muted:#63707a;--brick:#9d4933;--paper:#f8f5ee;--rule:#d9d6cd;min-height:100vh;background:var(--paper);color:var(--ink);font-family:var(--public-sans)}.page *{box-sizing:border-box}.page img{display:block;width:100%;object-fit:cover}.wrap{max-width:1600px;margin:0 auto;padding:24px clamp(20px,4vw,72px) 100px}.back{display:inline-block;margin:8px 0 22px;color:var(--brick);font:700 12px var(--public-sans);text-decoration:none}.kicker{display:block;font:700 11px/1.4 var(--public-sans);letter-spacing:.17em;color:var(--brick)}.hero{display:grid;grid-template-columns:42% 58%;min-height:620px;background:#eae7dd;overflow:hidden}.heroCopy{padding:clamp(35px,5.4vw,90px);display:flex;flex-direction:column;justify-content:center;align-items:flex-start}.hero h1,.sectionIntro h2,.eligibility h2{font-family:var(--public-display);font-weight:500;letter-spacing:-.04em}.hero h1{font-size:clamp(48px,5.2vw,86px);line-height:1.04;margin:26px 0 24px;max-width:12ch}.heroCopy>p{font-size:clamp(16px,1.35vw,19px);line-height:1.7;max-width:40ch;color:#435b6b;margin:0}.heroActions{display:flex;flex-direction:column;align-items:flex-start;gap:15px;margin-top:32px}.button{display:inline-flex;align-items:center;justify-content:space-between;gap:25px;min-height:50px;padding:0 24px;border-radius:100px;background:var(--ink);color:white;font:700 13px var(--public-sans);text-decoration:none;transition:background .2s}.button:hover{background:var(--brick)}.micro{font-size:12px;color:var(--muted)}.heroMedia{position:relative;min-width:0;overflow:hidden}.heroMedia img{height:100%;min-height:620px;object-position:center}.mediaLabel{position:absolute;right:28px;bottom:25px;color:white;background:#173557a8;padding:9px 14px;font:700 10px var(--public-sans);letter-spacing:.14em}.transition,.showcaseSection,.workflow{padding:clamp(65px,8vw,125px) 0;border-bottom:1px solid var(--rule)}.sectionIntro{max-width:780px;margin-bottom:42px}.sectionIntro h2{font-size:clamp(38px,4.4vw,70px);line-height:1.1;margin:16px 0 20px}.sectionIntro h2 em{font-style:normal;color:var(--brick)}.sectionIntro p{font-size:17px;line-height:1.7;color:var(--muted);max-width:58ch}.duo{display:grid;grid-template-columns:1fr 50px 1fr;align-items:center;gap:18px}.duo figure{margin:0;min-width:0}.duo img{height:clamp(260px,29vw,440px);border-radius:3px}.duo figcaption{font:700 12px var(--public-sans);color:var(--muted);padding:16px 0}.arrow{font-size:36px;color:var(--brick);text-align:center}.showcase{display:grid;grid-template-columns:36% 64%;background:#e8e6de;min-height:550px}.showcaseTabs{display:flex;flex-direction:column;justify-content:center;padding:36px clamp(20px,3vw,55px)}.showcaseTabs button{position:relative;display:grid;grid-template-columns:30px 1fr 24px;align-items:center;gap:10px;width:100%;padding:28px 0;text-align:left;border:0;border-bottom:1px solid #bcbdb9;background:transparent;color:var(--muted);cursor:pointer}.showcaseTabs button>span:first-child{font:700 11px var(--public-sans)}.showcaseTabs strong{font:500 clamp(20px,2vw,31px)/1.2 var(--public-display);grid-column:2}.showcaseTabs small{font-size:11px;grid-column:2;color:#6f777b}.tabArrow{grid-column:3;grid-row:1/3;font-size:24px}.showcaseTabs button.selected{color:var(--ink);border-color:var(--ink)}.showcaseTabs button.selected strong{color:var(--brick)}.showcaseTabs button:focus-visible{outline:2px solid var(--brick);outline-offset:3px}.showcaseVisual{position:relative;min-height:550px;background:#ccc}.showcaseVisual>img{height:100%;position:absolute;inset:0}.showcaseCaption{position:absolute;left:0;right:0;bottom:0;padding:55px clamp(22px,4vw,60px) 30px;color:#fff;background:linear-gradient(0deg,#142a3bee,transparent)}.showcaseCaption span{font-size:11px;letter-spacing:.12em}.showcaseCaption h3{font:500 32px var(--public-display);margin:10px 0}.showcaseCaption p{font-size:15px;line-height:1.6;max-width:50ch}.stageGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--rule)}.stageGrid article{padding:32px 22px 40px;border-right:1px solid var(--rule)}.stageGrid article:first-child{padding-left:0}.stageGrid article:last-child{border:0}.stageGrid span{font-size:11px;color:var(--brick);font-weight:700}.stageGrid h3{font:500 clamp(22px,2.2vw,34px) var(--public-display);margin:28px 0 14px}.stageGrid p{font-size:14px;line-height:1.6;color:var(--muted)}.eligibility{display:grid;grid-template-columns:57% 43%;background:#173557;color:white;margin-top:clamp(60px,7vw,110px);min-height:520px;overflow:hidden}.eligibilityCopy{padding:clamp(36px,5vw,78px)}.eligibility .kicker{color:#e4b79a}.eligibility h2{font-size:clamp(38px,4vw,62px);line-height:1.12;margin:20px 0}.eligibilityCopy>p{font-size:16px;line-height:1.7;color:#d2dce3;max-width:48ch}.conditions{margin:26px 0 28px;border-top:1px solid #ffffff45}.conditions>div{display:flex;align-items:center;gap:22px;border-bottom:1px solid #ffffff45;padding:16px 0}.conditions span{font-size:12px;color:#e9bfa4}.conditions strong{font-size:15px;font-weight:500}.eligibility .button{background:#f2d9b4;color:#173557}.subLink{display:inline-block;margin:18px 0 0 22px;color:white;font-size:13px;text-decoration:underline;text-underline-offset:4px}.eligibility>img{height:100%;min-height:520px;object-position:center}@media(max-width:900px){.hero{grid-template-columns:1fr}.heroCopy{padding:52px 36px}.hero h1{max-width:16ch}.heroMedia img{min-height:360px;max-height:490px}.showcase{grid-template-columns:1fr}.showcaseTabs{display:grid;grid-template-columns:repeat(3,1fr);padding:15px;gap:10px}.showcaseTabs button{display:flex;flex-direction:column;align-items:flex-start;padding:14px;gap:5px;border:1px solid var(--rule)}.showcaseTabs button.selected{border:1px solid var(--brick)}.showcaseTabs small,.tabArrow{display:none}.showcaseVisual{min-height:420px}.eligibility{grid-template-columns:1fr}.eligibility>img{min-height:270px;max-height:330px}}@media(max-width:600px){.wrap{padding:18px 16px 65px}.heroCopy{padding:36px 25px}.hero h1{font-size:48px;margin:20px 0}.heroMedia img{min-height:260px;max-height:330px}.mediaLabel{right:12px;bottom:12px}.transition,.showcaseSection,.workflow{padding:62px 0}.sectionIntro{margin-bottom:28px}.sectionIntro h2{font-size:40px}.duo{grid-template-columns:1fr;gap:4px}.duo img{height:250px}.duo .arrow{transform:rotate(90deg);font-size:25px}.showcaseTabs button strong{font-size:16px}.showcaseTabs{gap:5px;padding:8px}.showcaseTabs button{padding:10px 7px}.showcaseVisual{min-height:400px}.showcaseCaption{padding:50px 20px 20px}.showcaseCaption h3{font-size:27px}.stageGrid{grid-template-columns:repeat(2,1fr)}.stageGrid article{padding:24px 12px;border-bottom:1px solid var(--rule)}.stageGrid article:first-child{padding-left:12px}.stageGrid article:nth-child(2){border-right:0}.eligibilityCopy{padding:38px 25px}.eligibility h2{font-size:42px}.subLink{display:block;margin:20px 0 0}.eligibility>img{min-height:240px}}@media(prefers-reduced-motion:reduce){.button{transition:none}}
+
+/* PAP-2311: mockup-led editorial layout, existing R2 media. */
+.page{--ink:#643226;--brick:#a44f32;--paper:#fbf5e9;--muted:#5d4c42;--rule:#e9dccc;background:var(--paper);color:var(--ink)}
+.wrap{max-width:1600px;padding-top:16px}
+.hero{grid-template-columns:43% 57%;min-height:540px;background:#f8efdf;border-radius:3px}
+.heroCopy{padding:clamp(30px,4.4vw,70px)}
+.hero h1{font-size:clamp(45px,5vw,75px);font-style:italic;color:#703627}
+.heroCopy>p{color:#433b35}
+.heroMedia img{min-height:540px}
+.heroActions .micro{max-width:32ch;font-weight:700;line-height:1.5;color:#6d4935}
+.button{background:#843c2c}
+.button:hover{background:#633023}
+.transition{display:grid;grid-template-columns:55% 45%;gap:clamp(24px,4vw,65px);align-items:center;padding:65px 0}
+.transition .sectionIntro{grid-column:2;grid-row:1;margin:0}
+.transition .sectionIntro h2{font-size:clamp(33px,3.3vw,55px);font-style:italic}
+.bridgeMedia{grid-column:1;grid-row:1;min-width:0}
+.bridgeMedia img{width:100%;height:auto;max-height:480px;object-fit:contain}
+.showcaseSection{padding:68px 0}
+.showcaseSection .sectionIntro{margin-bottom:24px}
+.showcaseSection .sectionIntro h2{font-size:clamp(38px,4vw,60px);font-style:italic}
+.showcase{grid-template-columns:32% 68%;background:transparent;min-height:430px}
+.showcaseTabs{padding:10px 28px 10px 0}
+.showcaseTabs button{grid-template-columns:28px 1fr 18px;padding:24px 14px;border:0;border-radius:14px}
+.showcaseTabs button.selected{background:#f9e8bd;border-color:transparent}
+.showcaseTabs strong{font-size:clamp(20px,2vw,29px)}
+.showcaseVisual{min-height:430px;border-radius:18px;overflow:hidden}
+.showcaseVisual>img{object-position:center}
+.eligibility{grid-template-columns:60% 40%;min-height:350px;margin-top:56px;background:#193b58;border-radius:20px}
+.eligibilityCopy{padding:clamp(28px,4vw,60px)}
+.eligibility h2{font-style:italic;font-size:clamp(34px,3.6vw,55px)}
+.eligibility>img{min-height:350px;object-fit:cover}
+.eligibility .button{background:#f7e4b6;color:#253f53}
+@media(max-width:900px){.transition{grid-template-columns:1fr}.transition .sectionIntro{grid-column:1;grid-row:1}.bridgeMedia{grid-column:1;grid-row:2}.showcase{grid-template-columns:1fr}.eligibility{grid-template-columns:1fr}.hero{grid-template-columns:1fr}}
+@media(max-width:600px){.transition{padding:48px 0}.showcaseSection{padding:48px 0}.heroMedia img{min-height:260px}.showcaseTabs{padding:8px 0}.showcaseVisual{min-height:330px}.eligibility{margin-top:40px}.eligibility>img{min-height:230px}}
+/* PAP-2312: Artchitect DSA alignment. */
+.page{--ink:#173557;--brick:#b9502d;--paper:#f8f1e8;--muted:#526a80;--rule:rgba(96,76,58,.15);background:linear-gradient(180deg,#fbf7f2 0%,#f8f1e8 100%);color:var(--ink)}
+.wrap{max-width:1440px;padding-inline:clamp(20px,4vw,64px)}
+.back{color:var(--terracotta,#b9502d);font-weight:600}
+.kicker{color:var(--brick)}
+.hero{background:#f4eee5}
+.hero h1{font-style:normal;color:var(--ink);font-size:clamp(44px,4.8vw,68px);letter-spacing:-.035em}
+.heroCopy>p{color:#526a80}
+.heroActions .micro{color:#526a80}
+.button{background:var(--ink);border-radius:100px}
+.button:hover{background:#b9502d}
+.transition .sectionIntro h2,.showcaseSection .sectionIntro h2{font-style:normal;letter-spacing:-.035em;font-size:clamp(28px,3.1vw,44px)}
+.sectionIntro h2 em{color:var(--brick)}
+.sectionIntro p{color:var(--muted)}
+.showcaseTabs button.selected{background:#f3e7db;border-color:rgba(185,80,45,.35)}
+.showcaseTabs button.selected strong{color:var(--ink)}
+.showcaseTabs button:focus-visible{outline-color:var(--brick)}
+.showcaseVisual{background:#e7e5de}
+.eligibility{background:#173557}
+.eligibility h2{font-style:normal;font-size:clamp(30px,3.1vw,44px)}
+.eligibility .button{background:#f2d9b4;color:#173557}
+.eligibility .button:hover{background:#fff0d8}
+@media(max-width:600px){.hero h1{font-size:36px}.transition .sectionIntro h2,.showcaseSection .sectionIntro h2{font-size:28px}.eligibility h2{font-size:28px}.heroCopy{padding:32px 24px}.heroActions{gap:13px}.button{font-size:12px;padding-inline:18px}.showcaseTabs button strong{font-size:15px}}
+/* PAP-2315: image on desktop, solid color on mobile */
+@media(max-width:767px){.eligibility{display:block;background:#173557;min-height:0}.eligibility>img{display:none}.eligibilityCopy{padding:clamp(28px,6vw,42px) 24px}}
+
+/* PAP-2317: full-bleed hero; constrained editorial body; desktop horizontal CTA. */
+.page{overflow-x:clip}
+.wrap{width:100%;max-width:1440px;margin-inline:auto;padding-inline:clamp(20px,4vw,64px)}
+.hero{width:100%;max-width:none;border-radius:0;grid-template-columns:minmax(0,42%) minmax(0,58%);min-height:560px}
+.heroCopy{padding-inline:max(clamp(24px,4vw,64px),calc((100vw - 1312px)/2))}
+.heroMedia img{min-height:560px}
+.eligibility{display:grid;grid-template-columns:minmax(0,55%) minmax(0,45%);align-items:stretch;min-height:380px}
+.eligibilityCopy{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:clamp(28px,3.4vw,52px)}
+.eligibility>img{display:block;width:100%;height:100%;min-height:380px;max-height:none;object-fit:cover;object-position:center}
+.showcaseCaption{left:0;right:auto;top:0;bottom:0;display:flex;flex-direction:column;justify-content:flex-end;width:50%;max-width:50%;padding:clamp(22px,3vw,44px);background:linear-gradient(90deg,rgba(13,34,54,.93),rgba(13,34,54,.70) 72%,rgba(13,34,54,0));}
+.showcaseCaption p{max-width:100%;line-height:1.55}
+@media(max-width:900px){.hero{grid-template-columns:1fr}.heroCopy{padding:52px clamp(24px,5vw,50px)}.heroMedia img{min-height:360px}.eligibility{grid-template-columns:1fr}.eligibility>img{min-height:260px}.showcaseCaption{width:55%;max-width:55%}}
+@media(max-width:767px){.eligibility{display:block;min-height:0;background:#173557}.eligibility>img{display:none}.eligibilityCopy{padding:clamp(28px,6vw,42px) 24px}.showcaseCaption{left:0;right:0;top:auto;bottom:0;width:100%;max-width:100%;padding:48px 20px 20px;background:linear-gradient(0deg,rgba(13,34,54,.94),transparent)}}
+@media(max-width:600px){.heroCopy{padding:32px 24px}.heroMedia img{min-height:260px}.showcaseCaption h3{font-size:27px}}
+/* PAP-2319: 940px editorial body, full-width hero, mockup-aligned three-zone banner. */
+.wrap{max-width:940px;padding-inline:clamp(16px,2.5vw,24px)}
+.eligibility{position:relative;isolation:isolate;width:calc(100vw - 40px);max-width:1600px;margin-left:50%;transform:translateX(-50%);display:grid;grid-template-columns:30% 34% 36%;align-items:center;min-height:300px;margin-top:72px;border-radius:20px;background:#193b58;overflow:hidden}
+.eligibility::before{content:"";position:absolute;z-index:-1;inset:0 auto 0 0;width:32%;background:url("https://assets.pinohouse.art/site/Artchitect/221126/Vibrant%20Art%20Studio%20Collaboration.png") center/cover no-repeat;mask-image:linear-gradient(90deg,#000 0%,#000 60%,transparent 100%)}
+.eligibility>img{position:absolute;inset:0 0 0 auto;width:70%;height:100%;min-height:0;max-height:none;object-fit:cover;z-index:-2;opacity:.5}
+.eligibilityCopy{display:contents}
+.eligibilityCopy>.kicker,.eligibilityCopy>h2,.eligibilityCopy>p,.eligibilityCopy>.button{grid-column:2;margin-left:0;margin-right:20px}
+.eligibilityCopy>.kicker{align-self:end;grid-row:1;margin-top:34px;color:#f0d8b8}
+.eligibilityCopy>h2{grid-row:2;align-self:start;margin:8px 20px 8px 0;font-size:clamp(24px,2.35vw,38px);line-height:1.12;font-style:italic}
+.eligibilityCopy>p{grid-row:3;align-self:start;margin:0 20px 12px 0;font-size:12px;line-height:1.4}
+.eligibilityCopy>.button{grid-row:4;align-self:start;margin-bottom:35px;justify-content:center;padding:0 14px;min-height:48px;white-space:normal;text-align:center}
+.eligibilityCopy>.conditions,.eligibilityCopy>.subLink{grid-column:3;margin-left:20px;margin-right:clamp(22px,4vw,56px)}
+.eligibilityCopy>.conditions{grid-row:1/4;align-self:center;margin-top:20px;margin-bottom:0;border:0}
+.conditions>div{padding:11px 0;gap:12px;border:0;align-items:flex-start}
+.conditions span{font-size:16px;color:#f2d9b4}
+.conditions span::before{content:"✓";display:inline-block;margin-right:8px;border:2px solid #f2d9b4;border-radius:50%;width:23px;height:23px;text-align:center;line-height:19px;font-size:14px}
+.conditions strong{font-size:14px;line-height:1.4}
+.eligibilityCopy>.subLink{grid-row:4;align-self:start;display:flex;align-items:center;justify-content:center;min-height:48px;margin-top:0;margin-bottom:35px;padding:10px 16px;border:1px solid #f5dfc6;border-radius:50px;text-align:center;text-decoration:none;font-weight:600}
+@media(max-width:900px){.eligibility{width:calc(100vw - 32px);grid-template-columns:25% 37% 38%}.eligibilityCopy>.conditions,.eligibilityCopy>.subLink{margin-right:18px;margin-left:10px}.eligibilityCopy>h2{font-size:26px}}
+@media(max-width:767px){.eligibility{display:flex;flex-direction:column;align-items:stretch;width:100%;margin-left:0;transform:none;min-height:0;background:#173557;padding:28px 24px}.eligibility::before,.eligibility>img{display:none}.eligibilityCopy{display:flex;flex-direction:column;align-items:stretch;padding:0}.eligibilityCopy>.kicker,.eligibilityCopy>h2,.eligibilityCopy>p,.eligibilityCopy>.button,.eligibilityCopy>.conditions,.eligibilityCopy>.subLink{margin-left:0;margin-right:0}.eligibilityCopy>.kicker{margin-top:0}.eligibilityCopy>h2{font-size:30px;margin:14px 0}.eligibilityCopy>p{font-size:15px;margin:0 0 12px}.eligibilityCopy>.conditions{margin:16px 0}.eligibilityCopy>.button,.eligibilityCopy>.subLink{margin-bottom:0}.eligibilityCopy>.subLink{margin-top:14px}}
+/* PAP-2319 final: mockup uses the R2 Banner.png itself as the complete backdrop. */
+@media(min-width:901px){
+.eligibility{max-width:1200px;width:calc(100vw - 40px);min-height:270px;grid-template-columns:32% 34% 34%;grid-template-rows:auto auto auto auto;align-content:center;background:#193b58}
+.eligibility::before{display:none}
+.eligibility>img{inset:0;width:100%;height:100%;opacity:1;object-fit:fill}
+.eligibilityCopy>.kicker{grid-column:2;grid-row:1;margin:0 20px 8px 0;align-self:end}
+.eligibilityCopy>h2{grid-column:2;grid-row:2;margin:0 20px 12px 0;align-self:center;font-size:clamp(23px,2.2vw,32px)}
+.eligibilityCopy>p{display:none}
+.eligibilityCopy>.button{grid-column:2;grid-row:3;margin:0 20px 0 0;align-self:center}
+.eligibilityCopy>.conditions{grid-column:3;grid-row:1/3;margin:0 22px 8px 10px;align-self:center}
+.eligibilityCopy>.subLink{grid-column:3;grid-row:3;margin:0 22px 0 10px;align-self:center}
+}
+@media(min-width:768px) and (max-width:900px){.eligibility{grid-template-columns:1fr 1fr;min-height:330px}.eligibility::before{display:none}.eligibility>img{inset:0;width:100%;height:100%;object-fit:fill;opacity:1}.eligibilityCopy>.kicker,.eligibilityCopy>h2,.eligibilityCopy>p,.eligibilityCopy>.button{grid-column:1;margin-left:22px}.eligibilityCopy>.conditions,.eligibilityCopy>.subLink{grid-column:2}}
+@media(min-width:768px){.eligibility>img{z-index:0;pointer-events:none}.eligibilityCopy>*{position:relative;z-index:1}}
+
+/* PAP-2320: share Artchitect's full-bleed photo/overlay hero contract. */
+.hero{position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,1fr);width:100%;min-height:clamp(560px,calc(100svh - 80px),760px);background:#203b50 url("https://assets.pinohouse.art/site/Artchitect/Digi/Cozy%20Digital%20Art%20Workspace.png") center/cover no-repeat;overflow:hidden;border-radius:0}
+.hero::before{content:"";position:absolute;inset:0 auto 0 0;width:50%;z-index:0;pointer-events:none;background:linear-gradient(90deg,rgba(15,32,45,.9) 0%,rgba(15,32,45,.76) 65%,rgba(15,32,45,0) 100%)}
+.heroCopy{position:relative;z-index:1;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;max-width:760px;min-height:inherit;padding:clamp(40px,6vw,96px);background:transparent}
+.hero .back{display:inline-flex;align-items:center;min-height:44px;margin:0 0 22px;color:#f4ddbf;font-weight:700;text-shadow:0 1px 3px #0008}
+.hero .kicker{color:#f1d4b3;text-shadow:0 1px 3px #0008}
+.hero h1{color:#fffaf1;text-shadow:0 1px 5px #0006;max-width:13ch;font-size:clamp(45px,5.6vw,78px)}
+.heroCopy>p{color:#fffaf1;text-shadow:0 1px 4px #0008}
+.heroActions .micro{color:#fff2e0;text-shadow:0 1px 3px #0009}
+.hero .button{background:#f2d9b4;color:#193752}
+.hero .button:hover{background:#fff0d5}
+.heroMedia{display:none}
+@media(max-width:900px){.hero{grid-template-columns:minmax(0,1fr)}.heroCopy{max-width:680px;min-height:inherit;padding:clamp(32px,5vw,60px)}}
+@media(max-width:767px){.hero{min-height:620px;background-position:58% center}.hero::before{inset:0;width:100%;background:linear-gradient(180deg,rgba(15,32,45,.82),rgba(15,32,45,.66) 65%,rgba(15,32,45,.24))}.heroCopy{min-height:620px;padding:36px 24px}.hero h1{font-size:clamp(39px,9vw,54px);max-width:16ch}.hero .back{margin-bottom:16px}.heroActions{gap:12px}}
+
+/* PAP-2321: warm paper-colored hero veil and dark copy; top-left showcase caption. */
+@media(min-width:768px){
+.hero::before{width:58%;background:linear-gradient(90deg,rgba(241,236,224,.98) 0%,rgba(241,236,224,.94) 42%,rgba(241,236,224,.7) 72%,rgba(241,236,224,0) 100%)}
+.showcaseCaption{justify-content:flex-start;align-items:flex-start;padding-top:clamp(22px,3vw,44px)}
+}
+.hero .back{color:#703627;text-shadow:none}
+.hero .kicker{color:#703627;text-shadow:none}
+.hero h1{color:#193752;text-shadow:none}
+.heroCopy>p{color:#324b5b;text-shadow:none}
+.heroActions .micro{color:#324b5b;text-shadow:none}
+@media(max-width:767px){.hero::before{width:100%;background:linear-gradient(180deg,rgba(241,236,224,.98) 0%,rgba(241,236,224,.88) 52%,rgba(241,236,224,.26) 100%)}.showcaseCaption{justify-content:flex-start;align-items:flex-start;top:0;bottom:auto;padding:20px 20px 48px;background:linear-gradient(180deg,rgba(13,34,54,.93),rgba(13,34,54,0))}}
+
+/* PAP-2321 responsive contract: desktop overlays never exceed half the image. */
+@media(min-width:768px){.hero::before{width:50%}.showcaseCaption{width:50%;max-width:50%;top:0;bottom:0;justify-content:flex-start}}
+
+/* PAP-2322 — Artchitect canonical charcoal overlays, light text. */
+@media(min-width:768px){
+.hero::before{width:50%;background:linear-gradient(90deg,rgba(63,34,26,.78) 0%,rgba(63,34,26,.54) 72%,rgba(63,34,26,0) 100%)}
+.showcaseCaption{width:50%;max-width:50%;top:0;bottom:0;justify-content:flex-start;background:linear-gradient(90deg,rgba(63,34,26,.88) 0%,rgba(63,34,26,.67) 72%,rgba(63,34,26,0) 100%)}
+}
+.hero .back,.hero .kicker{color:#f1d4b3;text-shadow:0 1px 3px #0008}
+.hero h1,.heroCopy>p{color:#fffaf1;text-shadow:0 1px 5px #0008}
+.heroActions .micro{color:#fff2e0;text-shadow:0 1px 3px #0008}
+@media(max-width:767px){
+.hero::before{width:100%;background:linear-gradient(180deg,rgba(63,34,26,.8) 0%,rgba(63,34,26,.64) 64%,rgba(63,34,26,.22) 100%)}
+.showcaseCaption{top:0;bottom:auto;justify-content:flex-start;background:linear-gradient(180deg,rgba(63,34,26,.92),rgba(63,34,26,0))}
+}
+/* PAP-2322: override earlier high-specificity warm-hero typography. */
+.page .hero h1,.page .heroCopy>p{color:#fffaf1;text-shadow:0 1px 5px #0008}
+.page .hero .back,.page .hero .kicker{color:#f1d4b3;text-shadow:0 1px 3px #0008}
+.page .heroActions .micro{color:#fff2e0;text-shadow:0 1px 3px #0008}
+.page .hero h1{color:#fffaf1 !important;text-shadow:0 1px 5px #0008 !important}
+main[data-pino-marketing-page][data-path-theme="artchitect"].page .hero h1{color:#fffaf1 !important}
+
+/* PAP-2324 — exactly two warm stops, .88 to 0, within first 50% of image. */
+@media(min-width:768px){
+.hero::before{width:50%;background:linear-gradient(90deg,rgba(63,34,26,.88),rgba(63,34,26,0))}
+.showcaseCaption{width:50%;max-width:50%;background:linear-gradient(90deg,rgba(63,34,26,.88),rgba(63,34,26,0))}
+}
+@media(max-width:767px){
+.hero::before{width:100%;background:linear-gradient(180deg,rgba(63,34,26,.88),rgba(63,34,26,0))}
+.showcaseCaption{background:linear-gradient(180deg,rgba(63,34,26,.88),rgba(63,34,26,0))}
+}
+
+/* PAP-2326 — mobile showcase: bottom-anchored warm veil and directional image framing. */
+@media(max-width:767px){
+.showcaseCaption{top:auto;bottom:0;left:0;right:0;width:100%;max-width:100%;justify-content:flex-end;align-items:flex-start;padding:72px 20px 20px;background:linear-gradient(0deg,rgba(63,34,26,.88),rgba(63,34,26,0))}
+.showcaseVisual>img{object-position:left center;transition:object-position .55s ease}
+.showcaseVisual[data-active-direction="1"]>img{object-position:center center}
+.showcaseVisual[data-active-direction="2"]>img{object-position:right center}
+}
+@media(max-width:767px) and (prefers-reduced-motion:reduce){.showcaseVisual>img{transition:none}}

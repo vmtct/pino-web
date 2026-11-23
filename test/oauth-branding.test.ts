@@ -3,14 +3,16 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 
 const home = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
+const chrome = readFileSync(new URL("../app/components/path-chrome.tsx", import.meta.url), "utf8");
 const privacy = readFileSync(new URL("../app/policy/page.tsx", import.meta.url), "utf8");
 const terms = readFileSync(new URL("../app/term/page.tsx", import.meta.url), "utf8");
 const wrangler = readFileSync(new URL("../wrangler.toml", import.meta.url), "utf8");
 
 test("homepage exposes OAuth branding identity and legal destinations", () => {
-  assert.match(home, /PINO Notifier is the email notification service operated by PINO House/);
-  assert.match(home, /href="\/policy"/);
-  assert.match(home, /href="\/term"/);
+  assert.match(home, /<PathFooter/);
+  assert.match(chrome, /PINO Notifier is the email notification service operated by PINO House/);
+  assert.match(chrome, /href="\/policy"/);
+  assert.match(chrome, /href="\/term"/);
 });
 
 test("privacy policy describes PINO Notifier and Google account data handling", () => {

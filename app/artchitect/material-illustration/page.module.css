@@ -1,0 +1,52 @@
+@import "../specialty-shared.css";
+.page{background:#f7f1e8;color:#203e59;min-height:100vh;font-family:var(--public-sans,Arial,sans-serif)}.wrap{max-width:1240px;margin:auto;padding:32px 30px 110px}.back{display:inline-flex;color:#ad664d;text-decoration:none;font-size:13px;font-weight:700;letter-spacing:.03em}.hero{position:relative;display:flex;align-items:center;min-height:560px;margin:28px 0 84px;isolation:isolate}.heroCopy{position:relative;z-index:2;width:57%;padding:35px 0}.heroImage{position:absolute;right:-25px;top:0;width:69%;height:100%;object-fit:contain;object-position:right center;z-index:1;pointer-events:none}.age{display:inline-flex;padding:8px 17px;border-radius:40px;background:#f1d9cb;color:#a05437;font-size:13px;font-weight:700}.kicker,.eyebrow{font-size:12px;font-weight:700;letter-spacing:.19em;color:#af6c52}.kicker{margin:26px 0 16px}.hero h1,.sectionHeading h2,.cta h2{font-family:Georgia,'Times New Roman',serif;font-weight:500;letter-spacing:-.045em}.hero h1{font-size:clamp(54px,6.3vw,88px);line-height:1.06;margin:0 0 20px;max-width:650px}.lead{font-family:Georgia,'Times New Roman',serif;font-size:clamp(23px,2.5vw,32px);line-height:1.35;margin:0 0 18px;color:#b16e54}.intro{font-size:16px;line-height:1.8;color:#62717c;max-width:430px}.materialSection,.process{padding:30px 0 90px}.sectionHeading{max-width:740px;margin:0 auto 38px;text-align:center}.sectionHeading h2{font-size:clamp(36px,4.1vw,56px);line-height:1.15;margin:12px 0 14px}.sectionHeading>p:last-child{font-size:16px;line-height:1.75;color:#6b7880;margin:0}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:23px}.card{background:#fffcf8;border:1px solid #e9ded2;border-radius:20px;overflow:hidden;box-shadow:0 10px 30px rgba(69,55,45,.045);transition:transform .2s ease,box-shadow .2s ease}.card:hover{transform:translateY(-4px);box-shadow:0 17px 36px rgba(69,55,45,.1)}.cardVisual{height:230px;overflow:hidden;background:#f5eee5}.cardVisual img{width:100%;height:100%;object-fit:cover;display:block}.cardBody{padding:24px 26px 29px}.number{color:#b77c65;font-size:11px;font-weight:700;letter-spacing:.16em}.card h3{font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:500;letter-spacing:-.025em;margin:11px 0}.card p{color:#71808a;font-size:14px;line-height:1.7;margin:0}.process{padding-top:55px}.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}.step{text-align:center;padding:8px 15px}.step img{width:150px;max-width:100%;height:150px;object-fit:contain;display:block;margin:0 auto 10px}.stepNumber{font-size:11px;color:#bb8d77;letter-spacing:.14em}.step h3{font-family:Georgia,'Times New Roman',serif;font-size:25px;font-weight:500;margin:9px 0}.step p{font-size:14px;color:#77828a;line-height:1.65;margin:0}.cta{position:relative;min-height:315px;display:flex;align-items:center;overflow:hidden;border-radius:22px;background:#e8e2d7 url('https://assets.pinohouse.art/site/Artchitect/Illustration/Sunlit%20Watercolor%20Art%20Studio.png') right center/cover no-repeat}.cta:before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(245,238,226,.98) 0%,rgba(245,238,226,.92) 39%,rgba(245,238,226,.16) 100%)}.ctaContent{position:relative;max-width:570px;padding:48px 58px}.cta h2{font-size:clamp(33px,3.4vw,49px);line-height:1.16;margin:13px 0}.ctaContent>p:not(.eyebrow){color:#667480;line-height:1.7;margin-bottom:22px}.cta a{display:inline-flex;gap:22px;align-items:center;background:#a9573e;color:#fff;padding:14px 22px;border-radius:9px;text-decoration:none;font-weight:700;font-size:14px}.cta small{display:block;color:#687783;font-size:11px;margin-top:14px;line-height:1.5}@media(max-width:950px){.hero{min-height:480px}.heroCopy{width:65%}.heroImage{width:67%;opacity:.7}.grid{gap:15px}.cardVisual{height:185px}.cardBody{padding:20px}.card h3{font-size:24px}}@media(max-width:700px){.wrap{padding:25px 18px 70px}.hero{min-height:590px;align-items:flex-start;margin:24px 0 42px}.heroCopy{width:100%;padding:20px 0}.hero h1{font-size:clamp(43px,10vw,62px);max-width:450px}.heroImage{width:100%;height:330px;top:auto;bottom:0;right:0;object-position:right bottom;opacity:.85}.intro{max-width:330px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.cardVisual{height:170px}.cardBody{padding:17px}.card h3{font-size:23px}.steps{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:25px}.materialSection,.process{padding-bottom:55px}.ctaContent{padding:40px 26px}.cta:before{background:linear-gradient(90deg,rgba(245,238,226,.97),rgba(245,238,226,.72))}}@media(max-width:430px){.grid{grid-template-columns:1fr}.cardVisual{height:220px}.hero{min-height:600px}.step img{height:120px;width:120px}.cta{min-height:330px}.cta h2{font-size:35px}}@media(prefers-reduced-motion:reduce){.card{transition:none}}/* PAP-2274: full-bleed hero background, content remains aligned to page grid. */
+.hero{isolation:isolate}
+.hero::before{content:"";position:absolute;z-index:-2;top:0;bottom:0;left:50%;width:100vw;transform:translateX(-50%);background:#eee5d9 url("https://assets.pinohouse.art/site/Artchitect/Illustration/Watercolor%20Art%20Studio%20with%20Landscape%20Easel.png") center center/cover no-repeat}
+.hero::after{content:"";position:absolute;z-index:-1;inset:0;left:calc((min(1240px,100vw) - 100vw)/2);right:calc((min(1240px,100vw) - 100vw)/2);background:linear-gradient(90deg,rgba(247,241,232,.97) 0%,rgba(247,241,232,.87) 31%,rgba(247,241,232,.22) 66%,transparent 100%)}
+.heroImage{display:none}
+@media(max-width:700px){.hero::before{background-position:62% center}.hero::after{background:linear-gradient(180deg,rgba(247,241,232,.96) 0%,rgba(247,241,232,.89) 44%,rgba(247,241,232,.18) 100%)}}
+/* PAP-2274: materials cards use a left copy column and a right image background. */
+.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+.card{display:grid;grid-template-columns:minmax(0,48%) minmax(0,52%);min-height:240px}
+.cardBody{display:flex;flex-direction:column;justify-content:center;padding:25px 26px;min-width:0}
+.cardVisual{height:auto;min-height:240px;background-position:center;background-size:cover;background-repeat:no-repeat}
+.card h3{font-size:clamp(22px,2.2vw,29px)}
+@media(max-width:950px){.grid{gap:16px}.card{min-height:225px}.cardBody{padding:20px}.cardVisual{height:auto;min-height:225px}}
+@media(max-width:700px){.grid{grid-template-columns:1fr}.card{grid-template-columns:minmax(0,48%) minmax(0,52%);min-height:215px}.cardVisual{min-height:215px}.cardBody{padding:19px}}
+@media(max-width:430px){.card{grid-template-columns:minmax(0,52%) minmax(0,48%);min-height:215px}.cardVisual{height:auto;min-height:215px}.cardBody{padding:16px}.card h3{font-size:22px}}
+/* PAP-2274 correction: image is on the entire card, not a second column. */
+.card{display:flex;align-items:stretch;min-height:250px;background-size:cover;background-position:center;background-repeat:no-repeat;position:relative}
+.cardBody{position:relative;z-index:1;width:50%;flex:0 0 50%;min-width:0;box-sizing:border-box;background:linear-gradient(90deg,rgba(255,252,248,.98) 0%,rgba(255,252,248,.95) 75%,rgba(255,252,248,.84) 100%)}
+@media(max-width:950px){.card{min-height:230px}}
+@media(max-width:700px){.card{min-height:220px}.cardBody{width:50%;flex-basis:50%}}
+@media(max-width:430px){.card{min-height:230px}.cardBody{width:50%;flex-basis:50%}}
+
+/* PAP-2274: solid at 50%, fully transparent at 100%. */
+.cardBody{background:linear-gradient(90deg,rgba(255,252,248,1) 0%,rgba(255,252,248,1) 50%,rgba(255,252,248,0) 100%)}
+
+/* PAP-2274: 3:2 cropped journey icons and directional connectors. */
+.step{position:relative}
+.step img{width:100%;max-width:220px;height:auto;aspect-ratio:3/2;object-fit:cover;object-position:center;display:block;margin:0 auto 22px}
+.step:not(:last-child)::after{content:'→';position:absolute;top:63px;right:-23px;color:#bd866e;font-family:Georgia,serif;font-size:31px;font-weight:400;line-height:1;z-index:2}
+@media(max-width:700px){.step img{width:100%;max-width:200px;height:auto;aspect-ratio:3/2}.step:not(:last-child)::after{display:none}.step:nth-child(odd)::after{display:block;top:56px;right:-20px}}
+/* PAP-2274: six material cards in three desktop columns. */
+@media(min-width:951px){.materialSection .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.materialSection .card{min-height:230px}.materialSection .cardBody{padding:18px 16px}.materialSection .card h3{font-size:clamp(20px,1.8vw,25px)}.materialSection .card p{font-size:12px;line-height:1.55}}
+/* PAP-2274: hero asset belongs to page wrap, aligned right, fit width. */
+.wrap{background-image:url("https://assets.pinohouse.art/site/Artchitect/Illustration/Watercolor%20Art%20Studio%20with%20Landscape%20Easel.png");background-position:right top;background-repeat:no-repeat;background-size:100% auto}
+.hero::before,.hero::after{content:none;display:none}
+.hero{margin-top:0}
+.heroCopy{background:linear-gradient(90deg,rgba(247,241,232,.94) 0%,rgba(247,241,232,.82) 58%,rgba(247,241,232,0) 100%)}
+.hero .back{display:table;margin-bottom:28px}
+@media(max-width:700px){.wrap{background-size:100% auto;background-position:right top}.heroCopy{background:linear-gradient(90deg,rgba(247,241,232,.94),rgba(247,241,232,.65))}.hero .back{margin-bottom:20px}}
+/* PAP-2274: full-bleed hero background while content remains in centered wrap. */
+.wrap{position:relative;isolation:isolate;background-image:none}
+.wrap::before{content:"";position:absolute;z-index:-1;top:0;left:50%;transform:translateX(-50%);width:100vw;height:min(75vw,900px);pointer-events:none;background-image:url("https://assets.pinohouse.art/site/Artchitect/Illustration/Watercolor%20Art%20Studio%20with%20Landscape%20Easel.png");background-repeat:no-repeat;background-position:right top;background-size:100% auto}
+@media(max-width:700px){.wrap::before{height:650px;background-size:auto 650px;background-position:right top}}
+/* PAP-2274: Georgia lacks reliable Vietnamese accent coverage in display text. */
+.hero h1,.sectionHeading h2,.cta h2,.lead,.card h3,.step h3{font-family:Cambria,'Times New Roman',serif;letter-spacing:-.02em}
+/* PAP-2274: mobile hero wash needs a consistent inset for all text. */
+@media(max-width:700px){
+  .heroCopy{box-sizing:border-box;padding:32px 24px;width:100%;}
+  .hero .back{margin-bottom:20px;}
+}
+

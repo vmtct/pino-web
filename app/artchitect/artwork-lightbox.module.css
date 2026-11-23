@@ -1,0 +1,19 @@
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px 18px;align-items:start}
+.artwork{margin:0;min-width:0}
+.thumb{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:240px;padding:14px;background:#eee7dd;border:1px solid rgba(77,58,45,.12);border-radius:5px;box-shadow:0 9px 22px rgba(53,41,32,.07);cursor:zoom-in}
+.thumb img{display:block;width:100%;height:100%;object-fit:contain}
+.thumb:focus-visible{outline:3px solid #7e3121;outline-offset:3px}
+.zoom{position:absolute;right:12px;bottom:12px;border-radius:50%;background:#fff9ef;color:#5b3426;padding:6px 10px;opacity:0;transition:opacity .2s}
+.thumb:hover .zoom,.thumb:focus-visible .zoom{opacity:1}
+.artwork figcaption{margin-top:10px;text-align:center;font-size:13px;line-height:1.45;color:#6a594c}
+.overlay{position:fixed;inset:0;z-index:99999;background:rgba(21,19,18,.95);display:flex;align-items:center;justify-content:center;color:#fffaf1;padding:72px 80px 44px}
+.top{position:absolute;top:16px;left:24px;right:24px;display:flex;align-items:center;justify-content:space-between;font-size:14px}
+.top button,.prev,.next{border:0;background:rgba(255,255,255,.13);color:#fffaf1;cursor:pointer;border-radius:50%;width:46px;height:46px;font-size:25px}
+.prev,.next{position:absolute;top:50%;transform:translateY(-50%)}
+.prev{left:18px}.next{right:18px}
+.preview{margin:0;max-width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;min-width:0}
+.preview img{display:block;max-width:100%;max-height:calc(100% - 48px);width:auto;height:auto;object-fit:contain}
+.preview figcaption{font-size:15px;text-align:center}
+@media(max-width:1000px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 12px}.thumb{height:190px;padding:8px}.artwork figcaption{font-size:12px}.overlay{padding:76px 42px 58px}.prev{left:3px}.next{right:3px}.prev,.next{width:36px;height:42px}.zoom{opacity:1}}
+@media(max-width:390px){.thumb{height:155px}}

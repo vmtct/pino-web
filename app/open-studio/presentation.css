@@ -89,16 +89,16 @@
   }
 
   .open-studio-page .os-hero-copy h1 {
-    font-size: clamp(54px, 15.5vw, 68px);
-    line-height: .94;
-    letter-spacing: -.04em;
+    font-size: var(--public-h1);
+    line-height: 1.16;
+    letter-spacing: -.025em;
   }
 
   .open-studio-page .os-hero-copy p {
     margin-top: 13px;
     max-width: 340px;
-    font-size: 14.5px;
-    line-height: 1.55;
+    font-size: var(--public-body);
+    line-height: 1.65;
   }
 
   .open-studio-page .os-inline-link {
@@ -158,14 +158,14 @@
   }
 
   .open-studio-page .os-featured-copy h2 {
-    font-size: 32px;
-    line-height: 1.02;
+    font-size: var(--public-h2);
+    line-height: 1.16;
   }
 
   .open-studio-page .os-featured-copy > p {
     margin-top: 11px;
-    font-size: 13px;
-    line-height: 1.6;
+    font-size: var(--public-body);
+    line-height: 1.65;
   }
 
   .open-studio-page .os-time-label {
@@ -243,7 +243,7 @@
   }
 
   .open-studio-page .os-session-body h3 {
-    font-size: 27px;
+    font-size: var(--public-h3);
   }
 
   .open-studio-page .os-session-bottom {
@@ -269,7 +269,7 @@
   }
 
   .open-studio-page .os-session-detail-copy h2 {
-    font-size: 34px;
+    font-size: var(--public-h2);
   }
 
   .open-studio-page .os-session-detail-copy > p:not(.os-kicker):not(.os-detail-date) {
@@ -308,8 +308,8 @@
 
   .open-studio-page .os-architecture-card h2 {
     margin-top: -3px;
-    font-size: 31px;
-    line-height: 1.04;
+    font-size: var(--public-h2);
+    line-height: 1.16;
   }
 
   .open-studio-page .os-architecture-card p:not(.os-kicker) {
@@ -383,7 +383,7 @@
 
   .open-studio-page .os-faq h2 {
     padding: 18px 20px 14px;
-    font-size: 25px;
+    font-size: var(--public-h2);
   }
 
   .open-studio-page .os-faq summary {
@@ -399,8 +399,8 @@
 
   .open-studio-page .os-faq details p {
     padding: 14px 17px 16px;
-    font-size: 12px;
-    line-height: 1.6;
+    font-size: var(--public-body);
+    line-height: 1.65;
   }
 
   .open-studio-page .os-final-cta {
@@ -411,11 +411,11 @@
 
   .open-studio-page .os-final-bg {
     object-position: center 54%;
-    filter: saturate(.95) brightness(.66);
+    filter: none;
   }
 
   .open-studio-page .os-final-cta::after {
-    background: linear-gradient(120deg, rgba(132, 44, 25, .78), rgba(184, 72, 39, .48), rgba(106, 50, 33, .68));
+    background: linear-gradient(120deg,#000a,#0009,#000a);
   }
 
   .open-studio-page .os-final-cta > div {
@@ -423,15 +423,15 @@
   }
 
   .open-studio-page .os-final-cta h2 {
-    font-size: 34px;
-    line-height: 1.02;
+    font-size: var(--public-h2);
+    line-height: 1.16;
   }
 
   .open-studio-page .os-final-cta p {
     margin: 9px auto 16px;
     max-width: 330px;
-    font-size: 12.5px;
-    line-height: 1.55;
+    font-size: var(--public-body);
+    line-height: 1.65;
   }
 
   .open-studio-page .os-final-button {
@@ -452,7 +452,7 @@
 
   .open-studio-page .os-footer-brand p {
     margin-top: 11px;
-    font-size: 13px;
+    font-size: var(--public-body);
   }
 
   .open-studio-page .os-footer-brand small {
@@ -541,7 +541,7 @@
 
 .open-studio-page .os-main:has(.os-empty):has(.os-date-row button:only-child) .os-empty::before {
   content: "Lịch tuần này đang được chuẩn bị";
-  font-family: "DM Serif Display", serif;
+  font-family: var(--public-display);
   color: var(--os-navy);
   font-size: 20px;
   line-height: 1.12;
@@ -574,15 +574,15 @@
   }
 
   .open-studio-page .os-hero-copy h1 {
-    font-size: clamp(52px, 14.7vw, 64px);
-    line-height: .96;
+    font-size: var(--public-h1);
+    line-height: 1.16;
   }
 
   .open-studio-page .os-hero-copy p {
     margin-top: 11px;
     max-width: 330px;
-    font-size: 14px;
-    line-height: 1.48;
+    font-size: var(--public-body);
+    line-height: 1.65;
   }
 
   .open-studio-page .os-inline-link {
@@ -643,7 +643,7 @@
   }
 
   .open-studio-page .os-architecture-card h2 {
-    font-size: 30px;
+    font-size: var(--public-h2);
   }
 
   .open-studio-page .os-architecture-card p:not(.os-kicker) {
@@ -703,7 +703,7 @@
 
   .open-studio-page .os-faq h2 {
     padding: 18px 18px 13px;
-    font-size: 26px;
+    font-size: var(--public-h2);
   }
 
   .open-studio-page .os-faq summary {
@@ -715,8 +715,8 @@
 
   .open-studio-page .os-faq details p {
     padding: 15px 17px 17px;
-    font-size: 12.5px;
-    line-height: 1.6;
+    font-size: var(--public-body);
+    line-height: 1.65;
   }
 
   .open-studio-page .os-final-cta {
@@ -729,14 +729,14 @@
   }
 
   .open-studio-page .os-final-cta h2 {
-    font-size: 32px;
-    line-height: 1.02;
+    font-size: var(--public-h2);
+    line-height: 1.16;
   }
 
   .open-studio-page .os-final-cta p {
     margin-top: 8px;
     margin-bottom: 15px;
-    font-size: 12px;
+    font-size: var(--public-body);
   }
 
   .open-studio-page .os-final-button {
@@ -753,7 +753,7 @@
 
   .open-studio-page .os-footer-brand p {
     margin: 8px 0 5px;
-    font-size: 12.5px;
+    font-size: var(--public-body);
   }
 
   .open-studio-page .os-footer-brand small {
@@ -791,7 +791,7 @@
   }
 
   .open-studio-page .os-hero-copy h1 {
-    font-size: 50px;
+    font-size: var(--public-h1);
   }
 
   .open-studio-page .os-how-steps span {
@@ -832,17 +832,17 @@
   }
 
   .open-studio-page .os-hero-copy h1 {
-    font-size: clamp(74px, 6vw, 104px);
-    line-height: .94;
-    letter-spacing: -.045em;
+    font-size: var(--public-h1);
+    line-height: 1.16;
+    letter-spacing: -.025em;
     max-width: 620px;
   }
 
   .open-studio-page .os-hero-copy p {
     margin-top: 20px;
     max-width: 520px;
-    font-size: 18px;
-    line-height: 1.55;
+    font-size: var(--public-body);
+    line-height: 1.65;
   }
 
   .open-studio-page .os-inline-link {
@@ -992,8 +992,8 @@
   }
 
   .open-studio-page .os-session-body h3 {
-    font-size: 20px;
-    line-height: 1.02;
+    font-size: var(--public-h3);
+    line-height: 1.16;
     letter-spacing: -.025em;
   }
 
@@ -1060,8 +1060,8 @@
   }
 
   .open-studio-page .os-architecture-card h2 {
-    font-size: 34px;
-    line-height: 1.02;
+    font-size: var(--public-h2);
+    line-height: 1.16;
   }
 
   .open-studio-page .os-architecture-card p:not(.os-kicker) {
@@ -1117,7 +1117,7 @@
   .open-studio-page .os-faq h2 {
     min-width: 112px;
     padding-left: 24px;
-    font-size: 28px;
+    font-size: var(--public-h2);
   }
 
   .open-studio-page .os-faq summary {
@@ -1136,13 +1136,13 @@
   }
 
   .open-studio-page .os-final-cta h2 {
-    font-size: 42px;
-    line-height: 1;
+    font-size: var(--public-h2);
+    line-height: 1.16;
   }
 
   .open-studio-page .os-final-cta p {
     max-width: 620px;
-    font-size: 13px;
+    font-size: var(--public-body);
   }
 
   .open-studio-page .os-footer {
@@ -1154,7 +1154,7 @@
 
   .open-studio-page .os-footer-brand p {
     margin-top: 12px;
-    font-size: 13px;
+    font-size: var(--public-body);
   }
 
   .open-studio-page .os-footer > div:not(.os-footer-brand) {
@@ -1217,16 +1217,16 @@
   }
 
   .open-studio-page .os-hero-copy h1 {
-    font-size: clamp(48px, 14vw, 64px);
-    line-height: .91;
-    letter-spacing: -.04em;
+    font-size: var(--public-h1);
+    line-height: 1.16;
+    letter-spacing: -.025em;
   }
 
   .open-studio-page .os-hero-copy p {
     margin-top: 12px;
     max-width: 330px;
-    font-size: 13px;
-    line-height: 1.45;
+    font-size: var(--public-body);
+    line-height: 1.65;
   }
 
   .open-studio-page .os-inline-link {
@@ -1282,8 +1282,8 @@
   }
 
   .open-studio-page .os-featured-copy h2 {
-    font-size: 27px;
-    line-height: 1;
+    font-size: var(--public-h2);
+    line-height: 1.16;
   }
 
   .open-studio-page .os-featured-copy .os-pills {
@@ -1296,8 +1296,8 @@
     -webkit-line-clamp: 2;
     overflow: hidden;
     margin-top: 9px;
-    font-size: 11.5px;
-    line-height: 1.5;
+    font-size: var(--public-body);
+    line-height: 1.65;
   }
 
   .open-studio-page .os-featured-meta {
@@ -1393,8 +1393,8 @@
   }
 
   .open-studio-page .os-session-body h3 {
-    font-size: 17px;
-    line-height: 1.02;
+    font-size: var(--public-h3);
+    line-height: 1.16;
     letter-spacing: -.025em;
   }
 
@@ -1452,7 +1452,7 @@
   }
 
   .open-studio-page .os-session-detail-copy h2 {
-    font-size: 30px;
+    font-size: var(--public-h2);
   }
 
   .open-studio-page .os-info {
@@ -1470,8 +1470,8 @@
   }
 
   .open-studio-page .os-architecture-card h2 {
-    font-size: 27px;
-    line-height: 1;
+    font-size: var(--public-h2);
+    line-height: 1.16;
   }
 
   .open-studio-page .os-architecture-card p:not(.os-kicker) {
@@ -1529,7 +1529,7 @@
 
   .open-studio-page .os-faq h2 {
     padding: 14px 16px 11px;
-    font-size: 25px;
+    font-size: var(--public-h2);
   }
 
   .open-studio-page .os-faq summary {
@@ -1540,8 +1540,8 @@
 
   .open-studio-page .os-faq details p {
     padding: 10px 14px 13px;
-    font-size: 10.5px;
-    line-height: 1.5;
+    font-size: var(--public-body);
+    line-height: 1.65;
   }
 
   .open-studio-page .os-final-cta {
@@ -1554,14 +1554,14 @@
   }
 
   .open-studio-page .os-final-cta h2 {
-    font-size: 26px;
-    line-height: 1;
+    font-size: var(--public-h2);
+    line-height: 1.16;
   }
 
   .open-studio-page .os-final-cta p {
     margin-top: 8px;
-    font-size: 10.5px;
-    line-height: 1.45;
+    font-size: var(--public-body);
+    line-height: 1.65;
   }
 
   .open-studio-page .os-final-cta .os-book-button {
@@ -1788,3 +1788,64 @@
   .os-public-footer > small { margin-top: 4px; padding-top: 12px; font-size: 8.8px; }
 }
 
+
+/* Public landing only; shared content boundary, full-bleed hero. */
+.open-studio-page .os-shell:not(.os-hero){width:var(--public-content-width)}
+.open-studio-page .os-hero.os-shell{width:100%;max-width:none}
+@media(min-width:921px){.open-studio-page .os-hero-copy{padding-left:max(var(--public-gutter),calc((100vw - var(--public-content-max))/2))}.open-studio-page .os-featured-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr)}.open-studio-page .os-info{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}}
+
+/* PAP-2281 R2 visual enhancement */
+.os-new-free{background-image:url('https://assets.pinohouse.art/site/OpenStudio/Revise/Pastel%20Artist%E2%80%99s%20Desk%20with%20Books%20and%20Brushes.png');background-size:cover;background-position:center}
+.os-new-path{position:relative;overflow:hidden}
+.os-new-path-visual{display:block;width:100%;height:120px;object-fit:contain;margin:0 auto 12px}
+.os-new-hero>img{object-fit:cover;object-position:center}
+.os-new-grid article>img{object-fit:cover;object-position:center}
+@media(max-width:700px){.os-new-path-visual{height:100px}.os-new-free{background-position:center}}
+/* PAP-2281 M1 — editorial layout matching founder visual reference */
+.open-studio-page{background:#faf4ea;color:#432b24}
+.open-studio-page .os-new-hero.os-shell{min-height:570px;display:flex;align-items:center;position:relative;isolation:isolate;overflow:hidden;padding:76px max(6vw,calc((100vw - 1120px)/2));gap:0;background:#f9e9d5}
+.open-studio-page .os-new-hero::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,#f1ece0 0%,rgba(241,236,224,.98) 27%,rgba(241,236,224,.8) 43%,rgba(241,236,224,.06) 50%)}
+.open-studio-page .os-new-hero>div{width:min(49%,570px);position:relative;z-index:1}
+.open-studio-page .os-new-hero>img{position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto;border-radius:0;object-fit:cover;object-position:center 42%;z-index:-2}
+.open-studio-page .os-new-hero h1{font-size:clamp(38px,4.1vw,64px);line-height:1.13;letter-spacing:-.025em;max-width:610px;margin:22px 0 26px;font-weight:500}
+.open-studio-page .os-new-hero p:not(.os-kicker){font-size:16px;max-width:410px}
+.open-studio-page .os-new-hero .os-new-actions{margin-top:26px}
+.open-studio-page .os-new-section{padding-block:54px}
+.open-studio-page .os-new-section h2{font-size:clamp(29px,3vw,43px);letter-spacing:-.02em;font-weight:500;margin-bottom:18px}
+.open-studio-page .os-value{position:relative;padding-right:min(19vw,230px)}
+.open-studio-page .os-value p{max-width:740px}
+.open-studio-page .os-new-grid{gap:18px}
+.open-studio-page .os-new-grid article{background:#fff;border-radius:12px;box-shadow:0 6px 22px rgba(84,47,28,.055)}
+.open-studio-page .os-new-grid article>div{padding:17px 20px 22px}
+.open-studio-page .os-new-grid h3{font-size:20px;margin:0 0 10px}
+.open-studio-page .os-new-grid p{font-size:13px;margin:0}
+.open-studio-page .os-new-steps>div{padding:15px 0}
+.open-studio-page .os-new-studio{height:250px;border-radius:16px;overflow:hidden;margin-top:2px;margin-bottom:38px;background:#ecd2b5}
+.open-studio-page .os-new-studio img{width:100%;height:100%;object-fit:cover;object-position:center 47%}
+.open-studio-page .os-new-free{min-height:320px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 22%;background-color:#f6dccc;background-size:cover;background-position:center;border-radius:16px}
+.open-studio-page .os-new-free h2{white-space:nowrap;margin-bottom:10px}
+.open-studio-page .os-new-free strong{font-size:clamp(36px,4.5vw,60px);line-height:1.08}
+.open-studio-page .os-new-free p,.open-studio-page .os-new-free small{font-size:12px}
+.open-studio-page .os-new-free .os-new-actions{margin:16px 0}
+.open-studio-page .os-new-path{min-height:142px;padding:20px 18px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;border:1px solid #efe3d7;box-shadow:0 5px 16px rgba(70,35,20,.035)}
+.open-studio-page .os-new-path-visual{position:absolute;right:0;bottom:0;width:48%;height:95%;object-fit:contain;object-position:right bottom;margin:0;pointer-events:none}
+.open-studio-page .os-new-path h3,.open-studio-page .os-new-path p,.open-studio-page .os-path-age{position:relative;z-index:1;max-width:60%}
+.open-studio-page .os-new-path h3{margin:9px 0;font-size:20px}
+.open-studio-page .os-new-path p{margin:0;font-size:12px;color:#a34b2b}
+.open-studio-page .os-final-cta{background:#b46e42;border-radius:16px;overflow:hidden}
+.open-studio-page .os-final-cta .os-final-bg{opacity:.72;filter:sepia(.35) saturate(.8)}
+@media(max-width:900px){.open-studio-page .os-new-hero.os-shell{min-height:490px;padding:55px 6vw}.open-studio-page .os-new-hero>div{width:56%}.open-studio-page .os-new-hero::after{background:linear-gradient(90deg,#f1ece0 0%,rgba(241,236,224,.96) 32%,rgba(241,236,224,.2) 100%)}.open-studio-page .os-new-free{padding-inline:13%}}
+@media(max-width:700px){.open-studio-page .os-new-hero.os-shell{min-height:670px;align-items:flex-start;padding:44px 24px 300px}.open-studio-page .os-new-hero>div{width:100%}.open-studio-page .os-new-hero>img{object-position:62% bottom}.open-studio-page .os-new-hero::after{background:linear-gradient(180deg,#f1ece0 0%,rgba(241,236,224,.98) 34%,rgba(241,236,224,.5) 57%,transparent 82%)}.open-studio-page .os-new-hero h1{font-size:clamp(34px,8vw,46px);max-width:460px}.open-studio-page .os-new-hero p:not(.os-kicker){font-size:14px}.open-studio-page .os-new-section{padding-block:38px}.open-studio-page .os-value{padding-right:0}.open-studio-page .os-new-studio{height:180px;margin-bottom:20px}.open-studio-page .os-new-free{padding:44px 15px;min-height:290px;background-position:center}.open-studio-page .os-new-free h2{white-space:normal;font-size:26px}.open-studio-page .os-new-free strong{font-size:38px}.open-studio-page .os-new-path{min-height:130px}.open-studio-page .os-new-path-visual{height:110px}}
+/* PAP-2281 M1 corrective pass: override generic shell specificity */
+.open-studio-page .os-new-hero.os-shell{width:100%;max-width:none;box-sizing:border-box;min-height:520px;padding-inline:max(7vw,calc((100vw - 1160px)/2))}
+.open-studio-page .os-new-hero>div{width:min(53%,620px);flex:none}
+.open-studio-page .os-new-hero h1{font-size:clamp(37px,3.75vw,57px);max-width:620px;line-height:1.14;text-wrap:balance}
+.open-studio-page .os-new-hero>img{object-position:65% 45%}
+.open-studio-page .os-new-free{padding:42px 18%;min-height:285px}
+.open-studio-page .os-new-free strong{white-space:nowrap;font-size:clamp(32px,4.3vw,56px)}
+.open-studio-page .os-new-free h2{white-space:normal;text-wrap:balance}
+.open-studio-page .os-new-studio img{object-position:center 70%;object-fit:cover}
+.open-studio-page .os-final-cta .os-final-bg{opacity:.88;filter:sepia(.18) saturate(.9) brightness(1.23)}
+.open-studio-page .os-final-cta>div{position:relative;z-index:2;text-align:left;max-width:65%;margin-right:auto}
+@media(max-width:900px){.open-studio-page .os-new-hero.os-shell{min-height:460px;padding-inline:6vw}.open-studio-page .os-new-hero>div{width:58%}.open-studio-page .os-new-hero h1{font-size:clamp(34px,4.4vw,46px)}.open-studio-page .os-new-free{padding-inline:10%}}
+@media(max-width:700px){.open-studio-page .os-new-hero.os-shell{min-height:660px;padding:38px 22px 295px}.open-studio-page .os-new-hero>div{width:100%;max-width:460px}.open-studio-page .os-new-hero h1{font-size:clamp(31px,8vw,43px)}.open-studio-page .os-new-hero>img{object-position:62% bottom}.open-studio-page .os-new-free{padding:38px 12px}.open-studio-page .os-new-free strong{font-size:clamp(27px,7vw,38px)}.open-studio-page .os-final-cta>div{max-width:90%}}

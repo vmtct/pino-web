@@ -1,0 +1,242 @@
+.header,.footer {
+  width: min(var(--public-max), calc(100% - var(--public-gutter) * 2));
+  margin-inline: auto;
+  color: inherit;
+  font-family: var(--public-sans);
+}
+.headerSlot { height:var(--public-header-height); }
+.fixedHeader {
+  position:fixed;
+  inset:0 0 auto;
+  z-index:80;
+  background:var(--public-paper);
+  transform:translateY(0);
+  transition:transform 220ms ease;
+}
+.fixedHeader[data-pino-header-state="hidden"] {
+  transform:translateY(-100%);
+  pointer-events:none;
+}
+.fixedHeader:focus-within { transform:translateY(0); pointer-events:auto; }
+@media(prefers-reduced-motion:reduce){.fixedHeader{transition:none}}
+.header {
+  display: grid;
+  grid-template-columns: minmax(max-content,1fr) auto minmax(max-content,1fr);
+  align-items: center;
+  gap: 20px;
+  min-height: var(--public-header-height);
+  border-bottom: 1px solid var(--public-line);
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  font: 700 24px/1 var(--public-sans);
+  letter-spacing: .015em;
+}
+.brand img { width: 30px; height: 38px; object-fit: contain; }
+.nav { display: flex; align-items: center; justify-content: center; gap: 22px; white-space: nowrap; }
+.nav a,.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  font: 600 var(--public-button)/1.3 var(--public-sans);
+}
+.nav a[aria-current="page"] { text-decoration: underline; text-underline-offset: 5px; }
+.actions { display:flex; align-items:center; justify-self:end; gap:8px; }
+.actions :global(.locale-toggle) { font-family: var(--public-sans); font-size: 10px; }
+.action { border:1px solid var(--public-line-strong); border-radius:var(--public-pill); padding:0 14px; white-space:nowrap; }
+.header a:focus-visible,.footer a:focus-visible { outline:2px solid currentColor; outline-offset:3px; border-radius:4px; }
+.footer {
+  display:grid;
+  grid-template-columns:minmax(160px,1.2fr) 1fr 1fr;
+  gap:24px;
+  margin-top:var(--public-section);
+  padding:32px 0 86px;
+  border-top:1px solid var(--public-line);
+}
+.footer .brand { font-size:20px; margin-bottom:12px; }
+.footer .brand img { width:26px; height:33px; }
+.footer > div { display:flex; flex-direction:column; align-items:flex-start; gap:9px; min-width:0; }
+.footer h4 { margin:0 0 4px; font:600 var(--public-caption)/1.5 var(--public-sans); text-transform:uppercase; letter-spacing:.08em; }
+.footer p,.footer a:not(.brand),.footer strong,.footer small { margin:0; font:400 13px/1.6 var(--public-sans); overflow-wrap:anywhere; }
+.footer strong { font-weight:600; }
+.footer small { grid-column:1/-1; font-size:var(--public-caption); }
+.inset { width:var(--public-content-width); }
+@media(max-width:900px) {
+  .header { grid-template-columns:1fr auto; gap:0; min-height:var(--public-header-height); padding-top:6px; }
+  .nav { grid-row:2; grid-column:1/-1; justify-content:space-between; gap:8px; }
+  .actions { grid-row:1; grid-column:2; }
+  .nav a { font-size:12px; }
+  .brand { font-size:21px; }
+  .brand img { width:26px; height:32px; }
+}
+@media(max-width:560px) {
+  .footer { grid-template-columns:1fr 1fr; gap:20px; }
+  .footer > div:first-child { grid-column:1/-1; }
+  .action { font-size:12px; padding:0 11px; }
+}
+@media(max-width:360px) { .nav { gap:4px; } .nav a { font-size:11px; } .action { padding:0 8px; font-size:11px; } }
+
+
+/* PAP-2191: floating center sigil, compact navigation. */
+.homeHeader{grid-template-columns:minmax(0,1fr) 96px minmax(0,1fr);grid-template-rows:var(--public-header-height);position:relative;gap:12px;min-height:var(--public-header-height)}
+.homeHeader .brand{grid-area:1/1/2/-1;position:absolute;top:0;left:50%;transform:translateX(-50%);width:75px;height:calc(var(--public-header-height) + 16px);z-index:2}
+/* Desktop sigil dimensions tuned by Founder; preserve original artwork and mobile sizing. */
+.homeHeader .brand img{position:absolute;left:50%;top:-6.5625px;transform:translateX(-50%);width:100px;height:125px;max-width:none;object-fit:contain;filter:drop-shadow(0 4px 4px #00000022)}
+.homeHeader .nav{grid-column:1;grid-row:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:min(100%,345px);justify-self:center;gap:4px}
+.homeHeader .actions{grid-column:3;grid-row:1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:min(100%,260px);justify-self:center;justify-items:center;gap:6px}
+.homeFlowSlot{height:auto}
+.flowHeader{position:relative;z-index:2;background:var(--public-paper)}
+@media(max-width:900px){.homeFlowSlot{--public-header-height:118px}.homeHeader{grid-template-columns:minmax(0,1fr);grid-template-rows:72px 44px;gap:0;padding-top:0}.homeHeader .brand{position:relative;left:auto;top:auto;grid-column:1;grid-row:1;justify-self:center;align-self:center;width:49px;height:64px;transform:translateY(3px)}.homeHeader .brand img{position:static;transform:none;width:49px;height:64px}.homeHeader .nav{grid-row:2;grid-column:1;align-self:end;width:min(100%,345px);gap:3px}.homeHeader .nav a{font-size:12px;min-height:44px}.homeHeader .actions{grid-column:1;grid-row:1;justify-self:end;width:auto;grid-template-columns:auto auto;gap:6px}.homeHeader .action{font-size:11px;padding:0 9px}}
+@media(max-width:560px){.homeFlowSlot{--public-header-height:134px}.homeHeader{grid-template-rows:88px 44px}.homeHeader .brand{transform:none}.homeHeader .actions{grid-template-columns:auto;grid-template-rows:44px 44px;gap:0;justify-items:end}.homeHeader .actions :global(.locale-toggle){font-size:10px;min-height:36px;align-items:center}.homeHeader .action{font-size:11px;min-height:44px;padding:0 8px}.homeHeader .nav a{font-size:11px}}
+
+/* PAP-2226: right-side menu collapses while the left path links stay visible. */
+.menuToggle{display:none;width:44px;height:44px;border:1px solid var(--public-line-strong);border-radius:50%;background:transparent;align-items:center;justify-content:center;flex-direction:column;gap:5px;cursor:pointer}
+.menuToggle span{width:17px;height:1px;background:currentColor}
+@media(max-width:600px) and (orientation:portrait){.header:not(.homeHeader){grid-template-columns:1fr auto}.header:not(.homeHeader) .nav{display:none}.header:not(.homeHeader) .actions{display:none}.header:not(.homeHeader) .menuToggle{display:flex}.header:not(.homeHeader).menuOpen .nav,.header:not(.homeHeader).menuOpen .actions{display:flex;grid-column:1/-1;justify-self:stretch}.header:not(.homeHeader).menuOpen .nav{flex-direction:column;align-items:stretch}.header:not(.homeHeader).menuOpen{height:auto}}
+@media(min-width:601px),(orientation:landscape){.header:not(.homeHeader){grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}.header:not(.homeHeader) .nav{display:flex;grid-column:2;grid-row:1}.header:not(.homeHeader) .actions{display:none}.header:not(.homeHeader) .menuToggle{display:flex;grid-column:3;grid-row:1;justify-self:end}}
+
+@media(min-width:601px),(orientation:landscape){.header:not(.homeHeader).menuOpen .actions{display:flex;position:absolute;right:24px;top:calc(var(--public-header-height) - 8px);z-index:90;flex-direction:column;align-items:stretch;padding:12px;background:var(--public-paper);border:1px solid var(--public-line);box-shadow:0 12px 24px #1d302218}.header:not(.homeHeader).menuOpen .actions :global(.locale-toggle){align-self:flex-end}}
+
+/* PAP-2226: desktop above 900px; full menu at 900px and below. */
+@media(max-width:900px){
+.homeFlowSlot{--public-header-height:72px}
+.header,.header:not(.homeHeader),.homeHeader{position:relative;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:72px;gap:0;padding-top:0;min-height:72px}
+.homeHeader .brand{position:relative;grid-area:1/1;left:auto;top:auto;justify-self:start;align-self:center;transform:none;width:49px;height:64px}
+.homeHeader .brand img{position:static;transform:none;width:49px;height:64px}
+.header .nav,.header .actions,.header:not(.homeHeader) .nav,.header:not(.homeHeader) .actions{display:none}
+.header .menuToggle,.header:not(.homeHeader) .menuToggle{display:flex;grid-column:2;grid-row:1;justify-self:end}
+.header.menuOpen .nav,.header:not(.homeHeader).menuOpen .nav{display:flex;position:absolute;top:100%;left:0;right:0;width:auto;flex-direction:column;align-items:stretch;padding:12px;background:var(--public-paper);z-index:90}
+.header.menuOpen .actions,.header:not(.homeHeader).menuOpen .actions{display:flex;position:absolute;top:calc(100% + 144px);left:0;right:0;width:auto;flex-direction:column;align-items:stretch;padding:12px;background:var(--public-paper);z-index:90}
+}
+@media(min-width:901px){
+.header:not(.homeHeader){grid-template-columns:minmax(max-content,1fr) auto minmax(max-content,1fr)}
+.header:not(.homeHeader) .nav{display:flex;grid-column:2;grid-row:1}
+.header:not(.homeHeader) .actions,.header:not(.homeHeader).menuOpen .actions{display:flex;position:static;grid-column:3;grid-row:1;flex-direction:row;padding:0;background:transparent;border:0;box-shadow:none}
+.header .menuToggle,.header:not(.homeHeader) .menuToggle{display:none}
+}
+
+/* PAP-2226: language selector remains visible beside the mobile menu. */
+@media(max-width:900px){
+.header,.header:not(.homeHeader),.homeHeader{grid-template-columns:minmax(0,1fr) auto auto}
+.header .actions,.header:not(.homeHeader) .actions,.header.menuOpen .actions,.header:not(.homeHeader).menuOpen .actions{display:flex;position:static;grid-column:2;grid-row:1;width:auto;padding:0;background:transparent;border:0;box-shadow:none;flex-direction:row;justify-self:end}
+.header .actions .action{display:none}
+.header.menuOpen .actions .action{display:flex;position:absolute;top:calc(100% + 144px);left:0;right:0;z-index:90;background:var(--public-paper)}
+.header .menuToggle,.header:not(.homeHeader) .menuToggle{grid-column:3;margin-left:8px}
+}
+
+/* PAP-2226: lay out the expanded menu in consecutive rows. */
+@media (max-width:900px) {
+  .header.menuOpen, .header:not(.homeHeader).menuOpen {
+    grid-template-rows:72px auto auto;
+    background:var(--public-paper);
+    padding-bottom:12px;
+  }
+  .header.menuOpen .actions, .header:not(.homeHeader).menuOpen .actions {
+    display:contents;
+  }
+  .header.menuOpen .actions :global(.locale-toggle), .header:not(.homeHeader).menuOpen .actions :global(.locale-toggle) {
+    grid-area:1 / 2;
+    justify-self:end;
+    align-self:center;
+  }
+  .header.menuOpen .nav, .header:not(.homeHeader).menuOpen .nav {
+    position:static;
+    grid-area:2 / 1 / auto / -1;
+    justify-self:stretch;
+    align-self:stretch;
+    width:100%;
+    padding:8px 0;
+    gap:0;
+  }
+  .header.menuOpen .actions .action {
+    position:static;
+    grid-area:3 / 1 / auto / -1;
+  }
+  .header .menuToggle {color:inherit}
+}
+
+/* PAP-2246: Afterschool brand lockup matches MyTime 60px sigil + stacked words. */
+.header .afterschoolBrand{display:inline-flex;align-items:center;gap:0;min-height:60px;text-decoration:none}
+.header .afterschoolBrand img{width:60px;height:60px;max-width:none;flex:0 0 60px;object-fit:contain}
+.header .afterschoolBrand .brandWords{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:5px;line-height:1}
+.header .afterschoolBrand .brandWords strong{font:700 23px/1 var(--public-sans);letter-spacing:-.055em}
+.header .afterschoolBrand .brandWords small{font:italic 10px/1.1 Georgia,serif;white-space:nowrap}
+.homeHeader .afterschoolBrand{position:relative;left:auto;top:auto;transform:none;width:auto;height:60px;justify-self:center}
+.homeHeader .afterschoolBrand img{position:static;transform:none;width:60px;height:60px;max-width:none;filter:none}
+@media(max-width:900px){.homeHeader .afterschoolBrand{grid-column:1;grid-row:1;transform:none;width:auto;height:60px;justify-self:center}.homeHeader .afterschoolBrand img{width:60px;height:60px}}/* PAP-227: Afterschool ecosystem switcher, placed between locale and Piner App. */
+.ecosystemLink{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 12px;border:1px solid var(--public-line-strong);border-radius:var(--public-pill);white-space:nowrap;text-decoration:none;font:600 var(--public-button)/1.3 var(--public-sans)}
+.ecosystemLink:hover{background:var(--public-line)}
+@media(max-width:560px){.ecosystemLink{padding:0 8px;font-size:11px}}
+/* PAP-227: match MyTime ecosystem nav: underlined cross-link and solid Piner CTA. */
+.afterschoolHeader .ecosystemLink{border:0;border-radius:0;padding:0 8px;background:transparent;color:#536137;text-decoration:underline;text-underline-offset:5px;font-weight:700}
+.afterschoolHeader .ecosystemLink:hover{background:transparent;color:#354524}
+.afterschoolHeader .action{background:#65733e;border-color:#65733e;color:#fff;font-weight:700;padding-inline:18px}
+.afterschoolHeader .action:hover{background:#4d5d30;border-color:#4d5d30}
+@media(max-width:560px){.afterschoolHeader .ecosystemLink{font-size:11px;padding-inline:4px}.afterschoolHeader .action{padding-inline:10px}}
+/* PAP-227 Afterschool: symmetric left navigation, centered lockup, right PINO actions. */
+@media(min-width:901px){
+ .header.afterschoolHeader:not(.homeHeader){grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);column-gap:22px}
+ .header.afterschoolHeader:not(.homeHeader) .nav{grid-column:1;grid-row:1;justify-self:start;gap:20px}
+ .header.afterschoolHeader:not(.homeHeader) .afterschoolBrand{grid-column:2;grid-row:1;justify-self:center}
+ .header.afterschoolHeader:not(.homeHeader) .actions{grid-column:3;grid-row:1;justify-self:end;gap:10px}
+ .header.afterschoolHeader:not(.homeHeader) .nav a{font-size:12px}
+ .header.afterschoolHeader:not(.homeHeader) .ecosystemLink{color:#9d3d25}
+ .header.afterschoolHeader:not(.homeHeader) .action{background:#a84930;border-color:#a84930;color:white}
+ .header.afterschoolHeader:not(.homeHeader) .action:hover{background:#87351f;border-color:#87351f}
+}
+@media(max-width:900px){
+ .header.afterschoolHeader:not(.homeHeader){grid-template-columns:minmax(0,1fr) auto auto}
+ .header.afterschoolHeader:not(.homeHeader) .afterschoolBrand{grid-column:1;grid-row:1;justify-self:start}
+ .header.afterschoolHeader:not(.homeHeader) .actions{grid-column:2;grid-row:1}
+ .header.afterschoolHeader:not(.homeHeader) .menuToggle{grid-column:3;grid-row:1}
+ .header.afterschoolHeader:not(.homeHeader) .ecosystemLink{color:#9d3d25}
+ .header.afterschoolHeader:not(.homeHeader) .action{background:#a84930;border-color:#a84930;color:#fff}
+}
+/* PAP-227: unified Afterschool desktop nav typography, left and right. */
+@media(min-width:901px){
+ .header.afterschoolHeader:not(.homeHeader) .nav a,
+ .header.afterschoolHeader:not(.homeHeader) .actions .ecosystemLink,
+ .header.afterschoolHeader:not(.homeHeader) .actions .action{font-family:var(--public-sans);font-size:12px;line-height:1.3;font-weight:600;letter-spacing:0}
+}
+
+/* PAP-2316: center all hamburger navigation labels consistently. */
+@media(max-width:900px){.header.menuOpen .nav a,.header:not(.homeHeader).menuOpen .nav a{display:flex;align-items:center;justify-content:center;text-align:center;width:100%;min-height:44px}}
+
+/* PAP-2328 — center mobile hamburger controls/menu; avoid duplicate ecosystem link. */
+@media(max-width:900px){
+.header .menuToggle,.header:not(.homeHeader) .menuToggle{align-self:center;justify-self:end;margin-block:0;padding:0;flex-shrink:0}
+.header.afterschoolHeader .ecosystemLink{display:none !important}
+.header.menuOpen .nav,.header:not(.homeHeader).menuOpen .nav{align-items:stretch;text-align:center}
+.header.menuOpen .nav a,.header:not(.homeHeader).menuOpen .nav a{justify-content:center;text-align:center}
+}
+
+/* PAP-2329 — ecosystem switch inside collapsed nav, legible mobile labels. */
+.mobileMyTimeLink{display:none !important}
+@media(max-width:900px){
+.header.menuOpen .nav .mobileMyTimeLink{display:flex !important;align-items:center;justify-content:center;min-height:48px;font-size:16px;font-weight:600;text-align:center}
+.header.menuOpen .nav a,.header:not(.homeHeader).menuOpen .nav a{font-size:16px;line-height:1.4;min-height:48px}
+}
+
+/* PAP-2331 — prominent uppercase Piner App in collapsed Afterschool navigation. */
+@media(max-width:900px){
+.header.menuOpen .actions .action,.header:not(.homeHeader).menuOpen .actions .action{font-size:19px;font-weight:700;line-height:1.3;text-transform:uppercase;letter-spacing:.035em;min-height:52px;justify-content:center;text-align:center}
+}
+/* PAP-2336: elastic, evenly distributed desktop navigation within each side of centered brand. */
+@media(min-width:901px){
+ .header .nav,.header .actions{min-width:0;width:100%;gap:0;justify-content:space-evenly;justify-self:stretch}
+ .homeHeader .nav{display:flex;width:100%;gap:0;justify-content:space-evenly;justify-self:stretch}
+ .homeHeader .actions{display:flex;width:100%;gap:0;justify-content:space-evenly;justify-self:stretch;align-items:center}
+ .header.afterschoolHeader:not(.homeHeader) .nav,
+ .header.afterschoolHeader:not(.homeHeader) .actions{width:100%;gap:0;justify-content:space-evenly;justify-self:stretch}
+}
+@media(min-width:901px){
+ .header{width:calc(100% - var(--public-gutter) * 2);max-width:none}
+}
+/* PAP-2338 refinement: navbar content max-width 940px, not viewport-wide. */
+@media(min-width:901px){
+ .header{width:min(940px,calc(100% - var(--public-gutter) * 2));max-width:940px}
+}

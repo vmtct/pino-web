@@ -1,0 +1,19 @@
+@media (prefers-reduced-motion: no-preference) {
+  .pino-motion-pending {opacity:0;transform:translate3d(0,24px,0);transition:opacity 650ms ease,transform 750ms cubic-bezier(.22,1,.36,1);will-change:opacity,transform}
+  .pino-motion-pending.pino-motion-visible {opacity:1;transform:translate3d(0,0,0);will-change:auto}
+  main section img.pino-motion-pending {transform:translate3d(0,18px,0) scale(.985)}
+  main section img.pino-motion-visible {transform:translate3d(0,0,0) scale(1)}
+}
+@media (prefers-reduced-motion: reduce) {.pino-motion-pending{opacity:1!important;transform:none!important;transition:none!important}}
+@media (prefers-reduced-motion: no-preference){.pino-hero-entry{opacity:0;transition:opacity 800ms ease 1s,transform 900ms cubic-bezier(.22,1,.36,1) 1s;will-change:transform,opacity}.pino-hero-entry.pino-hero-from-left{transform:translate3d(-52px,0,0)}.pino-hero-entry.pino-hero-from-right{transform:translate3d(52px,0,0)}.pino-hero-entry.pino-motion-visible{animation:pinoHeroEnter 900ms cubic-bezier(.22,1,.36,1) .5s both;will-change:auto}@keyframes pinoHeroEnter{from{opacity:0;transform:translate3d(var(--pino-hero-start-x,-52px),0,0)}to{opacity:1;transform:translate3d(0,0,0)}}.pino-hero-entry.pino-hero-from-right{--pino-hero-start-x:52px}.pino-hero-entry.pino-hero-from-left{--pino-hero-start-x:-52px}}@media(prefers-reduced-motion:reduce){.pino-hero-entry{opacity:1!important;transform:none!important;transition:none!important}}
+/* Pre-hydration hero state: hide SSR text before ScrollMotion attaches classes. */
+@media (prefers-reduced-motion: no-preference) {
+  main section[class*="hero" i]:not([data-home-carousel]) [class*="heroCopy" i],
+  main section[class*="hero" i]:not([data-home-carousel]) [class*="heroContent" i],
+  main section[class*="hero" i]:not([data-home-carousel]) [class*="concept-copy" i],
+  main section[class*="hero" i]:not([data-home-carousel]) > div:first-child:not([class*="visual" i]):not([class*="media" i]),
+  main header[class*="hero" i] [class*="heroCopy" i],
+  main div[class*="hero" i][class*="section" i] [class*="heroCopy" i] {
+    opacity: 0;
+  }
+}
