@@ -1,7 +1,7 @@
 "use client";
 import RegistrationInterest from "../registration-interest";
 
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import {
   CoreSession,
   RegistrationForm,
@@ -114,6 +114,12 @@ function compactDate(iso: string, locale: "vi" | "en") {
   }).format(new Date(iso));
 }
 
+function weeklyDay(iso: string, locale: "vi" | "en") {
+  const value = new Intl.DateTimeFormat(locale === "vi" ? "vi-VN" : "en-US", {
+    timeZone: "Asia/Ho_Chi_Minh", weekday: "long",
+  }).format(new Date(iso));
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
 function OpenStudioNav({ locale }: { locale: "vi" | "en" }) {
   const en = locale === "en";
   return (
@@ -176,7 +182,7 @@ export default function OpenStudioPage() {
   const usingFallback = false;
   const canRegister = registrationEnabled;
   const selectedSession = sessions.find((session) => session.id === selectedId) || null;
-  const featuredSession = useMemo(() => sessions.find((session) => !isSessionFull(session)) || sessions[0] || null, [sessions]);
+
   const visibleSessions = sessions;
 
   const selectSession = (session: CoreSession, openForm = false) => {
@@ -224,28 +230,36 @@ export default function OpenStudioPage() {
 <section className="os-new-section os-shell os-value"><h2>{locale==="vi"?"Thêm lựa chọn cho con sau giờ học.":"More ways to spend the afternoon."}</h2><p>{locale==="vi"?"Thay vì chỉ xem màn hình hay quanh quẩn ở nhà, con có thể dành buổi chiều để vẽ tranh, khám phá chất liệu và thử chơi piano.":"Instead of another afternoon on screens or at home, children can paint, explore materials and try the piano."}</p><p>{locale==="vi"?"Tại Trạm Nghệ Thuật Mở, con được tự chọn hoạt động, sáng tạo theo sở thích và làm quen với những trải nghiệm mới mỗi lần ghé đến.":"At Open Studio, children choose activities, create at their own pace and discover something new each visit."}</p></section><section id="activities" className="os-new-section os-shell"><h2>{locale==="vi"?"Hôm nay con muốn làm gì?":"What would you like to make today?"}</h2><div className="os-new-grid">{[[ASSETS.clay,"Đa chất liệu","Mixed media","Khám phá bằng đôi tay, với giấy, đất nặn và vật liệu sáng tạo.","Explore paper, clay and creative materials."],[ASSETS.acrylicCover,"Chất liệu & Nhân vật","Materials & Characters","Tự do thể hiện ý tưởng qua sắc màu, họa cụ và sáng tạo nhân vật.","Express your ideas through colour."],[ASSETS.piano,"Piano nền tảng","Foundational piano","Làm quen phím đàn, nhịp điệu và âm thanh.","Discover keys, rhythm and sound."]].map(([src,vi,en,dv,de])=><article key={en}><img src={src} alt="" loading="lazy"/><div><h3>{locale==="vi"?vi:en}</h3><p>{locale==="vi"?dv:de}</p><a className="os-activity-register" href="#register" data-registration-branch={src===ASSETS.piano?"pianohouse":src===ASSETS.acrylicCover?"artchitect":"little-piner"}>{locale==="vi"?"Đăng ký tham gia":"Register for a session"} →</a></div></article>)}</div></section>
 <section className="os-new-section os-shell"><h2>{locale==="vi"?"Một buổi tại Open Studio":"A visit to Open Studio"}</h2><div className="os-new-steps">{(locale==="vi"?["Đến trạm","Chọn hoạt động","Tự do sáng tạo","Mang về niềm vui"]:["Arrive","Choose an activity","Create freely","Take joy home"]).map((step,i)=><div key={step}><b>0{i+1}</b><h3>{step}</h3></div>)}</div><p>{locale==="vi"?"Mentor hỗ trợ khi con cần và gợi mở khi con chưa có ý tưởng.":"Mentors offer support and inspiration whenever needed."}</p></section>
 <section className="os-new-studio os-shell" aria-label="PINO House creative studio"><img src={ASSETS.watercolor} alt="Góc sáng tạo nghệ thuật tại PINO House" loading="lazy"/></section><section className="os-new-section os-shell os-new-free"><h2>{locale==="vi"?"Một thói quen sáng tạo mỗi tháng":"A creative habit every month"}</h2><strong>{locale==="vi"?"2 buổi miễn phí*":"2 free sessions*"}</strong><p>{locale==="vi"?"Một khoảng thời gian dành riêng cho nghệ thuật và âm nhạc.":"Time set aside for art and music."}</p><div className="os-new-actions"><a href="#sessions">{locale==="vi"?"Đặt chỗ tại Open Studio":"Reserve a place"} →</a></div><small>{locale==="vi"?"* Các buổi tiếp theo: 199.000đ/buổi.":"* Additional sessions: 199,000 VND per session."}</small></section>
-<section className="os-main os-shell" id="sessions" aria-labelledby="sessions-title">
+<section className="os-main os-shell os-weekly-schedule" id="sessions" aria-labelledby="sessions-title">
         <OpenStudioM1Review/>
-        <div className="os-featured-panel">
-          <p className="os-kicker">✦ <CmsText contentKey="os_v2_up_next_label" fallback={t.upNext} />{usingFallback ? ` · ${t.demoSchedule}` : ""}</p>
-          {status === "loading" ? <div className="os-featured-loading">{t.loading}</div> : null}
-          {status === "error" ? <div className="os-featured-error"><strong>{t.loadError}</strong><button type="button" onClick={() => void loadSessions()}>{t.retry}</button></div> : null}
-          {status === "success" && !featuredSession ? <div className="os-featured-error"><strong>{t.noSchedule}</strong><span>{t.checkBack}</span></div> : null}
-          {status === "success" && featuredSession ? <div className="os-featured-grid">
-            <img className="os-featured-image" src={activityImage(featuredSession)} alt={sessionImageAlt(featuredSession)} />
-            <div className="os-featured-copy"><span className="os-time-label">{formatLocalTimeRange(featuredSession.startsAt, featuredSession.endsAt, locale)}</span><h2 id="sessions-title">{publicSyllabusTitle(featuredSession.syllabus.title)}</h2><div className="os-pills"><span>{formatAgeRange(featuredSession.syllabus.ageMin, featuredSession.syllabus.ageMax, locale)}</span><span>{pathLabel(featuredSession)}</span></div><p>{featuredSession.syllabus.shortDescription || t.fallbackDescription}</p></div>
-            <div className="os-featured-meta"><dl><div><dt>Path</dt><dd>{pathLabel(featuredSession)}</dd></div><div><dt>{t.seatsLeft}</dt><dd>{isSessionFull(featuredSession) ? t.full : featuredSession.availability.remainingSeats ?? t.available}</dd></div><div><dt>{t.time}</dt><dd>{formatLocalDate(featuredSession.startsAt, locale)}</dd></div></dl><button className="os-book-button" type="button" disabled={isSessionFull(featuredSession)} onClick={() => selectSession(featuredSession, true)}>{isSessionFull(featuredSession) ? t.full : t.registerNow}<span>→</span></button><button className="os-detail-link" type="button" disabled={isSessionFull(featuredSession)} onClick={() => selectSession(featuredSession)}>{t.detail}</button></div>
-          </div> : null}
-        </div>
-
-        {status === "loading" ? <div className="os-card-grid os-skeleton-grid">{[0, 1, 2, 3, 4, 5].map((item) => <div className="os-session-card os-skeleton-card" key={item}><span /><i /><i /><i /></div>)}</div> : null}
-        {status === "success" && visibleSessions.length === 0 ? <div className="os-empty">{t.noFiltered}</div> : null}
-        {status === "success" && visibleSessions.length > 0 ? <div className="os-card-grid">{visibleSessions.slice(0, 9).map((session, index) => { const full = isSessionFull(session); return <article className={`os-session-card${selectedId === session.id ? " is-selected" : ""}`} key={session.id}><img src={activityImage(session, index)} alt={sessionImageAlt(session)} /><div className="os-session-body"><span className="os-time-label">{formatLocalTimeRange(session.startsAt, session.endsAt, locale)}</span><h3>{publicSyllabusTitle(session.syllabus.title)}</h3><div className="os-pills"><span>{formatAgeRange(session.syllabus.ageMin, session.syllabus.ageMax, locale)}</span><span>{pathLabel(session)}</span></div><div className="os-session-bottom"><strong className={typeof session.availability.remainingSeats === "number" && session.availability.remainingSeats <= 3 ? "is-low" : ""}>{full ? t.full : session.availability.remainingSeats === null ? t.available : `${session.availability.remainingSeats} ${t.seatsRemaining}`}</strong><button type="button" disabled={full} onClick={() => selectSession(session)}>{full ? t.fullShort : t.detail}<span>{full ? "" : "→"}</span></button></div></div></article>; })}</div> : null}
-
-        {selectedSession ? <dialog className="os-session-detail os-session-modal" ref={detailRef} tabIndex={-1} aria-labelledby="session-detail-title" onClose={()=>{if(submissionInFlight.current)return;setSelectedId(null);setShowForm(false);requestAnimationFrame(()=>returnFocus.current?.focus())}} onCancel={e=>{if(submissionInFlight.current)e.preventDefault()}}><button className="os-modal-close" type="button" aria-label={locale==="vi"?"Đóng":"Close"} disabled={submission==="pending"} onClick={()=>detailRef.current?.close()}>×</button>
+        <header className="os-weekly-heading">
+          <p className="os-kicker">✦ OPEN STUDIO{usingFallback ? " · " + t.demoSchedule : ""}</p>
+          <h2 id="sessions-title">{usingFallback ? (locale === "vi" ? "Lịch Open Studio cố định hàng tuần" : "Weekly Open Studio schedule") : <CmsText contentKey="os_v2_calendar_label" fallback={t.schedule} />}</h2>
+          {usingFallback && <p>{locale === "vi" ? "Ba buổi trải nghiệm nghệ thuật tại PINO, diễn ra đều đặn mỗi tuần." : "Three creative experiences at PINO, every week."}</p>}
+        </header>
+        {status === "error" && <div className="os-featured-error"><strong>{t.loadError}</strong><button type="button" onClick={() => void loadSessions()}>{t.retry}</button></div>}
+        {status === "loading" && <div className="os-card-grid os-skeleton-grid" aria-label={t.loading}>{[0, 1, 2].map(item => <div className="os-session-card os-skeleton-card" key={item}><span /><i /><i /><i /></div>)}</div>}
+        {status === "success" && visibleSessions.length === 0 && <div className="os-empty"><strong>{t.noSchedule}</strong><p>{t.checkBack}</p></div>}
+        {status === "success" && visibleSessions.length > 0 && <div className="os-card-grid os-weekly-grid">{visibleSessions.slice(0, 9).map((session, index) => {
+          const full = isSessionFull(session);
+          const path = pathLabel(session);
+          const accent = path === "PianoHouse" ? "piano" : path === "Little Piner" ? "little" : "art";
+          return <article className="os-session-card os-weekly-card" data-accent={accent} key={session.id}>
+            <div className="os-weekly-time"><strong>{usingFallback ? weeklyDay(session.startsAt, locale) : formatLocalDate(session.startsAt, locale)}</strong><span>{formatLocalTimeRange(session.startsAt, session.endsAt, locale)}</span></div>
+            <img src={activityImage(session, index)} alt={sessionImageAlt(session)} />
+            <div className="os-session-body">
+              <h3>{publicSyllabusTitle(session.syllabus.title)}</h3>
+              <div className="os-pills"><span>{formatAgeRange(session.syllabus.ageMin, session.syllabus.ageMax, locale)}</span><span className="os-path-badge" data-path={accent}>{path}</span></div>
+              <p className="os-weekly-description">{session.syllabus.shortDescription || t.fallbackDescription}</p>
+              {!usingFallback && <p className="os-weekly-availability">{full ? t.full : session.availability.remainingSeats === null ? t.available : session.availability.remainingSeats + " " + t.seatsRemaining}</p>}
+              <button className="os-weekly-detail" type="button" disabled={full} onClick={() => selectSession(session)}>{full ? t.fullShort : t.detail}<span aria-hidden="true">→</span></button>
+            </div>
+          </article>;
+        })}</div>}
+        {selectedSession ? <dialog className="os-session-detail os-session-modal os-weekly-modal" ref={detailRef} tabIndex={-1} aria-labelledby="session-detail-title" onClose={()=>{if(submissionInFlight.current)return;setSelectedId(null);setShowForm(false);requestAnimationFrame(()=>returnFocus.current?.focus())}} onCancel={e=>{if(submissionInFlight.current)e.preventDefault()}}><button className="os-modal-close" type="button" aria-label={locale==="vi"?"Đóng":"Close"} disabled={submission==="pending"} onClick={()=>detailRef.current?.close()}>×</button>
           <img src={activityImage(selectedSession)} alt={sessionImageAlt(selectedSession)} />
-          <div className="os-session-detail-copy"><p className="os-kicker">{pathLabel(selectedSession)} · {formatAgeRange(selectedSession.syllabus.ageMin, selectedSession.syllabus.ageMax, locale)}</p><h2 id="session-detail-title">{publicSyllabusTitle(selectedSession.syllabus.title)}</h2><p className="os-detail-date">{formatLocalDate(selectedSession.startsAt, locale)} · {formatLocalTimeRange(selectedSession.startsAt, selectedSession.endsAt, locale)} · {t.vietnamTime}</p>{selectedSession.syllabus.publicDescription ? <p>{selectedSession.syllabus.publicDescription}</p> : null}{selectedSession.syllabus.skillSummary ? <div className="os-detail-note"><strong>{t.exploreHeading}</strong><p>{selectedSession.syllabus.skillSummary}</p></div> : null}
-          {usingFallback ? <div className="os-registration-notice"><strong>{t.demoTitle}</strong><p>{t.demoCopy}</p></div> : null}
+          <div className="os-session-detail-copy"><h2 id="session-detail-title">{publicSyllabusTitle(selectedSession.syllabus.title)}</h2><div className="os-pills"><span>{formatAgeRange(selectedSession.syllabus.ageMin, selectedSession.syllabus.ageMax, locale)}</span><span className="os-path-badge" data-path={pathLabel(selectedSession) === "PianoHouse" ? "piano" : pathLabel(selectedSession) === "Little Piner" ? "little" : "art"}>{pathLabel(selectedSession)}</span></div><div className="os-weekly-modal-times"><strong>{usingFallback ? weeklyDay(selectedSession.startsAt, locale) + (locale === "vi" ? " (hàng tuần)" : " (every week)") : formatLocalDate(selectedSession.startsAt, locale)}</strong><span>{formatLocalTimeRange(selectedSession.startsAt, selectedSession.endsAt, locale)} · {t.vietnamTime}</span><span>{Math.round((Date.parse(selectedSession.endsAt) - Date.parse(selectedSession.startsAt)) / 60000)} {locale === "vi" ? "phút" : "minutes"}</span></div>{selectedSession.syllabus.publicDescription ? <p>{selectedSession.syllabus.publicDescription}</p> : null}{selectedSession.syllabus.skillSummary ? <div className="os-detail-note"><strong>{t.exploreHeading}</strong><p>{selectedSession.syllabus.skillSummary}</p></div> : null}
+          {usingFallback ? <div className="os-registration-notice"><p>{locale === "vi" ? "Lịch minh hoạ · Chưa mở đăng ký." : "Sample schedule · Registration not open."}</p><button className="os-book-button" type="button" disabled>{t.registerNow}<span>→</span></button></div> : null}
           {!usingFallback && !registrationEnabled ? <div className="os-registration-notice"><strong>{t.registrationSoon}</strong><p>{t.registrationSoonCopy}</p></div> : null}
           {canRegister && !showForm && submission !== "success" ? <button className="os-book-button" type="button" onClick={() => setShowForm(true)}>{t.registerSession} <span>→</span></button> : null}
           {canRegister && showForm && submission !== "success" ? <form className="os-registration-form" onSubmit={submitRegistration} noValidate><h3>{t.familyInfo}</h3><p>{t.familyInfoCopy}</p><label>{t.parentName}<input name="contactName" autoComplete="name" value={form.contactName} onChange={(event) => updateForm("contactName", event.target.value)} aria-invalid={Boolean(fieldErrors.contactName)} />{fieldErrors.contactName ? <small>{fieldErrors.contactName}</small> : null}</label><label>{t.phone}<input name="phone" type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={(event) => updateForm("phone", event.target.value)} aria-invalid={Boolean(fieldErrors.phone)} />{fieldErrors.phone ? <small>{fieldErrors.phone}</small> : null}</label><label>{t.childName}<input name="childName" autoComplete="off" value={form.childName} onChange={(event) => updateForm("childName", event.target.value)} aria-invalid={Boolean(fieldErrors.childName)} />{fieldErrors.childName ? <small>{fieldErrors.childName}</small> : null}</label><label>{t.childBirth}<input name="childDateOfBirth" type="date" value={form.childDateOfBirth} onChange={(event) => updateForm("childDateOfBirth", event.target.value)} aria-invalid={Boolean(fieldErrors.childDateOfBirth)} />{fieldErrors.childDateOfBirth ? <small>{fieldErrors.childDateOfBirth}</small> : null}</label>{submission === "error" ? <p className="os-submit-error" role="alert">{submissionMessage}</p> : null}<button className="os-book-button" type="submit" disabled={submission === "pending"}>{submission === "pending" ? t.sending : t.submit}<span>→</span></button></form> : null}
