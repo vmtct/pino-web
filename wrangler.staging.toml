@@ -7,6 +7,7 @@ keep_vars = false
 [vars]
 ENVIRONMENT = "staging"
 PINO_CORE_REGISTRATION_ENABLED = "false"
+WEBSITE_SYNTHETIC_ENABLED = "false"
 
 [[services]]
 binding = "PINO_CORE_PUBLIC"
@@ -22,6 +23,11 @@ entrypoint = "PublicWebCmsControlPlane"
 binding = "PINO_MEMBER_CORE"
 service = "pino-core-staging"
 entrypoint = "ParentMemberControlPlane"
+
+[[services]]
+binding = "PINO_WEBSITE_SYNTHETIC_CORE"
+service = "pino-core-staging"
+entrypoint = "WebsiteSyntheticIntakeControlPlane"
 
 [assets]
 directory = "./out"
